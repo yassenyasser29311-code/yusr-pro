@@ -208,7 +208,7 @@
     .acc-writing    { background: linear-gradient(135deg,#67e8f9,#0891b2); color:#042e33; }
     .acc-summarizer { background: linear-gradient(135deg,#a5b4fc,#4f46e5); color:#fff; }
     .acc-transcribe { background: linear-gradient(135deg,#5eead4,#0d9488); color:#042e28; }
-    .acc-montage    { background: linear-gradient(135deg,#fca5a5,#dc2626); color:#fff; }
+    .acc-pitch      { background: linear-gradient(135deg,#fbbf24,#f97316); color:#3a1c00; }
     .acc-profile    { background: linear-gradient(135deg,#93c5fd,#6366f1); color:#fff; }
     .acc-donations  { background: linear-gradient(135deg,#fde68a,#f59e0b); color:#3a2400; }
     .acc-subs       { background: linear-gradient(135deg,#c4b5fd,#8b5cf6); color:#fff; }
@@ -373,8 +373,8 @@
                     <div class="nav-item" data-view="transcribe" onclick="switchView('transcribe', this)">
                         <i class="fa-solid fa-microphone-lines"></i><span class="sidebar-label" data-i18n="nav.transcribe">تفريغ الصوت إلى نص</span>
                     </div>
-                    <div class="nav-item" data-view="montage" onclick="switchView('montage', this)">
-                        <i class="fa-solid fa-clapperboard"></i><span class="sidebar-label" data-i18n="nav.montage">مونتاج فيديو بالذكاء الاصطناعي</span>
+                    <div class="nav-item" data-view="pitch" onclick="switchView('pitch', this)">
+                        <i class="fa-solid fa-stopwatch"></i><span class="sidebar-label" data-i18n="nav.pitch">قدّم نفسك في 30 ثانية</span>
                     </div>
                 </div>
             </div>
@@ -1083,58 +1083,60 @@
                 </div>
             </section>
 
-            <!-- ================= VIDEO MONTAGE (AI edit plan + basic trim) ================= -->
-            <section id="view-montage" class="view">
+            <!-- ================= 30-SECOND SELF PITCH (AI elevator pitch, linked to CV/Profile) ================= -->
+            <section id="view-pitch" class="view">
                 <div class="panel rounded-2xl p-4 sm:p-5 space-y-3">
                     <div class="panel-2 rounded-xl px-3 py-2 text-[11px] text-slate-400 flex items-start gap-2">
                         <i class="fa-solid fa-circle-info mt-0.5 text-slate-500"></i>
-                        <span data-i18n="mo.notice">ارفع فيديوك واكتب تعليماتك بالظبط (مثلاً: مونتاج جيمنج سريع الإيقاع، أو فيديو نصايح هادي). الذكاء الاصطناعي بيحلل طلبك ويجهّزلك "خطة مونتاج احترافية" مفصّلة، وبعدها تقدر تدوس "نفّذ المونتاج" عشان يتنفذ فعلياً جوه المتصفح (قص، سرعة، تلاشي دخول/خروج) وينزّلك فيديو جاهز حقيقي مش نص خطة بس. ملحوظة بالصراحة: التنفيذ الآلي بيغطي القص والسرعة والتلاشي والإيقاع بناءً على تعليماتك، أما التأثيرات البصرية المعقدة والألوان والموسيقى المخصصة فلسه محتاجة برنامج مونتاج حقيقي أو مونتير — الخطة النصية بتوجهك بالتفصيل لعملها.</span>
+                        <span data-i18n="pitch.notice">جهّز نص تقديم ذاتي احترافي مدته حوالي 30 ثانية لما تتكلم بيه بصوت عادي — تستخدمه في بداية مقابلة شخصية، فيديو تعريفي، أو أول رسالة تواصل مع شركة. مربوط بالـ CV والبروفايل المحفوظين عندك في الموقع، فتقدر تسحب بياناتك منهم بضغطة واحدة بدل ما تكتبها من الأول.</span>
                     </div>
+
+                    <button onclick="importPitchFromProfile()" class="w-full py-2.5 panel-2 border border-[var(--border)] font-bold text-xs rounded-xl flex items-center justify-center gap-2 hover:bg-[var(--panel-2)]">
+                        <i class="fa-solid fa-arrow-rotate-left fa-flip-horizontal"></i> استورد بياناتي من الـ CV والبروفايل المحفوظين
+                    </button>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-xs text-slate-400 mb-1.5" data-i18n="mo.uploadLabel">ارفع الفيديو</label>
-                            <input type="file" id="mo-video-input" accept="video/*" class="w-full input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm" onchange="handleMontageVideoUpload(event)">
+                            <label class="block text-xs text-slate-400 mb-1.5" data-i18n="pitch.purposeLabel">هتستخدمه فين؟</label>
+                            <select id="pitch-purpose" class="w-full input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
+                                <option value="بداية مقابلة شخصية (سؤال 'حدثني عن نفسك')">بداية مقابلة شخصية</option>
+                                <option value="فيديو تعريفي على لينكد إن أو البورتفوليو">فيديو تعريفي (لينكد إن / بورتفوليو)</option>
+                                <option value="تواصل بارد مع شركة أو صاحب عمل (Networking)">تواصل بارد مع شركة (Networking)</option>
+                                <option value="بداية مكالمة هاتفية أو فرصة عمل مفاجئة">بداية مكالمة هاتفية / فرصة مفاجئة</option>
+                            </select>
                         </div>
                         <div>
-                            <label class="block text-xs text-slate-400 mb-1.5" data-i18n="mo.typeLabel">نوع المحتوى</label>
-                            <select id="mo-type" class="w-full input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
-                                <option value="مقطع ألعاب (Gaming Highlights)">ألعاب / Gaming Highlights</option>
-                                <option value="فيديو نصائح تعليمي">فيديو نصائح / تعليمي</option>
-                                <option value="فلوق يومي (Vlog)">فلوق يومي (Vlog)</option>
-                                <option value="إعلان تسويقي قصير">إعلان تسويقي قصير</option>
-                                <option value="ريلز / محتوى سوشيال ميديا سريع">ريلز / سوشيال ميديا سريع</option>
+                            <label class="block text-xs text-slate-400 mb-1.5" data-i18n="pitch.toneLabel">أسلوب الكلام</label>
+                            <select id="pitch-tone" class="w-full input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
+                                <option value="رسمي احترافي هادئ">رسمي احترافي هادئ</option>
+                                <option value="حماسي وفيه طاقة">حماسي وفيه طاقة</option>
+                                <option value="بسيط وودود قريب من الناس">بسيط وودود قريب من الناس</option>
                             </select>
                         </div>
                     </div>
-                    <video id="mo-video-preview" class="hidden w-full rounded-xl max-h-64 bg-black" controls></video>
-                    <textarea id="mo-instructions" rows="4" data-i18n-ph="mo.instructionsPh" placeholder="اكتب تعليماتك بالظبط: اعمل كذا، شيل كذا، حط موسيقى كذا، الإيقاع يبقى سريع/هادي..." class="w-full input-field rounded-xl p-3 text-xs sm:text-sm resize-none"></textarea>
-                    <button onclick="runMontagePlanner()" class="w-full py-3 btn-accent acc-montage font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-clapperboard"></i> <span data-i18n="mo.run">جهّز خطة المونتاج الاحترافية</span>
+
+                    <input type="text" id="pitch-role" data-i18n-ph="pitch.rolePh" placeholder="الوظيفة أو المجال المستهدف" class="w-full input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
+                    <textarea id="pitch-highlight" rows="3" data-i18n-ph="pitch.highlightPh" placeholder="أهم نقطة أو نقطتين عايز تبرزهم (خبرة، إنجاز، مهارة مميزة) - اختياري، وممكن نسحبهم من الـ CV تلقائياً" class="w-full input-field rounded-xl p-3 text-xs sm:text-sm resize-none"></textarea>
+
+                    <button onclick="runElevatorPitch()" class="w-full py-3 btn-accent acc-pitch font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-stopwatch"></i> <span data-i18n="pitch.run">جهّز نص التقديم في 30 ثانية</span>
                     </button>
-                    <div id="montage-result" class="hidden panel-2 rounded-xl p-3.5 text-xs sm:text-sm leading-relaxed max-h-[380px] overflow-y-auto"></div>
+                    <div id="pitch-result" class="hidden panel-2 rounded-xl p-3.5 text-xs sm:text-sm leading-relaxed max-h-[380px] overflow-y-auto"></div>
 
-                    <div id="mo-auto-box" class="hidden panel-2 rounded-xl p-3.5 space-y-2 border border-[var(--border)]">
-                        <p class="text-xs font-bold text-slate-300 flex items-center gap-2"><i class="fa-solid fa-wand-magic-sparkles"></i> تنفيذ المونتاج فعلياً</p>
-                        <p class="text-[10.5px] text-slate-500">الذكاء الاصطناعي هيقسّم الفيديو لمشاهد متعددة حسب تعليماتك، ويحدد أنسب قص وسرعة وتلاشي لكل مشهد، والمتصفح هيلزّق المشاهد ويعالج الفيديو ويطلعلك ملف فيديو مُعدّل حقيقي تقدر تحمّله فوراً (أول مرة ممكن تاخد شوية وقت لتحميل محرّك المعالجة، ولو الفيديو طويل ممكن ياخد وقت أطول في المعالجة).</p>
-                        <div>
-                            <label class="block text-[10.5px] text-slate-500 mb-1">موسيقى خلفية (اختياري — لازم تكون عندك حقوق استخدامها)</label>
-                            <input type="file" id="mo-music-input" accept="audio/*" class="w-full input-field rounded-xl px-3.5 py-2 text-xs" onchange="handleMontageMusicUpload(event)">
-                            <p id="mo-music-status" class="text-[10px] text-slate-500 mt-1"></p>
-                        </div>
-                        <button onclick="runAutoEditVideo()" class="w-full py-2.5 btn-accent acc-montage font-bold text-xs rounded-xl flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-clapperboard"></i> نفّذ المونتاج وحمّل الفيديو الجاهز
-                        </button>
-                        <p id="mo-auto-status" class="text-[10px] text-slate-500"></p>
-                        <video id="mo-auto-output" class="hidden w-full rounded-xl max-h-64 bg-black mt-2" controls></video>
-
-                        <div class="pt-2 border-t border-[var(--border)] mt-2">
-                            <p class="text-[10.5px] text-slate-500 mb-1.5">وعايز كابشونز/ترجمة تحطها على الفيديو؟ الحرق المباشر للنص العربي جوه الفيديو مش بيطلع مظبوط بصرياً بسبب قيود محرك المعالجة، فبدل ما نطلعلك كلام متقطّع وغير مقروء، بنطلعلك ملف ترجمة (SRT) متزامن مع الفيديو تقدر تحطه في أي مشغل فيديو أو ترفعه مباشرة مع الفيديو على يوتيوب/تيك توك وهما بيحرقوه لك بشكل سليم.</p>
-                            <button onclick="generateVideoCaptions()" class="w-full py-2 btn-accent acc-montage font-bold text-xs rounded-xl flex items-center justify-center gap-2">
-                                <i class="fa-solid fa-closed-captioning"></i> استخرج ملف ترجمة (SRT) من كلام الفيديو
+                    <div id="pitch-audio-box" class="hidden panel-2 rounded-xl p-3.5 space-y-2 border border-[var(--border)]">
+                        <p class="text-xs font-bold text-slate-300 flex items-center gap-2"><i class="fa-solid fa-volume-high"></i> اسمع النص وقيس توقيته</p>
+                        <p id="pitch-timing" class="text-[10.5px] text-slate-500"></p>
+                        <div class="flex gap-2">
+                            <button onclick="previewPitchAudio()" class="flex-1 py-2.5 btn-accent acc-pitch font-bold text-xs rounded-xl flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-play"></i> استمع للنص
                             </button>
-                            <p id="mo-captions-status" class="text-[10px] text-slate-500 mt-1"></p>
+                            <button onclick="stopSpeaking()" class="px-4 py-2.5 chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-stop"></i></button>
                         </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <button onclick="switchViewByName('cv')" class="panel-2 rounded-xl p-2.5 text-center lift-hover text-[11px] text-slate-400 flex items-center justify-center gap-1.5"><i class="fa-solid fa-file-lines"></i> جهّز الـ CV الأول</button>
+                        <button onclick="switchViewByName('interview')" class="panel-2 rounded-xl p-2.5 text-center lift-hover text-[11px] text-slate-400 flex items-center justify-center gap-1.5"><i class="fa-solid fa-microphone-lines"></i> اتدرّب في مقابلة صوتية</button>
                     </div>
                 </div>
             </section>
@@ -1763,7 +1765,7 @@
         video: "محاكي مقابلة فيديو", salary: "تقدير الراتب المتوقع", progress: "متابعة التقدم",
         cv: "بناء السيرة الذاتية", match: "مطابقة CV مع الوظيفة", cover: "مولّد رسائل توظيف",
         portfolio: "بورتفوليو شخصي", writing: "تدقيق وتنسيق أكاديمي",
-        summarizer: "تلخيص المستندات", transcribe: "تفريغ الصوت إلى نص", montage: "مونتاج فيديو بالذكاء الاصطناعي",
+        summarizer: "تلخيص المستندات", transcribe: "تفريغ الصوت إلى نص", pitch: "قدّم نفسك في 30 ثانية",
         profile: "الملف الشخصي", subscriptions: "الاشتراكات", donations: "التبرعات", support: "الدعم والتواصل",
         terms: "شروط الاستخدام", privacy: "سياسة الخصوصية"
     };
@@ -1773,7 +1775,7 @@
         video: "Video Mock Interview", salary: "Salary Insights", progress: "Progress Tracking",
         cv: "CV Builder", match: "CV Job Match", cover: "Cover Letter Generator",
         portfolio: "Personal Portfolio", writing: "Academic Writing Review",
-        summarizer: "Document Summarizer", transcribe: "Speech to Text", montage: "AI Video Montage",
+        summarizer: "Document Summarizer", transcribe: "Speech to Text", pitch: "30-Second Self Pitch",
         profile: "Profile", subscriptions: "Subscriptions", donations: "Donations", support: "Support",
         terms: "Terms of Use", privacy: "Privacy Policy"
     };
@@ -1814,7 +1816,7 @@
         ar: {
             "nav.section.interviews":"المقابلات والتوظيف","nav.interview":"مقابلة تدريبية صوتية","nav.faq":"أسئلة شائعة + إجابات نموذجية","nav.career":"خطة التطور المهني",
             "nav.section.documents":"المستندات","nav.cv":"بناء السيرة الذاتية","nav.portfolio":"بورتفوليو شخصي","nav.writing":"تدقيق وتنسيق أكاديمي","nav.summarizer":"تلخيص المستندات",
-            "nav.section.audio":"الصوت والفيديو","nav.transcribe":"تفريغ الصوت إلى نص","nav.montage":"مونتاج فيديو بالذكاء الاصطناعي",
+            "nav.section.audio":"الصوت والفيديو","nav.transcribe":"تفريغ الصوت إلى نص","nav.pitch":"قدّم نفسك في 30 ثانية",
             "nav.section.account":"الحساب والدعم","nav.about":"من نحن","nav.profile":"الملف الشخصي","nav.subscriptions":"الاشتراكات","nav.donations":"التبرعات","nav.support":"الدعم والتواصل",
             "nav.section.legal":"قانوني","nav.terms":"شروط الاستخدام","nav.privacy":"سياسة الخصوصية",
             "account.guest":"زائر (الجهاز ده)","account.signinHint":"سجّل دخول بجوجل لحفظ صورتك ونقاطك",
@@ -1835,8 +1837,8 @@
             "sum.desc":"لخّص أي تقرير أو مقال أو محاضرة في ثواني.","sum.inputPh":"الصق النص هنا...","sum.run":"لخّص الآن",
             "tr.notice":"تقدر ترفع ملف صوت جاهز فيتفرّغ تلقائياً بالذكاء الاصطناعي، أو تسجل مباشرة بالمايك، أو تلصق نص جاهز.","tr.uploadBtn":"ارفع ملف صوتي وفرّغه تلقائياً","tr.uploadHint":"مفيش ملف مرفوع لسه",
             "tr.sourceLangLabel":"لغة الكلام المصدر","tr.targetLangLabel":"ترجم النص النهائي إلى (اختياري)","tr.micHint":"اضغط للتسجيل، أو ارفع ملف فوق، أو الصق نص جاهز تحت.","tr.rawPh":"النص الخام هيظهر هنا...","tr.run":"نظّف وحسّن التنسيق",
-            "mo.notice":"ارفع فيديوك واكتب تعليماتك بالظبط. الذكاء الاصطناعي هيجهّزلك خطة مونتاج احترافية مفصّلة.","mo.uploadLabel":"ارفع الفيديو","mo.typeLabel":"نوع المحتوى",
-            "mo.instructionsPh":"اكتب تعليماتك بالظبط...","mo.run":"جهّز خطة المونتاج الاحترافية",
+            "pitch.notice":"جهّز نص تقديم ذاتي احترافي مدته حوالي 30 ثانية، مربوط بالـ CV والبروفايل المحفوظين عندك.","pitch.purposeLabel":"هتستخدمه فين؟","pitch.toneLabel":"أسلوب الكلام",
+            "pitch.rolePh":"الوظيفة أو المجال المستهدف","pitch.highlightPh":"أهم نقطة أو نقطتين عايز تبرزهم - اختياري","pitch.run":"جهّز نص التقديم في 30 ثانية",
             "profile.points":"نقطة","profile.namePh":"اسمك الكامل","profile.titlePh":"المسمى الوظيفي","profile.googleBtn":"تسجيل الدخول بحساب جوجل",
             "profile.googleHint":"تسجيل الدخول بيحفظ اسمك وصورتك ونقاطك على نفس الجهاز — المحاولات المجانية بتُحسب على الجهاز مش على الحساب.","profile.save":"حفظ البيانات",
             "profile.connected":"متصل بجوجل","profile.logoutBtn":"تسجيل الخروج",
@@ -1892,7 +1894,7 @@
         en: {
             "nav.section.interviews":"Interviews & Hiring","nav.interview":"Voice Mock Interview","nav.faq":"FAQ + Model Answers","nav.career":"Career Growth Plan",
             "nav.section.documents":"Documents","nav.cv":"CV Builder","nav.portfolio":"Personal Portfolio","nav.writing":"Academic Writing Review","nav.summarizer":"Document Summarizer",
-            "nav.section.audio":"Audio & Video","nav.transcribe":"Speech to Text","nav.montage":"AI Video Montage",
+            "nav.section.audio":"Audio & Video","nav.transcribe":"Speech to Text","nav.pitch":"30-Second Self Pitch",
             "nav.section.account":"Account & Support","nav.about":"About Us","nav.profile":"Profile","nav.subscriptions":"Subscriptions","nav.donations":"Donations","nav.support":"Support",
             "nav.section.legal":"Legal","nav.terms":"Terms of Use","nav.privacy":"Privacy Policy",
             "account.guest":"Guest (this device)","account.signinHint":"Sign in with Google to save your photo & points",
@@ -1913,8 +1915,8 @@
             "sum.desc":"Summarize any report, article, or lecture in seconds.","sum.inputPh":"Paste text here...","sum.run":"Summarize Now",
             "tr.notice":"Upload an audio file to auto-transcribe with AI, record with the mic, or paste ready text.","tr.uploadBtn":"Upload audio file & auto-transcribe","tr.uploadHint":"No file uploaded yet",
             "tr.sourceLangLabel":"Source speech language","tr.targetLangLabel":"Translate final text to (optional)","tr.micHint":"Press to record, upload a file above, or paste text below.","tr.rawPh":"Raw text will appear here...","tr.run":"Clean Up & Format",
-            "mo.notice":"Upload your video and write your exact instructions. The AI will prepare a detailed professional edit plan.","mo.uploadLabel":"Upload video","mo.typeLabel":"Content type",
-            "mo.instructionsPh":"Write your exact instructions...","mo.run":"Generate Professional Edit Plan",
+            "pitch.notice":"Prepare a professional ~30-second self introduction, linked to your saved CV and profile.","pitch.purposeLabel":"Where will you use it?","pitch.toneLabel":"Tone of voice",
+            "pitch.rolePh":"Target role or field","pitch.highlightPh":"One or two highlights to feature - optional","pitch.run":"Generate 30-Second Pitch",
             "profile.points":"pts","profile.namePh":"Your full name","profile.titlePh":"Job title","profile.googleBtn":"Sign in with Google",
             "profile.googleHint":"Signing in saves your name, photo and points on this device — free trials are counted per device, not per account.","profile.save":"Save Info",
             "profile.connected":"Connected with Google","profile.logoutBtn":"Log out",
@@ -1971,7 +1973,7 @@
         fr: {
             "nav.section.interviews":"Entretiens et embauche","nav.interview":"Entretien d'entraînement vocal","nav.faq":"FAQ + réponses modèles","nav.career":"Plan de développement de carrière",
             "nav.section.documents":"Documents","nav.cv":"Créateur de CV","nav.portfolio":"Portfolio personnel","nav.writing":"Relecture académique","nav.summarizer":"Résumé de documents",
-            "nav.section.audio":"Audio et vidéo","nav.transcribe":"Transcription audio en texte","nav.montage":"Montage vidéo par IA",
+            "nav.section.audio":"Audio et vidéo","nav.transcribe":"Transcription audio en texte",
             "nav.section.account":"Compte et assistance","nav.about":"À propos de nous","nav.profile":"Profil","nav.subscriptions":"Abonnements","nav.donations":"Dons","nav.support":"Assistance et contact",
             "nav.section.legal":"Mentions légales","nav.terms":"Conditions d'utilisation","nav.privacy":"Politique de confidentialité",
             "account.guest":"Invité (cet appareil)","account.signinHint":"Connectez-vous avec Google pour enregistrer votre photo et vos points",
@@ -1992,8 +1994,7 @@
             "sum.desc":"Résumez n'importe quel rapport, article ou cours en quelques secondes.","sum.inputPh":"Collez le texte ici...","sum.run":"Résumer maintenant",
             "tr.notice":"Vous pouvez importer un fichier audio pour une transcription automatique par IA, enregistrer directement au micro, ou coller un texte déjà prêt.","tr.uploadBtn":"Importer un fichier audio et le transcrire","tr.uploadHint":"Aucun fichier importé pour l'instant",
             "tr.sourceLangLabel":"Langue source de la parole","tr.targetLangLabel":"Traduire le texte final vers (facultatif)","tr.micHint":"Appuyez pour enregistrer, importez un fichier ci-dessus, ou collez un texte ci-dessous.","tr.rawPh":"Le texte brut apparaîtra ici...","tr.run":"Nettoyer et mettre en forme",
-            "mo.notice":"Importez votre vidéo et écrivez vos instructions précises. L'IA analysera votre demande et préparera un \"plan de montage professionnel\" détaillé, puis vous pourrez cliquer sur \"Exécuter le montage\" pour qu'il soit réalisé directement dans le navigateur (découpe, vitesse, fondu d'entrée/sortie) et obtenir une vraie vidéo prête, pas juste un texte de plan. Note honnête : l'exécution automatique couvre la découpe, la vitesse, le fondu et le rythme selon vos instructions ; les effets visuels complexes, l'étalonnage et la musique personnalisée nécessitent encore un vrai logiciel de montage ou un monteur — le plan texte vous guide en détail pour les réaliser.","mo.uploadLabel":"Importer la vidéo","mo.typeLabel":"Type de contenu",
-            "mo.instructionsPh":"Écrivez vos instructions précises : faire ceci, retirer cela, ajouter telle musique, rythme rapide/lent...","mo.run":"Générer le plan de montage professionnel",
+            
             "profile.points":"points","profile.namePh":"Votre nom complet","profile.titlePh":"Intitulé du poste","profile.googleBtn":"Se connecter avec Google",
             "profile.googleHint":"La connexion enregistre votre nom, votre photo et vos points sur cet appareil — les essais gratuits sont comptés par appareil, pas par compte.","profile.save":"Enregistrer les informations",
             "profile.connected":"Connecté avec Google","profile.logoutBtn":"Se déconnecter",
@@ -2049,7 +2050,7 @@
         es: {
             "nav.section.interviews":"Entrevistas y contratación","nav.interview":"Entrevista de práctica por voz","nav.faq":"Preguntas frecuentes + respuestas modelo","nav.career":"Plan de desarrollo profesional",
             "nav.section.documents":"Documentos","nav.cv":"Creador de CV","nav.portfolio":"Portafolio personal","nav.writing":"Revisión académica","nav.summarizer":"Resumen de documentos",
-            "nav.section.audio":"Audio y video","nav.transcribe":"Transcripción de audio a texto","nav.montage":"Montaje de video con IA",
+            "nav.section.audio":"Audio y video","nav.transcribe":"Transcripción de audio a texto",
             "nav.section.account":"Cuenta y soporte","nav.about":"Sobre nosotros","nav.profile":"Perfil","nav.subscriptions":"Suscripciones","nav.donations":"Donaciones","nav.support":"Soporte y contacto",
             "nav.section.legal":"Legal","nav.terms":"Términos de uso","nav.privacy":"Política de privacidad",
             "account.guest":"Invitado (este dispositivo)","account.signinHint":"Inicia sesión con Google para guardar tu foto y puntos",
@@ -2070,8 +2071,7 @@
             "sum.desc":"Resume cualquier informe, artículo o clase en segundos.","sum.inputPh":"Pega el texto aquí...","sum.run":"Resumir ahora",
             "tr.notice":"Puedes subir un archivo de audio listo para transcribirlo automáticamente con IA, grabar directamente con el micrófono, o pegar un texto ya listo.","tr.uploadBtn":"Subir archivo de audio y transcribir","tr.uploadHint":"Aún no se ha subido ningún archivo",
             "tr.sourceLangLabel":"Idioma original del habla","tr.targetLangLabel":"Traducir el texto final a (opcional)","tr.micHint":"Pulsa para grabar, sube un archivo arriba, o pega un texto abajo.","tr.rawPh":"El texto en bruto aparecerá aquí...","tr.run":"Limpiar y dar formato",
-            "mo.notice":"Sube tu video y escribe tus instrucciones exactas (por ejemplo: montaje de gaming rápido, o video de consejos tranquilo). La IA analizará tu solicitud y preparará un \"plan de montaje profesional\" detallado; después podrás pulsar \"Ejecutar montaje\" para que se realice directamente en el navegador (corte, velocidad, fundido de entrada/salida) y obtener un video real y listo, no solo un plan de texto. Nota honesta: la ejecución automática cubre el corte, la velocidad, el fundido y el ritmo según tus instrucciones; los efectos visuales complejos, la corrección de color y la música personalizada aún requieren un programa de edición real o un editor — el plan de texto te guía en detalle para hacerlo.","mo.uploadLabel":"Subir video","mo.typeLabel":"Tipo de contenido",
-            "mo.instructionsPh":"Escribe tus instrucciones exactas: hacer esto, quitar aquello, poner tal música, ritmo rápido/lento...","mo.run":"Generar plan de montaje profesional",
+            
             "profile.points":"puntos","profile.namePh":"Tu nombre completo","profile.titlePh":"Puesto de trabajo","profile.googleBtn":"Iniciar sesión con Google",
             "profile.googleHint":"Iniciar sesión guarda tu nombre, foto y puntos en este dispositivo — los intentos gratuitos se cuentan por dispositivo, no por cuenta.","profile.save":"Guardar información",
             "profile.connected":"Conectado con Google","profile.logoutBtn":"Cerrar sesión",
@@ -2127,7 +2127,7 @@
         tr: {
             "nav.section.interviews":"Mülakatlar ve İşe Alım","nav.interview":"Sesli Deneme Mülakatı","nav.faq":"SSS + Örnek Cevaplar","nav.career":"Kariyer Gelişim Planı",
             "nav.section.documents":"Belgeler","nav.cv":"CV Oluşturucu","nav.portfolio":"Kişisel Portfolyo","nav.writing":"Akademik Yazı Denetimi","nav.summarizer":"Belge Özetleyici",
-            "nav.section.audio":"Ses ve Video","nav.transcribe":"Sesi Metne Dönüştürme","nav.montage":"Yapay Zeka ile Video Montajı",
+            "nav.section.audio":"Ses ve Video","nav.transcribe":"Sesi Metne Dönüştürme",
             "nav.section.account":"Hesap ve Destek","nav.about":"Hakkımızda","nav.profile":"Profil","nav.subscriptions":"Abonelikler","nav.donations":"Bağışlar","nav.support":"Destek ve İletişim",
             "nav.section.legal":"Yasal","nav.terms":"Kullanım Şartları","nav.privacy":"Gizlilik Politikası",
             "account.guest":"Misafir (bu cihaz)","account.signinHint":"Fotoğrafını ve puanlarını kaydetmek için Google ile giriş yap",
@@ -2148,8 +2148,7 @@
             "sum.desc":"Herhangi bir raporu, makaleyi veya dersi saniyeler içinde özetle.","sum.inputPh":"Metni buraya yapıştır...","sum.run":"Şimdi Özetle",
             "tr.notice":"Yapay zekayla otomatik olarak yazıya dökülmesi için hazır bir ses dosyası yükleyebilir, doğrudan mikrofonla kayıt yapabilir veya hazır bir metni yapıştırabilirsin.","tr.uploadBtn":"Ses dosyası yükle ve otomatik yazıya dök","tr.uploadHint":"Henüz dosya yüklenmedi",
             "tr.sourceLangLabel":"Kaynak konuşma dili","tr.targetLangLabel":"Son metni şu dile çevir (isteğe bağlı)","tr.micHint":"Kayıt için bas, yukarıdan dosya yükle veya aşağıya hazır metin yapıştır.","tr.rawPh":"Ham metin burada görünecek...","tr.run":"Temizle ve Biçimlendir",
-            "mo.notice":"Videonu yükle ve talimatlarını tam olarak yaz (örneğin: hızlı tempolu oyun montajı, ya da sakin bir tavsiye videosu). Yapay zeka isteğini analiz eder ve ayrıntılı bir \"profesyonel montaj planı\" hazırlar; ardından \"Montajı Uygula\"ya basarak tarayıcı içinde gerçekten işlenmesini (kesme, hız, açılış/kapanış geçişi) ve sadece bir plan metni değil, gerçek hazır bir video indirmeyi sağlayabilirsin. Dürüst bir not: otomatik uygulama, talimatlarına göre kesme, hız, geçiş ve tempoyu kapsar; karmaşık görsel efektler, renk düzenlemesi ve özel müzik hâlâ gerçek bir montaj programı veya bir editör gerektirir — metin planı bunları yapman için sana ayrıntılı rehberlik eder.","mo.uploadLabel":"Video Yükle","mo.typeLabel":"İçerik türü",
-            "mo.instructionsPh":"Talimatlarını tam olarak yaz: şunu yap, bunu kaldır, şu müziği koy, tempo hızlı/sakin olsun...","mo.run":"Profesyonel Montaj Planı Oluştur",
+            
             "profile.points":"puan","profile.namePh":"Ad Soyad","profile.titlePh":"Meslek unvanı","profile.googleBtn":"Google ile Giriş Yap",
             "profile.googleHint":"Giriş yapmak, adını, fotoğrafını ve puanlarını bu cihazda kaydeder — ücretsiz denemeler hesaba göre değil cihaza göre sayılır.","profile.save":"Bilgileri Kaydet",
             "profile.connected":"Google ile Bağlı","profile.logoutBtn":"Çıkış Yap",
@@ -2205,7 +2204,7 @@
         de: {
             "nav.section.interviews":"Vorstellungsgespräche & Bewerbung","nav.interview":"Sprachbasiertes Übungsinterview","nav.faq":"FAQ + Musterantworten","nav.career":"Karriereentwicklungsplan",
             "nav.section.documents":"Dokumente","nav.cv":"Lebenslauf-Generator","nav.portfolio":"Persönliches Portfolio","nav.writing":"Akademisches Lektorat","nav.summarizer":"Dokumentenzusammenfassung",
-            "nav.section.audio":"Audio & Video","nav.transcribe":"Sprache-zu-Text","nav.montage":"KI-Videoschnitt",
+            "nav.section.audio":"Audio & Video","nav.transcribe":"Sprache-zu-Text",
             "nav.section.account":"Konto & Support","nav.about":"Über uns","nav.profile":"Profil","nav.subscriptions":"Abonnements","nav.donations":"Spenden","nav.support":"Support & Kontakt",
             "nav.section.legal":"Rechtliches","nav.terms":"Nutzungsbedingungen","nav.privacy":"Datenschutzerklärung",
             "account.guest":"Gast (dieses Gerät)","account.signinHint":"Melde dich mit Google an, um dein Foto und deine Punkte zu speichern",
@@ -2226,8 +2225,7 @@
             "sum.desc":"Fasse jeden Bericht, Artikel oder jede Vorlesung in Sekunden zusammen.","sum.inputPh":"Text hier einfügen...","sum.run":"Jetzt zusammenfassen",
             "tr.notice":"Du kannst eine fertige Audiodatei hochladen, die automatisch von der KI transkribiert wird, direkt mit dem Mikrofon aufnehmen oder einen fertigen Text einfügen.","tr.uploadBtn":"Audiodatei hochladen und automatisch transkribieren","tr.uploadHint":"Noch keine Datei hochgeladen",
             "tr.sourceLangLabel":"Ausgangssprache der Sprache","tr.targetLangLabel":"Endtext übersetzen nach (optional)","tr.micHint":"Zum Aufnehmen drücken, oben eine Datei hochladen oder unten einen fertigen Text einfügen.","tr.rawPh":"Der Rohtext erscheint hier...","tr.run":"Bereinigen & Formatieren",
-            "mo.notice":"Lade dein Video hoch und schreibe deine genauen Anweisungen (z. B.: schneller Gaming-Schnitt oder ruhiges Tipp-Video). Die KI analysiert deine Anfrage und erstellt einen detaillierten \"professionellen Schnittplan\"; danach kannst du auf \"Schnitt ausführen\" klicken, damit er direkt im Browser umgesetzt wird (Schnitt, Geschwindigkeit, Ein-/Ausblenden) und du ein echtes fertiges Video erhältst, nicht nur einen Textplan. Ehrlicher Hinweis: Die automatische Ausführung deckt Schnitt, Geschwindigkeit, Überblendung und Rhythmus gemäß deinen Anweisungen ab; komplexe visuelle Effekte, Farbkorrektur und individuelle Musik erfordern weiterhin ein echtes Schnittprogramm oder einen Editor — der Textplan leitet dich im Detail an, das selbst umzusetzen.","mo.uploadLabel":"Video hochladen","mo.typeLabel":"Inhaltstyp",
-            "mo.instructionsPh":"Schreibe deine genauen Anweisungen: mach dies, entferne das, füge diese Musik hinzu, Tempo schnell/ruhig...","mo.run":"Professionellen Schnittplan erstellen",
+            
             "profile.points":"Punkte","profile.namePh":"Dein vollständiger Name","profile.titlePh":"Berufsbezeichnung","profile.googleBtn":"Mit Google anmelden",
             "profile.googleHint":"Die Anmeldung speichert deinen Namen, dein Foto und deine Punkte auf diesem Gerät — kostenlose Versuche werden pro Gerät gezählt, nicht pro Konto.","profile.save":"Angaben speichern",
             "profile.connected":"Mit Google verbunden","profile.logoutBtn":"Abmelden",
@@ -2283,7 +2281,7 @@
         hi: {
             "nav.section.interviews":"इंटरव्यू और नौकरी","nav.interview":"वॉइस मॉक इंटरव्यू","nav.faq":"सामान्य प्रश्न + नमूना उत्तर","nav.career":"करियर विकास योजना",
             "nav.section.documents":"दस्तावेज़","nav.cv":"सीवी बिल्डर","nav.portfolio":"व्यक्तिगत पोर्टफोलियो","nav.writing":"अकादमिक लेखन समीक्षा","nav.summarizer":"दस्तावेज़ सारांश",
-            "nav.section.audio":"ऑडियो और वीडियो","nav.transcribe":"ऑडियो से टेक्स्ट","nav.montage":"AI वीडियो एडिटिंग",
+            "nav.section.audio":"ऑडियो और वीडियो","nav.transcribe":"ऑडियो से टेक्स्ट",
             "nav.section.account":"खाता और सहायता","nav.about":"हमारे बारे में","nav.profile":"प्रोफ़ाइल","nav.subscriptions":"सदस्यताएँ","nav.donations":"दान","nav.support":"सहायता और संपर्क",
             "nav.section.legal":"कानूनी","nav.terms":"उपयोग की शर्तें","nav.privacy":"गोपनीयता नीति",
             "account.guest":"अतिथि (यह डिवाइस)","account.signinHint":"अपनी फ़ोटो और पॉइंट्स सेव करने के लिए Google से साइन इन करें",
@@ -2304,8 +2302,7 @@
             "sum.desc":"किसी भी रिपोर्ट, लेख या व्याख्यान का सेकंडों में सारांश बनाएं।","sum.inputPh":"टेक्स्ट यहाँ पेस्ट करें...","sum.run":"अभी सारांश बनाएं",
             "tr.notice":"आप AI से अपने-आप ट्रांसक्राइब होने के लिए तैयार ऑडियो फ़ाइल अपलोड कर सकते हैं, सीधे माइक से रिकॉर्ड कर सकते हैं, या तैयार टेक्स्ट पेस्ट कर सकते हैं।","tr.uploadBtn":"ऑडियो फ़ाइल अपलोड करें और ट्रांसक्राइब करें","tr.uploadHint":"अभी तक कोई फ़ाइल अपलोड नहीं हुई",
             "tr.sourceLangLabel":"मूल भाषण की भाषा","tr.targetLangLabel":"अंतिम टेक्स्ट का अनुवाद करें (वैकल्पिक)","tr.micHint":"रिकॉर्ड करने के लिए दबाएं, ऊपर फ़ाइल अपलोड करें, या नीचे तैयार टेक्स्ट पेस्ट करें।","tr.rawPh":"कच्चा टेक्स्ट यहाँ दिखाई देगा...","tr.run":"साफ़ करें और फ़ॉर्मेट करें",
-            "mo.notice":"अपना वीडियो अपलोड करें और अपने निर्देश ठीक-ठीक लिखें (उदाहरण के लिए: तेज़ रफ़्तार गेमिंग एडिट, या शांत टिप्स वीडियो)। AI आपके अनुरोध का विश्लेषण करके एक विस्तृत \"पेशेवर एडिटिंग प्लान\" तैयार करेगा, फिर आप \"एडिट लागू करें\" दबाकर इसे सीधे ब्राउज़र में लागू करवा सकते हैं (कट, स्पीड, फ़ेड इन/आउट) और सिर्फ़ प्लान टेक्स्ट नहीं बल्कि एक असली तैयार वीडियो पा सकते हैं। ईमानदार नोट: स्वचालित निष्पादन आपके निर्देशों के अनुसार कट, स्पीड, फ़ेड और रिदम को कवर करता है; जटिल विज़ुअल इफ़ेक्ट्स, कलर ग्रेडिंग और कस्टम म्यूज़िक के लिए अभी भी एक असली एडिटिंग सॉफ़्टवेयर या एडिटर चाहिए — टेक्स्ट प्लान इन्हें करने के लिए आपको विस्तार से मार्गदर्शन देता है।","mo.uploadLabel":"वीडियो अपलोड करें","mo.typeLabel":"कंटेंट का प्रकार",
-            "mo.instructionsPh":"अपने निर्देश ठीक-ठीक लिखें: यह करो, वो हटाओ, यह म्यूज़िक लगाओ, रिदम तेज़/धीमा हो...","mo.run":"पेशेवर एडिटिंग प्लान बनाएं",
+            
             "profile.points":"पॉइंट्स","profile.namePh":"आपका पूरा नाम","profile.titlePh":"पद का नाम","profile.googleBtn":"Google से साइन इन करें",
             "profile.googleHint":"साइन इन करने पर आपका नाम, फ़ोटो और पॉइंट्स इस डिवाइस पर सेव हो जाते हैं — मुफ़्त प्रयास खाते के अनुसार नहीं, डिवाइस के अनुसार गिने जाते हैं।","profile.save":"जानकारी सेव करें",
             "profile.connected":"Google से जुड़ा हुआ","profile.logoutBtn":"लॉग आउट करें",
@@ -2361,7 +2358,7 @@
         ur: {
             "nav.section.interviews":"انٹرویوز اور ملازمت","nav.interview":"صوتی مشقی انٹرویو","nav.faq":"عمومی سوالات + نمونہ جوابات","nav.career":"کیریئر ترقی کا منصوبہ",
             "nav.section.documents":"دستاویزات","nav.cv":"سی وی بنانے کا آلہ","nav.portfolio":"ذاتی پورٹ فولیو","nav.writing":"تعلیمی تحریر کا جائزہ","nav.summarizer":"دستاویز کا خلاصہ",
-            "nav.section.audio":"آڈیو اور ویڈیو","nav.transcribe":"آواز کو تحریر میں بدلنا","nav.montage":"AI ویڈیو ایڈیٹنگ",
+            "nav.section.audio":"آڈیو اور ویڈیو","nav.transcribe":"آواز کو تحریر میں بدلنا",
             "nav.section.account":"اکاؤنٹ اور معاونت","nav.about":"ہمارے بارے میں","nav.profile":"پروفائل","nav.subscriptions":"سبسکرپشنز","nav.donations":"عطیات","nav.support":"معاونت اور رابطہ",
             "nav.section.legal":"قانونی","nav.terms":"استعمال کی شرائط","nav.privacy":"رازداری کی پالیسی",
             "account.guest":"مہمان (یہ ڈیوائس)","account.signinHint":"اپنی تصویر اور پوائنٹس محفوظ کرنے کے لیے گوگل سے سائن ان کریں",
@@ -2382,8 +2379,7 @@
             "sum.desc":"کسی بھی رپورٹ، مضمون یا لیکچر کا سیکنڈوں میں خلاصہ بنائیں۔","sum.inputPh":"متن یہاں چسپاں کریں...","sum.run":"ابھی خلاصہ بنائیں",
             "tr.notice":"آپ AI سے خودکار طور پر تحریر میں بدلنے کے لیے تیار آڈیو فائل اپ لوڈ کر سکتے ہیں، براہ راست مائیک سے ریکارڈ کر سکتے ہیں، یا تیار متن چسپاں کر سکتے ہیں۔","tr.uploadBtn":"آڈیو فائل اپ لوڈ کریں اور خودکار تحریر بنائیں","tr.uploadHint":"ابھی تک کوئی فائل اپ لوڈ نہیں ہوئی",
             "tr.sourceLangLabel":"اصل بولی جانے والی زبان","tr.targetLangLabel":"حتمی متن کا ترجمہ کریں (اختیاری)","tr.micHint":"ریکارڈ کرنے کے لیے دبائیں، اوپر فائل اپ لوڈ کریں، یا نیچے تیار متن چسپاں کریں۔","tr.rawPh":"خام متن یہاں ظاہر ہوگا...","tr.run":"صاف کریں اور فارمیٹ کریں",
-            "mo.notice":"اپنی ویڈیو اپ لوڈ کریں اور اپنی ہدایات بالکل واضح لکھیں (مثلاً: تیز رفتار گیمنگ ایڈٹ، یا پرسکون تجاویز والی ویڈیو)۔ AI آپ کی درخواست کا تجزیہ کر کے ایک تفصیلی \"پیشہ ورانہ ایڈیٹنگ منصوبہ\" تیار کرے گا، پھر آپ \"ایڈٹ لاگو کریں\" دبا کر اسے براہِ راست براؤزر میں عملی جامہ پہنا سکتے ہیں (کٹ، رفتار، فیڈ ان/آؤٹ) اور صرف متنی منصوبہ نہیں بلکہ ایک حقیقی تیار ویڈیو حاصل کر سکتے ہیں۔ ایک ایماندارانہ نوٹ: خودکار عملدرآمد آپ کی ہدایات کے مطابق کٹ، رفتار، فیڈ اور تال کا احاطہ کرتا ہے؛ پیچیدہ بصری اثرات، کلر گریڈنگ اور مخصوص موسیقی کے لیے اب بھی ایک حقیقی ایڈیٹنگ سافٹ ویئر یا ایڈیٹر درکار ہے — متنی منصوبہ آپ کو یہ خود کرنے کے لیے تفصیلی رہنمائی دیتا ہے۔","mo.uploadLabel":"ویڈیو اپ لوڈ کریں","mo.typeLabel":"مواد کی قسم",
-            "mo.instructionsPh":"اپنی ہدایات بالکل واضح لکھیں: یہ کریں، وہ ہٹائیں، یہ موسیقی لگائیں، تال تیز/پرسکون ہو...","mo.run":"پیشہ ورانہ ایڈیٹنگ منصوبہ تیار کریں",
+            
             "profile.points":"پوائنٹس","profile.namePh":"آپ کا مکمل نام","profile.titlePh":"عہدے کا نام","profile.googleBtn":"گوگل سے سائن ان کریں",
             "profile.googleHint":"سائن ان کرنے سے آپ کا نام، تصویر اور پوائنٹس اس ڈیوائس پر محفوظ ہو جاتے ہیں — مفت کوششیں اکاؤنٹ کے بجائے ڈیوائس کے حساب سے شمار ہوتی ہیں۔","profile.save":"معلومات محفوظ کریں",
             "profile.connected":"گوگل سے منسلک","profile.logoutBtn":"لاگ آؤٹ کریں",
@@ -2439,7 +2435,7 @@
         fa: {
             "nav.section.interviews":"مصاحبه‌ها و استخدام","nav.interview":"مصاحبه آزمایشی صوتی","nav.faq":"سوالات متداول + پاسخ‌های نمونه","nav.career":"برنامه رشد شغلی",
             "nav.section.documents":"مدارک","nav.cv":"سازنده رزومه","nav.portfolio":"نمونه‌کار شخصی","nav.writing":"بازبینی نگارش آکادمیک","nav.summarizer":"خلاصه‌سازی مدارک",
-            "nav.section.audio":"صدا و ویدیو","nav.transcribe":"تبدیل صدا به متن","nav.montage":"تدوین ویدیو با هوش مصنوعی",
+            "nav.section.audio":"صدا و ویدیو","nav.transcribe":"تبدیل صدا به متن",
             "nav.section.account":"حساب کاربری و پشتیبانی","nav.about":"درباره ما","nav.profile":"پروفایل","nav.subscriptions":"اشتراک‌ها","nav.donations":"کمک مالی","nav.support":"پشتیبانی و ارتباط",
             "nav.section.legal":"حقوقی","nav.terms":"شرایط استفاده","nav.privacy":"سیاست حریم خصوصی",
             "account.guest":"مهمان (این دستگاه)","account.signinHint":"برای ذخیره عکس و امتیازهایتان با گوگل وارد شوید",
@@ -2460,8 +2456,7 @@
             "sum.desc":"هر گزارش، مقاله یا سخنرانی را در چند ثانیه خلاصه کنید.","sum.inputPh":"متن را اینجا بچسبانید...","sum.run":"خلاصه‌سازی همین حالا",
             "tr.notice":"می‌توانید یک فایل صوتی آماده برای رونویسی خودکار با هوش مصنوعی بارگذاری کنید، مستقیماً با میکروفون ضبط کنید، یا متن آماده بچسبانید.","tr.uploadBtn":"بارگذاری فایل صوتی و رونویسی خودکار","tr.uploadHint":"هنوز فایلی بارگذاری نشده",
             "tr.sourceLangLabel":"زبان اصلی گفتار","tr.targetLangLabel":"ترجمه متن نهایی به (اختیاری)","tr.micHint":"برای ضبط فشار دهید، فایلی در بالا بارگذاری کنید، یا متنی آماده در پایین بچسبانید.","tr.rawPh":"متن خام اینجا نمایش داده می‌شود...","tr.run":"پاک‌سازی و قالب‌بندی",
-            "mo.notice":"ویدیوی خود را بارگذاری کنید و دستورالعمل‌های دقیق خود را بنویسید (مثلاً: تدوین سریع گیمینگ، یا ویدیوی آرام نکات آموزشی). هوش مصنوعی درخواست شما را تحلیل کرده و یک \"برنامه تدوین حرفه‌ای\" دقیق آماده می‌کند؛ سپس می‌توانید روی \"اجرای تدوین\" بزنید تا مستقیماً در مرورگر اجرا شود (برش، سرعت، محو ورود/خروج) و یک ویدیوی واقعی و آماده دریافت کنید، نه فقط یک متن برنامه. یادداشت صادقانه: اجرای خودکار برش، سرعت، محو و ریتم را طبق دستورالعمل‌های شما پوشش می‌دهد؛ جلوه‌های بصری پیچیده، درجه‌بندی رنگ و موسیقی سفارشی هنوز به یک نرم‌افزار تدوین واقعی یا یک تدوینگر نیاز دارند — برنامه متنی شما را برای انجام آن‌ها به‌طور دقیق راهنمایی می‌کند.","mo.uploadLabel":"بارگذاری ویدیو","mo.typeLabel":"نوع محتوا",
-            "mo.instructionsPh":"دستورالعمل‌های دقیق خود را بنویسید: این کار را بکن، آن را حذف کن، فلان موسیقی را بگذار، ریتم سریع/آرام باشد...","mo.run":"تهیه برنامه تدوین حرفه‌ای",
+            
             "profile.points":"امتیاز","profile.namePh":"نام کامل شما","profile.titlePh":"عنوان شغلی","profile.googleBtn":"ورود با گوگل",
             "profile.googleHint":"ورود، نام، عکس و امتیازهای شما را روی این دستگاه ذخیره می‌کند — تلاش‌های رایگان بر اساس دستگاه شمارش می‌شوند، نه حساب کاربری.","profile.save":"ذخیره اطلاعات",
             "profile.connected":"متصل به گوگل","profile.logoutBtn":"خروج از حساب",
@@ -4705,223 +4700,61 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
         catch (e) { box.innerHTML = errorHTML("تعذر التنظيف، حاول تاني."); }
     }
 
-    // ============ Video montage: AI edit plan + basic in-browser trim ============
-    let montageFile = null, montageVideoURL = null;
-    const MONTAGE_MAX_BYTES = 300 * 1024 * 1024; // 300MB - حماية من فيديوهات ضخمة تعلّق المتصفح أثناء المعالجة
-    function handleMontageVideoUpload(e) {
-        const file = e.target.files[0]; if (!file) return;
-        if (file.size > MONTAGE_MAX_BYTES) {
-            showToast('حجم الفيديو كبير جداً (أقصى حجم 300MB)، جرب فيديو أصغر أو قصّه الأول.', 'error');
-            e.target.value = '';
-            return;
-        }
-        montageFile = file;
-        if (montageVideoURL) URL.revokeObjectURL(montageVideoURL);
-        montageVideoURL = URL.createObjectURL(file);
-        const vid = document.getElementById('mo-video-preview');
-        vid.src = montageVideoURL; vid.classList.remove('hidden');
-        document.getElementById('mo-auto-box').classList.remove('hidden');
-    }
-    async function runMontagePlanner() {
-        const instructions = document.getElementById('mo-instructions').value.trim();
-        if (!instructions) return showToast("اكتب تعليماتك للمونتاج أولاً.", 'error');
-        if (!checkDeviceTrial()) return;
-        const type = document.getElementById('mo-type').value;
-        const box = document.getElementById('montage-result');
-        box.classList.remove('hidden'); box.innerHTML = spinnerHTML("جاري تحليل الفيديو وبناء خطة المونتاج...");
-        incrementDeviceUsage();
-        const vid = document.getElementById('mo-video-preview');
-        const duration = (montageFile && vid.duration && !isNaN(vid.duration)) ? Math.round(vid.duration) + ' ثانية' : 'غير معروفة';
-        const messages = [
-            { role: "system", content: `أنت مدير مونتاج فيديو محترف جداً (خبرة سينمائية + محتوى سوشيال ميديا). المستخدم رفع فيديو من نوع "${type}" ومدته التقريبية ${duration}، واداك تعليمات دقيقة يجب اتباعها بالحرف. اكتب "خطة مونتاج احترافية" منظمة بالتفصيل تشمل: 1) ملخص لما هيتنفذ بناءً على طلبه بالظبط 2) تقسيم الفيديو لمشاهد/لقطات مقترحة مع توقيتات تقريبية وسبب كل قرار قص 3) اقتراحات الإيقاع (سريع/هادي) حسب نوع المحتوى 4) اقتراح موسيقى/مؤثرات صوت تناسب النوع ده تحديداً 5) اقتراح أسلوب تعليقات/كابشونز لو الفيديو نصايح أو تعليمي 6) ملاحظات ألوان وانتقالات احترافية. اتبع تعليمات المستخدم بالحرف ولا تتجاهل أي طلب فيها. بدون رموز markdown.` },
-            { role: "user", content: `نوع المحتوى: ${type}\nمدة الفيديو التقريبية: ${duration}\nتعليمات المستخدم بالحرف:\n${instructions}` }
-        ];
-        try {
-            renderResult(box, await callGroqConversation(messages), 'montage-plan.txt');
-        } catch (e) { box.innerHTML = errorHTML("تعذر بناء الخطة، حاول تاني."); }
-    }
-    // ============ Real automatic video execution (not just a text plan) ============
+    // ============ Shared: load an external script once (used by video mock interview face-api) ============
     function loadScriptOnce(src) {
         return new Promise((resolve, reject) => {
             if (document.querySelector(`script[src="${src}"]`)) return resolve();
             const s = document.createElement('script');
-            s.src = src; s.onload = () => resolve(); s.onerror = () => reject(new Error('تعذر تحميل مكتبة معالجة الفيديو.'));
+            s.src = src; s.onload = () => resolve(); s.onerror = () => reject(new Error('تعذر تحميل المكتبة المطلوبة.'));
             document.head.appendChild(s);
         });
     }
-    let ffmpegInstance = null;
-    async function getFFmpegInstance(statusEl) {
-        if (ffmpegInstance) return ffmpegInstance;
-        if (statusEl) statusEl.innerText = 'جاري تحميل محرّك معالجة الفيديو (أول مرة بس)...';
-        await loadScriptOnce('https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js');
-        if (!window.FFmpeg) throw new Error('محرك المونتاج مش متاح في المتصفح ده.');
-        const { createFFmpeg } = window.FFmpeg;
-        ffmpegInstance = createFFmpeg({ log: false, corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js' });
-        await ffmpegInstance.load();
-        return ffmpegInstance;
-    }
-    let montageMusicFile = null;
-    function handleMontageMusicUpload(e) {
-        const file = e.target.files[0];
-        const statusEl = document.getElementById('mo-music-status');
-        if (!file) { montageMusicFile = null; if (statusEl) statusEl.innerText = ''; return; }
-        const MUSIC_MAX_BYTES = 20 * 1024 * 1024; // 20MB كفاية جداً لملف صوتي
-        if (file.size > MUSIC_MAX_BYTES) {
-            showToast('ملف الموسيقى كبير جداً (أقصى حجم 20MB).', 'error');
-            e.target.value = ''; montageMusicFile = null; return;
+
+    // ============ 30-second self pitch (elevator pitch), linked to saved CV & profile ============
+    let lastPitchText = '';
+    function importPitchFromProfile() {
+        const profile = getProfile();
+        if (profile && profile.title && !document.getElementById('pitch-role').value.trim()) {
+            document.getElementById('pitch-role').value = profile.title;
         }
-        montageMusicFile = file;
-        if (statusEl) statusEl.innerText = `✓ هتتضاف: ${file.name}`;
+        if (cvContent && !document.getElementById('pitch-highlight').value.trim()) {
+            document.getElementById('pitch-highlight').value = cvContent.slice(0, 500);
+        }
+        if (!profile?.title && !cvContent) {
+            showToast('مفيش بيانات محفوظة في البروفايل أو الـ CV لسه، تقدر تكتب بياناتك يدوياً هنا أو تجهّزهم الأول من صفحة "الملف الشخصي" أو "بناء السيرة الذاتية".', 'error');
+            return;
+        }
+        showToast('تم سحب البيانات المتاحة، كمّل أو عدّل زي ما يناسبك.', 'success');
     }
-
-    const MONTAGE_MAX_SCENES = 6;
-
-    async function runAutoEditVideo() {
-        if (!montageFile) return showToast('ارفع فيديو الأول.', 'error');
-        const instructions = document.getElementById('mo-instructions').value.trim();
-        if (!instructions) return showToast('اكتب تعليماتك للمونتاج أولاً.', 'error');
+    async function runElevatorPitch() {
+        const role = document.getElementById('pitch-role').value.trim();
+        if (!role) return showToast('اكتب الوظيفة أو المجال المستهدف أولاً.', 'error');
         if (!checkDeviceTrial()) return;
-        const status = document.getElementById('mo-auto-status');
-        const vid = document.getElementById('mo-video-preview');
-        const duration = (vid && vid.duration && !isNaN(vid.duration)) ? vid.duration : 0;
-        status.innerText = 'جاري تقسيم الفيديو لمشاهد وتحديد أفضل قرارات المونتاج بناءً على تعليماتك...';
+        const purpose = document.getElementById('pitch-purpose').value;
+        const tone = document.getElementById('pitch-tone').value;
+        const highlight = document.getElementById('pitch-highlight').value.trim();
+        const box = document.getElementById('pitch-result');
+        box.classList.remove('hidden'); box.innerHTML = spinnerHTML('جاري صياغة نص التقديم...');
+        document.getElementById('pitch-audio-box').classList.add('hidden');
         incrementDeviceUsage();
-
-        // ---- خطة افتراضية (لو فشل تحليل الذكاء الاصطناعي): مشهد واحد بيغطي الفيديو كله من غير تعديل ----
-        let scenes = [{ start: 0, end: duration || 10, speed: 1, fadeIn: false, fadeOut: false }];
-        let useMusic = false, musicVolume = 0.25;
+        const profile = getProfile();
+        const messages = [
+            { role: "system", content: `أنت كوتش تقديم ذاتي (Personal Pitch / Elevator Pitch) محترف جداً. اكتب نص تقديم ذاتي بصيغة المتكلم (أنا)، مكتوب عشان يتقال بصوت عادي غير مستعجل خلال حوالي 30 ثانية بالظبط (يعني تقريباً 75-90 كلمة عربي مش أكتر ولا أقل بشكل واضح). النص يشمل: مقدمة قصيرة عن مين هو/هي، أهم خبرة أو مهارة تخدم الهدف المطلوب، وخاتمة قوية تربطه بالهدف من التقديم. الأسلوب: ${tone}. الهدف من التقديم: ${purpose}. اكتب فقرة واحدة متصلة (من غير عناوين أو نقاط أو رموز markdown)، وفي آخر السطر ضيف على سطر منفصل بس: "عدد الكلمات التقريبي: X كلمة".` },
+            { role: "user", content: `اسمي (لو موجود): ${profile?.name || 'غير محدد، اكتب النص عام بدون اسم صريح'}\nالوظيفة/المجال المستهدف: ${role}\nأهم نقاط عايز أبرزها: ${highlight || 'مفيش نقاط محددة، استنتج من الوظيفة المطلوبة حاجات منطقية وعامة'}${cvContent ? '\n\nملخص من الـ CV المحفوظ (استخدمه كسياق لو مفيد): ' + cvContent.slice(0, 1200) : ''}` }
+        ];
         try {
-            const messages = [
-                { role: "system", content: `أنت مدير مونتاج فيديو محترف. مهمتك تقسّم الفيديو لعدة مشاهد (لو تعليمات المستخدم بتقتضي ده) وتحدد إعدادات تقنية قابلة للتنفيذ آلياً لكل مشهد. أرجع فقط كائن JSON صالح بدون أي نص أو شرح أو رموز markdown حواليه، بالشكل ده بالظبط:
-{"scenes": [{"start": رقم بالثواني, "end": رقم بالثواني, "speed": رقم من 0.5 إلى 2, "fadeIn": true/false, "fadeOut": true/false}, ...], "useMusic": true/false, "musicVolume": رقم من 0 إلى 1 (مستوى صوت الموسيقى نسبة لصوت الفيديو الأصلي، الافتراضي 0.25)}
-قواعد مهمة:
-- أقصى عدد مشاهد ${MONTAGE_MAX_SCENES}. لو التعليمات بسيطة ومحتاجة مقطع واحد بس، رجّع مشهد واحد فقط.
-- كل start/end لازم يكون جوه مدة الفيديو (من 0 لحد ${duration ? Math.round(duration) : 'مدة الفيديو'} ثانية) ومفيش end أقل من أو يساوي start.
-- المشاهد بترتيب زي ما هيتلزقوا في الفيديو النهائي (ممكن تكون بترتيب مختلف عن ترتيبها الأصلي في الفيديو لو ده يخدم تعليمات المستخدم).
-- fadeIn تتحط على أول مشهد بس لو طلب المستخدم تلاشي دخول، وfadeOut على آخر مشهد بس لو طلب تلاشي خروج.
-- useMusic يبقى true بس لو المستخدم طلب صراحة موسيقى في التعليمات.
-- اتبع تعليمات المستخدم بالحرف قد الإمكان.` },
-                { role: "user", content: `مدة الفيديو: ${duration ? Math.round(duration) : 'غير معروفة'} ثانية\nنوع المحتوى: ${document.getElementById('mo-type') ? document.getElementById('mo-type').value : ''}\nتعليمات المستخدم بالحرف:\n${instructions}` }
-            ];
-            const raw = await callGroqConversation(messages);
-            const match = raw.match(/\{[\s\S]*\}/);
-            const parsed = JSON.parse(match ? match[0] : raw);
-            if (Array.isArray(parsed.scenes) && parsed.scenes.length) {
-                scenes = parsed.scenes.slice(0, MONTAGE_MAX_SCENES);
-            }
-            useMusic = !!parsed.useMusic;
-            if (typeof parsed.musicVolume === 'number' && !isNaN(parsed.musicVolume)) {
-                musicVolume = Math.min(1, Math.max(0, parsed.musicVolume));
-            }
-        } catch (e) { console.warn('تعذر بناء خطة تنفيذية دقيقة، هيتم استخدام إعدادات افتراضية:', e); }
-
-        // ---- تنظيف وتثبيت قيم المشاهد ----
-        scenes = scenes.map(sc => {
-            let start = Math.max(0, Number(sc.start) || 0);
-            let end = Number(sc.end);
-            if (!end || isNaN(end) || (duration && end > duration)) end = duration || (start + 10);
-            if (end <= start) end = start + Math.min(3, duration || 3);
-            let speed = Number(sc.speed); if (!speed || isNaN(speed)) speed = 1;
-            speed = Math.min(2, Math.max(0.5, speed));
-            return { start, end, speed, fadeIn: !!sc.fadeIn, fadeOut: !!sc.fadeOut };
-        });
-        if (!scenes.length) scenes = [{ start: 0, end: duration || 10, speed: 1, fadeIn: false, fadeOut: false }];
-
-        const wantsMusic = useMusic && !!montageMusicFile;
-        if (useMusic && !montageMusicFile) {
-            status.innerText = 'ملحوظة: طلبت موسيقى بس ملفش ملف موسيقى مرفوع، هيتم تنفيذ باقي المونتاج من غيرها...';
-        }
-
-        try {
-            const ffmpeg = await getFFmpegInstance(status);
-            status.innerText = `جاري تنفيذ المونتاج (${scenes.length} مشهد) وتصدير الفيديو...`;
-            const { fetchFile } = window.FFmpeg;
-            ffmpeg.FS('writeFile', 'input_src', await fetchFile(montageFile));
-            if (wantsMusic) ffmpeg.FS('writeFile', 'music_src', await fetchFile(montageMusicFile));
-
-            // ---- بناء فلتر القص للزق المشاهد ورا بعض (concat) ----
-            const filterParts = [];
-            const vLabels = [], aLabels = [];
-            scenes.forEach((sc, i) => {
-                const v = `v${i}`, a = `a${i}`;
-                vLabels.push(`[${v}]`); aLabels.push(`[${a}]`);
-                filterParts.push(`[0:v]trim=start=${sc.start}:end=${sc.end},setpts=(1/${sc.speed})*PTS-STARTPTS[${v}]`);
-                const atempo = sc.speed !== 1 ? `,atempo=${sc.speed}` : '';
-                filterParts.push(`[0:a]atrim=start=${sc.start}:end=${sc.end},asetpts=PTS-STARTPTS${atempo}[${a}]`);
-            });
-            const pairs = scenes.map((_, i) => `${vLabels[i]}${aLabels[i]}`).join('');
-            filterParts.push(`${pairs}concat=n=${scenes.length}:v=1:a=1[vcat][acat]`);
-
-            // ---- تلاشي دخول/خروج على الناتج النهائي ككل ----
-            const totalDur = scenes.reduce((sum, sc) => sum + Math.max(0.1, (sc.end - sc.start) / sc.speed), 0);
-            let vOut = 'vcat';
-            const vfx = [];
-            if (scenes[0].fadeIn) vfx.push(`fade=t=in:st=0:d=1`);
-            if (scenes[scenes.length - 1].fadeOut) vfx.push(`fade=t=out:st=${Math.max(0, totalDur - 1).toFixed(2)}:d=1`);
-            if (vfx.length) { filterParts.push(`[vcat]${vfx.join(',')}[vout]`); vOut = 'vout'; }
-
-            // ---- مزج الموسيقى مع صوت الفيديو الأصلي (لو موجودة) ----
-            let aOut = 'acat';
-            if (wantsMusic) {
-                filterParts.push(`[1:a]volume=${musicVolume}[amus]`);
-                filterParts.push(`[acat][amus]amix=inputs=2:duration=first:dropout_transition=2[aout]`);
-                aOut = 'aout';
-            }
-
-            const args = ['-i', 'input_src'];
-            if (wantsMusic) args.push('-i', 'music_src');
-            args.push('-filter_complex', filterParts.join(';'), '-map', `[${vOut}]`, '-map', `[${aOut}]`, '-y', 'output.mp4');
-            await ffmpeg.run(...args);
-
-            const data = ffmpeg.FS('readFile', 'output.mp4');
-            const blob = new Blob([data.buffer], { type: 'video/mp4' });
-            const url = URL.createObjectURL(blob);
-            const outVid = document.getElementById('mo-auto-output');
-            outVid.src = url; outVid.classList.remove('hidden');
-            const a = document.createElement('a'); a.href = url; a.download = 'yusr-edited-video.mp4'; document.body.appendChild(a); a.click(); a.remove();
-            status.innerText = `✓ اتعمل المونتاج (${scenes.length} مشهد${wantsMusic ? ' + موسيقى' : ''}) والفيديو المُعدّل جاهز، وبدأ التحميل تلقائياً. تقدر كمان تشغّله فوق قبل ما تحمّله تاني.`;
-        } catch (e) {
-            console.warn('Auto video edit failed:', e);
-            status.innerText = 'تعذر تنفيذ المونتاج تلقائياً في المتصفح ده (جرب Chrome على الكمبيوتر لأفضل أداء، ولو الفيديو طويل جداً جرب مقطع أقصر). ممكن تستخدم أداة القص اليدوي تحت كبديل.';
-        }
+            const text = await callGroqConversation(messages);
+            lastPitchText = text.replace(/عدد الكلمات التقريبي:.*$/i, '').trim();
+            renderResult(box, text, 'pitch-30-seconds.txt');
+            const wordCount = lastPitchText.split(/\s+/).filter(Boolean).length;
+            const estSeconds = Math.round((wordCount / 140) * 60); // ~140 كلمة عربي/دقيقة بمعدل كلام هادئ وواضح
+            document.getElementById('pitch-timing').innerText = `عدد الكلمات: ${wordCount} — يقابل تقريباً ${estSeconds} ثانية بمعدل كلام هادئ وواضح.`;
+            document.getElementById('pitch-audio-box').classList.remove('hidden');
+        } catch (e) { box.innerHTML = errorHTML('تعذر توليد النص، حاول تاني.'); }
     }
-
-    // ============ Real subtitle (.srt) extraction with actual timestamps from the video's own speech ============
-    function srtTimestamp(seconds) {
-        seconds = Math.max(0, Number(seconds) || 0);
-        const h = String(Math.floor(seconds / 3600)).padStart(2, '0');
-        const m = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
-        const s = String(Math.floor(seconds % 60)).padStart(2, '0');
-        const ms = String(Math.round((seconds % 1) * 1000)).padStart(3, '0');
-        return `${h}:${m}:${s},${ms}`;
-    }
-    async function generateVideoCaptions() {
-        if (!montageFile) return showToast('ارفع فيديو الأول.', 'error');
-        if (!checkDeviceTrial()) return;
-        const status = document.getElementById('mo-captions-status');
-        status.innerText = 'جاري تفريغ كلام الفيديو بالتوقيتات (ممكن ياخد شوية وقت حسب طول الفيديو)...';
-        incrementDeviceUsage();
-        try {
-            const data = await transcribeAudioBlob(montageFile, montageFile.name, true);
-            const segments = Array.isArray(data && data.segments) ? data.segments : [];
-            if (!segments.length) {
-                status.innerText = 'تعذر استخراج توقيتات دقيقة من الفيديو ده. جرب فيديو بصوت أوضح.';
-                return;
-            }
-            const srtBody = segments.map((seg, i) => {
-                const text = String(seg.text || '').trim();
-                if (!text) return '';
-                return `${i + 1}\n${srtTimestamp(seg.start)} --> ${srtTimestamp(seg.end)}\n${text}\n`;
-            }).filter(Boolean).join('\n');
-            const blob = new Blob([srtBody], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = 'captions.srt'; document.body.appendChild(a); a.click(); a.remove();
-            URL.revokeObjectURL(url);
-            status.innerText = '✓ ملف الترجمة (captions.srt) جاهز ونزل تلقائياً. تقدر ترفعه مباشرة مع الفيديو على يوتيوب/تيك توك أو تفتحه في أي برنامج مونتاج.';
-        } catch (e) {
-            console.warn('Caption extraction failed:', e);
-            status.innerText = 'تعذر استخراج الترجمة، حاول تاني.';
-        }
+    function previewPitchAudio() {
+        if (!lastPitchText) return;
+        speakText(lastPitchText);
     }
 
     // ============ Screenshot (takes an image of a whole chat/box, even if it's long) ============
