@@ -1564,7 +1564,7 @@
                             <ul class="space-y-1.5 list-disc pr-4">
                                 <li data-i18n-html="privacy.s4.li1"><b class="text-slate-200">Google Firebase:</b> لتسجيل الدخول وتخزين ملفك الشخصي بشكل آمن.</li>
                                 <li data-i18n-html="privacy.s4.li2"><b class="text-slate-200">Groq:</b> لمعالجة النصوص والصوت في أدوات المحادثة والتفريغ.</li>
-                                <li data-i18n-html="privacy.s4.li3"><b class="text-slate-200">ElevenLabs:</b> لتحويل النص إلى صوت.</li>
+                                <li data-i18n-html="privacy.s4.li3"><b class="text-slate-200">Microsoft Edge:</b> لتحويل النص إلى صوت.</li>
                                 <li data-i18n-html="privacy.s4.li4"><b class="text-slate-200">Cloudflare:</b> كوسيط تقني آمن بين تطبيقك وخدمات الذكاء الاصطناعي، من غير ما يحتفظ ببياناتك.</li>
                                 <li data-i18n-html="privacy.s4.li5"><b class="text-slate-200">s.jina.ai:</b> للبحث اللايف على الويب في أداة تقدير الراتب المتوقع بس — من غير تسجيل دخول أو حفظ هوية عندهم.</li>
                             </ul>
@@ -1743,11 +1743,19 @@
     let currentAppLang = 'ar-EG';
 
     // ============ Voice (TTS) config ============
-    // أصوات ElevenLabs الجاهزة (Premade) المتاحة افتراضياً في أي حساب ElevenLabs مجاني أو مدفوع
-    // (لو حد منهم اتشال من مكتبة الصوت بتاعتك من قبل، رجّعيه من "Voice Library" في حساب ElevenLabs).
-    const ELEVEN_VOICE_IDS = {
-        male: "pNInz6obpgDQGcFmaJgB",   // Adam - صوت رجالي هادئ
-        female: "21m00Tcm4TlvDq8ikWAM"  // Rachel - صوت حريمي واضح
+    // أصوات edge-tts (Microsoft) — مجانية بالكامل، اتنين لكل لغة مدعومة في الموقع (رجالي/حريمي).
+    // بتتقرأ حسب لغة الواجهة الحالية (currentAppLang) فمفيش حاجة تتعدّل يدوي لما المستخدم يغيّر اللغة.
+    const EDGE_TTS_VOICES = {
+        "ar-EG": { male: "ar-EG-ShakirNeural", female: "ar-EG-SalmaNeural" },
+        "ar-SA": { male: "ar-SA-HamedNeural", female: "ar-SA-ZariyahNeural" },
+        "en-US": { male: "en-US-GuyNeural", female: "en-US-JennyNeural" },
+        "fr-FR": { male: "fr-FR-HenriNeural", female: "fr-FR-DeniseNeural" },
+        "es-ES": { male: "es-ES-AlvaroNeural", female: "es-ES-ElviraNeural" },
+        "tr-TR": { male: "tr-TR-AhmetNeural", female: "tr-TR-EmelNeural" },
+        "de-DE": { male: "de-DE-ConradNeural", female: "de-DE-KatjaNeural" },
+        "hi-IN": { male: "hi-IN-MadhurNeural", female: "hi-IN-SwaraNeural" },
+        "ur-PK": { male: "ur-PK-AsadNeural", female: "ur-PK-UzmaNeural" },
+        "fa-IR": { male: "fa-IR-FaridNeural", female: "fa-IR-DilaraNeural" }
     };
     let voiceGenderPref = localStorage.getItem('yusr_voice_gender') || 'male';
     let currentSpeakingAudio = null; // بنتتبع الصوت الشغال دلوقتي عشان زرار الإيقاف يقدر يوقفه فوراً
@@ -1882,7 +1890,7 @@
             "privacy.s4.title":"4. مين بيشوف بياناتك (أطراف تالتة)",
             "privacy.s4.li1":"<b class=\"text-slate-200\">Google Firebase:</b> لتسجيل الدخول وتخزين ملفك الشخصي بشكل آمن.",
             "privacy.s4.li2":"<b class=\"text-slate-200\">Groq:</b> لمعالجة النصوص والصوت في أدوات المحادثة والتفريغ.",
-            "privacy.s4.li3":"<b class=\"text-slate-200\">ElevenLabs:</b> لتحويل النص إلى صوت.",
+            "privacy.s4.li3":"<b class=\"text-slate-200\">Microsoft Edge:</b> لتحويل النص إلى صوت.",
             "privacy.s4.li4":"<b class=\"text-slate-200\">Cloudflare:</b> كوسيط تقني آمن بين تطبيقك وخدمات الذكاء الاصطناعي، من غير ما يحتفظ ببياناتك.",
             "privacy.s4.li5":"<b class=\"text-slate-200\">s.jina.ai:</b> للبحث اللايف على الويب في أداة تقدير الراتب المتوقع بس — من غير تسجيل دخول أو حفظ هوية عندهم.",
             "privacy.s4.note":"إحنا مش بنبيع بياناتك لأي حد، ومش بنشاركها لأغراض إعلانية.",
@@ -1960,7 +1968,7 @@
             "privacy.s4.title":"4. Who Sees Your Data (Third Parties)",
             "privacy.s4.li1":"<b class=\"text-slate-200\">Google Firebase:</b> for sign-in and securely storing your profile.",
             "privacy.s4.li2":"<b class=\"text-slate-200\">Groq:</b> for processing text and audio in the chat and transcription tools.",
-            "privacy.s4.li3":"<b class=\"text-slate-200\">ElevenLabs:</b> for text-to-speech conversion.",
+            "privacy.s4.li3":"<b class=\"text-slate-200\">Microsoft Edge:</b> for text-to-speech conversion.",
             "privacy.s4.li4":"<b class=\"text-slate-200\">Cloudflare:</b> as a secure technical intermediary between your app and the AI services, without retaining your data.",
             "privacy.s4.li5":"<b class=\"text-slate-200\">s.jina.ai:</b> for live web search in the expected-salary estimator tool only — without any login or identity stored with them.",
             "privacy.s4.note":"We never sell your data to anyone, and never share it for advertising purposes.",
@@ -2038,7 +2046,7 @@
             "privacy.s4.title":"4. Qui voit vos données (tiers)",
             "privacy.s4.li1":"<b class=\"text-slate-200\">Google Firebase :</b> pour la connexion et le stockage sécurisé de votre profil.",
             "privacy.s4.li2":"<b class=\"text-slate-200\">Groq :</b> pour le traitement du texte et de l'audio dans les outils de conversation et de transcription.",
-            "privacy.s4.li3":"<b class=\"text-slate-200\">ElevenLabs :</b> pour la conversion texte-parole.",
+            "privacy.s4.li3":"<b class=\"text-slate-200\">Microsoft Edge :</b> pour la conversion texte-parole.",
             "privacy.s4.li4":"<b class=\"text-slate-200\">Cloudflare :</b> comme intermédiaire technique sécurisé entre votre application et les services d'IA, sans conserver vos données.",
             "privacy.s4.li5":"<b class=\"text-slate-200\">s.jina.ai :</b> uniquement pour la recherche web en direct dans l'outil d'estimation de salaire.",
             "privacy.s4.note":"Nous ne vendons jamais vos données à qui que ce soit et ne les partageons jamais à des fins publicitaires.",
@@ -2115,7 +2123,7 @@
             "privacy.s4.title":"4. Quién ve tus datos (terceros)",
             "privacy.s4.li1":"<b class=\"text-slate-200\">Google Firebase:</b> para el inicio de sesión y el almacenamiento seguro de tu perfil.",
             "privacy.s4.li2":"<b class=\"text-slate-200\">Groq:</b> para procesar texto y audio en las herramientas de chat y transcripción.",
-            "privacy.s4.li3":"<b class=\"text-slate-200\">ElevenLabs:</b> para la conversión de texto a voz.",
+            "privacy.s4.li3":"<b class=\"text-slate-200\">Microsoft Edge:</b> para la conversión de texto a voz.",
             "privacy.s4.li4":"<b class=\"text-slate-200\">Cloudflare:</b> como intermediario técnico seguro entre tu aplicación y los servicios de IA, sin conservar tus datos.",
             "privacy.s4.li5":"<b class=\"text-slate-200\">s.jina.ai:</b> solo para búsqueda web en vivo en la herramienta de estimación de salario.",
             "privacy.s4.note":"Nunca vendemos tus datos a nadie, ni los compartimos con fines publicitarios.",
@@ -2192,7 +2200,7 @@
             "privacy.s4.title":"4. Verilerini Kim Görüyor (Üçüncü Taraflar)",
             "privacy.s4.li1":"<b class=\"text-slate-200\">Google Firebase:</b> giriş için ve profilinin güvenli şekilde saklanması için.",
             "privacy.s4.li2":"<b class=\"text-slate-200\">Groq:</b> sohbet ve yazıya dökme araçlarında metin ve ses işleme için.",
-            "privacy.s4.li3":"<b class=\"text-slate-200\">ElevenLabs:</b> metni sese dönüştürme için.",
+            "privacy.s4.li3":"<b class=\"text-slate-200\">Microsoft Edge:</b> metni sese dönüştürme için.",
             "privacy.s4.li4":"<b class=\"text-slate-200\">Cloudflare:</b> uygulaman ile yapay zeka hizmetleri arasında, verilerini saklamadan güvenli bir teknik aracı olarak.",
             "privacy.s4.li5":"<b class=\"text-slate-200\">s.jina.ai:</b> yalnızca maaş tahmini aracında canlı web araması için.",
             "privacy.s4.note":"Verilerini asla kimseye satmayız ve reklam amacıyla asla paylaşmayız.",
@@ -2269,7 +2277,7 @@
             "privacy.s4.title":"4. Wer deine Daten sieht (Dritte)",
             "privacy.s4.li1":"<b class=\"text-slate-200\">Google Firebase:</b> für die Anmeldung und die sichere Speicherung deines Profils.",
             "privacy.s4.li2":"<b class=\"text-slate-200\">Groq:</b> zur Verarbeitung von Text und Audio in den Chat- und Transkriptionswerkzeugen.",
-            "privacy.s4.li3":"<b class=\"text-slate-200\">ElevenLabs:</b> für die Text-zu-Sprache-Umwandlung.",
+            "privacy.s4.li3":"<b class=\"text-slate-200\">Microsoft Edge:</b> für die Text-zu-Sprache-Umwandlung.",
             "privacy.s4.li4":"<b class=\"text-slate-200\">Cloudflare:</b> als sicherer technischer Vermittler zwischen deiner App und den KI-Diensten, ohne deine Daten zu speichern.",
             "privacy.s4.li5":"<b class=\"text-slate-200\">s.jina.ai:</b> nur für die Live-Websuche im Gehaltsschätzungs-Tool.",
             "privacy.s4.note":"Wir verkaufen deine Daten niemals an irgendjemanden und geben sie niemals zu Werbezwecken weiter.",
@@ -2346,7 +2354,7 @@
             "privacy.s4.title":"4. आपका डेटा कौन देखता है (तीसरे पक्ष)",
             "privacy.s4.li1":"<b class=\"text-slate-200\">Google Firebase:</b> साइन-इन और आपकी प्रोफ़ाइल को सुरक्षित रूप से स्टोर करने के लिए।",
             "privacy.s4.li2":"<b class=\"text-slate-200\">Groq:</b> चैट और ट्रांसक्रिप्शन टूल्स में टेक्स्ट और ऑडियो प्रोसेस करने के लिए।",
-            "privacy.s4.li3":"<b class=\"text-slate-200\">ElevenLabs:</b> टेक्स्ट-टू-स्पीच रूपांतरण के लिए।",
+            "privacy.s4.li3":"<b class=\"text-slate-200\">Microsoft Edge:</b> टेक्स्ट-टू-स्पीच रूपांतरण के लिए।",
             "privacy.s4.li4":"<b class=\"text-slate-200\">Cloudflare:</b> आपके ऐप और AI सेवाओं के बीच एक सुरक्षित तकनीकी माध्यम के रूप में, बिना आपका डेटा रखे।",
             "privacy.s4.li5":"<b class=\"text-slate-200\">s.jina.ai:</b> केवल वेतन अनुमान टूल में लाइव वेब खोज के लिए।",
             "privacy.s4.note":"हम आपका डेटा कभी किसी को नहीं बेचते, और इसे कभी विज्ञापन उद्देश्यों के लिए साझा नहीं करते।",
@@ -2423,7 +2431,7 @@
             "privacy.s4.title":"4. آپ کا ڈیٹا کون دیکھتا ہے (تیسرے فریق)",
             "privacy.s4.li1":"<b class=\"text-slate-200\">Google Firebase:</b> سائن ان اور آپ کے پروفائل کو محفوظ طریقے سے ذخیرہ کرنے کے لیے۔",
             "privacy.s4.li2":"<b class=\"text-slate-200\">Groq:</b> چیٹ اور تحریر میں تبدیلی کے آلات میں متن اور آڈیو پروسیس کرنے کے لیے۔",
-            "privacy.s4.li3":"<b class=\"text-slate-200\">ElevenLabs:</b> تحریر کو آواز میں تبدیل کرنے کے لیے۔",
+            "privacy.s4.li3":"<b class=\"text-slate-200\">Microsoft Edge:</b> تحریر کو آواز میں تبدیل کرنے کے لیے۔",
             "privacy.s4.li4":"<b class=\"text-slate-200\">Cloudflare:</b> آپ کی ایپ اور AI سروسز کے درمیان ایک محفوظ تکنیکی واسطے کے طور پر، بغیر آپ کا ڈیٹا محفوظ کیے۔",
             "privacy.s4.li5":"<b class=\"text-slate-200\">s.jina.ai:</b> صرف تنخواہ کے تخمینے کے ٹول میں لائیو ویب سرچ کے لیے۔",
             "privacy.s4.note":"ہم آپ کا ڈیٹا کبھی کسی کو فروخت نہیں کرتے، اور نہ ہی اسے کبھی اشتہاری مقاصد کے لیے شیئر کرتے ہیں۔",
@@ -2500,7 +2508,7 @@
             "privacy.s4.title":"۴. چه کسی داده‌های شما را می‌بیند (اشخاص ثالث)",
             "privacy.s4.li1":"<b class=\"text-slate-200\">Google Firebase:</b> برای ورود و ذخیره‌سازی امن پروفایل شما.",
             "privacy.s4.li2":"<b class=\"text-slate-200\">Groq:</b> برای پردازش متن و صدا در ابزارهای گفتگو و رونویسی.",
-            "privacy.s4.li3":"<b class=\"text-slate-200\">ElevenLabs:</b> برای تبدیل متن به گفتار.",
+            "privacy.s4.li3":"<b class=\"text-slate-200\">Microsoft Edge:</b> برای تبدیل متن به گفتار.",
             "privacy.s4.li4":"<b class=\"text-slate-200\">Cloudflare:</b> به‌عنوان یک واسط فنی امن بین برنامه شما و خدمات هوش مصنوعی، بدون نگه‌داری داده‌های شما.",
             "privacy.s4.li5":"<b class=\"text-slate-200\">s.jina.ai:</b> فقط برای جستجوی زنده وب در ابزار برآورد حقوق.",
             "privacy.s4.note":"ما هرگز داده‌های شما را به کسی نمی‌فروشیم و هرگز آن را برای اهداف تبلیغاتی به اشتراک نمی‌گذاریم.",
@@ -2627,7 +2635,7 @@
         setLocalUsageCache(getEffectiveUsageCount() + 1);
         checkDeviceTrial();
         // ⚠️ العداد الحقيقي بيتزوّد من السيرفر (Cloudflare Worker -> checkPlanUsage) لما الطلب
-        // يوصل فعلاً لـ /groqChat أو /groqTranscribe أو /elevenlabsSpeak، مش من هنا.
+        // يوصل فعلاً لـ /groqChat أو /groqTranscribe أو /edgeTtsSpeak، مش من هنا.
         // ده عشان نتجنب تكرار الزيادة (مرة من هنا ومرة من السيرفر لنفس الفعل)، ولأن العميل
         // مش مصدر موثوق للعداد أصلاً. الـ listener في attachCloudUsageListener هو اللي هيحدّث
         // الكاش برقم السيرفر الحقيقي أول ما رد الطلب يوصل.
@@ -3395,11 +3403,12 @@
         document.getElementById('status-text').innerText = "أحمد (HR) يتحدث...";
         indicator.classList.remove('hidden');
         try {
-            const voiceId = ELEVEN_VOICE_IDS[voiceGenderPref] || ELEVEN_VOICE_IDS.male;
-            const response = await fetch(`${CLOUD_FUNCTIONS_BASE}/elevenlabsSpeak`, {
+            const langVoices = EDGE_TTS_VOICES[currentAppLang] || EDGE_TTS_VOICES["ar-EG"];
+            const voice = langVoices[voiceGenderPref] || langVoices.male;
+            const response = await fetch(`${CLOUD_FUNCTIONS_BASE}/edgeTtsSpeak`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", ...(await getAuthHeader()) },
-                body: JSON.stringify({ text, voiceId })
+                body: JSON.stringify({ text, voice })
             });
             if (response.ok) {
                 const blob = await response.blob();
@@ -3409,8 +3418,8 @@
                 audio.onpause = () => { indicator.classList.add('hidden'); };
                 await audio.play();
                 return;
-            } else console.warn("ElevenLabs error:", response.status);
-        } catch (e) { console.error("ElevenLabs Voice Error:", e); }
+            } else console.warn("Edge TTS error:", response.status);
+        } catch (e) { console.error("Edge TTS Voice Error:", e); }
 
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
