@@ -264,40 +264,40 @@
     <div class="panel modal-pop max-w-sm w-full rounded-2xl p-5 space-y-4 text-right">
         <div class="text-center space-y-1">
             <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-slate-400 to-slate-600 flex items-center justify-center mx-auto font-extrabold text-slate-950 text-base">يس</div>
-            <h3 class="text-sm font-bold text-slate-100">سجّل دخولك للمتابعة</h3>
-            <p class="text-[11px] text-slate-400">لازم تسجّل دخول (بجوجل أو بإيميلك) عشان تقدر تستخدم المنصة.</p>
+            <h3 class="text-sm font-bold text-slate-100" data-i18n="authgate.title">سجّل دخولك</h3>
+            <p class="text-[11px] text-slate-400" data-i18n="authgate.subtitle">لو مش قادر تدخل كزائر دلوقتي (غالبًا بسبب الإنترنت)، سجّل دخول بجوجل أو بإيميلك.</p>
         </div>
 
         <button id="auth-gate-google-btn" onclick="mockGoogleSignIn()" class="g-signin-btn w-full flex items-center justify-center gap-2">
             <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" width="18" height="18"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
-            <span>تسجيل الدخول بجوجل</span>
+            <span data-i18n="authgate.googleBtn">تسجيل الدخول بجوجل</span>
         </button>
 
         <div class="flex items-center gap-2 text-[10px] text-slate-500">
             <div class="flex-1 h-px bg-[var(--border)]"></div>
-            <span>أو بالإيميل</span>
+            <span data-i18n="authgate.orEmail">أو بالإيميل</span>
             <div class="flex-1 h-px bg-[var(--border)]"></div>
         </div>
 
         <div class="flex panel-2 rounded-xl p-1 gap-1">
-            <button id="auth-gate-tab-login" onclick="switchAuthGateTab('login')" class="auth-gate-tab auth-tab-active flex-1 text-xs font-bold py-1.5 rounded-lg">تسجيل الدخول</button>
-            <button id="auth-gate-tab-signup" onclick="switchAuthGateTab('signup')" class="auth-gate-tab flex-1 text-xs font-bold py-1.5 rounded-lg">إنشاء حساب</button>
+            <button id="auth-gate-tab-login" onclick="switchAuthGateTab('login')" class="auth-gate-tab auth-tab-active flex-1 text-xs font-bold py-1.5 rounded-lg" data-i18n="authgate.tabLogin">تسجيل الدخول</button>
+            <button id="auth-gate-tab-signup" onclick="switchAuthGateTab('signup')" class="auth-gate-tab flex-1 text-xs font-bold py-1.5 rounded-lg" data-i18n="authgate.tabSignup">إنشاء حساب</button>
         </div>
 
         <div class="space-y-2">
             <div id="auth-gate-name-wrap" class="hidden">
-                <input id="auth-gate-name" type="text" placeholder="اسمك الكامل" class="w-full input-field rounded-xl px-3 py-2.5 text-xs">
+                <input id="auth-gate-name" type="text" placeholder="اسمك الكامل" data-i18n-ph="authgate.namePh" class="w-full input-field rounded-xl px-3 py-2.5 text-xs">
             </div>
-            <input id="auth-gate-email" type="email" placeholder="الإيميل" class="w-full input-field rounded-xl px-3 py-2.5 text-xs" dir="ltr" autocomplete="email">
-            <input id="auth-gate-password" type="password" placeholder="كلمة المرور" class="w-full input-field rounded-xl px-3 py-2.5 text-xs" dir="ltr" autocomplete="current-password">
+            <input id="auth-gate-email" type="email" placeholder="الإيميل" data-i18n-ph="authgate.emailPh" class="w-full input-field rounded-xl px-3 py-2.5 text-xs" dir="ltr" autocomplete="email">
+            <input id="auth-gate-password" type="password" placeholder="كلمة المرور" data-i18n-ph="authgate.passwordPh" class="w-full input-field rounded-xl px-3 py-2.5 text-xs" dir="ltr" autocomplete="current-password">
             <div id="auth-gate-confirm-wrap" class="hidden">
-                <input id="auth-gate-confirm" type="password" placeholder="تأكيد كلمة المرور" class="w-full input-field rounded-xl px-3 py-2.5 text-xs" dir="ltr" autocomplete="new-password">
+                <input id="auth-gate-confirm" type="password" placeholder="تأكيد كلمة المرور" data-i18n-ph="authgate.confirmPh" class="w-full input-field rounded-xl px-3 py-2.5 text-xs" dir="ltr" autocomplete="new-password">
             </div>
         </div>
 
-        <button id="auth-gate-submit-btn" onclick="submitEmailAuth()" class="w-full py-2.5 btn-primary font-bold text-xs rounded-xl">تسجيل الدخول</button>
+        <button id="auth-gate-submit-btn" onclick="submitEmailAuth()" class="w-full py-2.5 btn-primary font-bold text-xs rounded-xl" data-i18n="authgate.submitLogin">تسجيل الدخول</button>
         <p id="auth-gate-status" class="text-[11px] text-center hidden"></p>
-        <p class="text-[9.5px] text-slate-600 text-center leading-relaxed">بياناتك بتتحفظ بشكل آمن، وكلمة المرور متشفّرة ومش بنقدر نشوفها إحنا كأصحاب الموقع.</p>
+        <p class="text-[9.5px] text-slate-600 text-center leading-relaxed" data-i18n="authgate.privacyNote">بياناتك بتتحفظ بشكل آمن، وكلمة المرور متشفّرة ومش بنقدر نشوفها إحنا كأصحاب الموقع.</p>
     </div>
 </div>
 
@@ -1734,6 +1734,7 @@
 
     let isVoiceEnabled = true;
     let interviewRole = "", selectedNationality = "", chatHistory = [], cvContent = "";
+    let currentInterviewerName = "أحمد"; // بيتغيّر لـ"مريم" تلقائياً لو المستخدم اختار صوت الست
     let recognition = null, isRecording = false, recordStartTime = 0;
     let speakingStats = [];
     let currentAppLang = 'ar-EG';
@@ -1823,6 +1824,7 @@
             "nav.section.account":"الحساب والدعم","nav.about":"من نحن","nav.profile":"الملف الشخصي","nav.subscriptions":"الاشتراكات","nav.donations":"التبرعات","nav.support":"الدعم والتواصل",
             "nav.section.legal":"قانوني","nav.terms":"شروط الاستخدام","nav.privacy":"سياسة الخصوصية",
             "account.guest":"زائر (الجهاز ده)","account.signinHint":"سجّل دخول بجوجل لحفظ صورتك ونقاطك",
+            "authgate.title":"سجّل دخولك","authgate.subtitle":"لو مش قادر تدخل كزائر دلوقتي (غالبًا بسبب الإنترنت)، سجّل دخول بجوجل أو بإيميلك.","authgate.googleBtn":"تسجيل الدخول بجوجل","authgate.orEmail":"أو بالإيميل","authgate.tabLogin":"تسجيل الدخول","authgate.tabSignup":"إنشاء حساب","authgate.namePh":"اسمك الكامل","authgate.emailPh":"الإيميل","authgate.passwordPh":"كلمة المرور","authgate.confirmPh":"تأكيد كلمة المرور","authgate.submitLogin":"تسجيل الدخول","authgate.submitSignup":"إنشاء الحساب","authgate.privacyNote":"بياناتك بتتحفظ بشكل آمن، وكلمة المرور متشفّرة ومش بنقدر نشوفها إحنا كأصحاب الموقع.",
             "trial.left":"المحاولات المتبقية","trial.upgrade":"ترقية للباقة الكاملة",
             "copy":"نسخ","download":"تنزيل",
             "interview.desc":"تدرّب على مقابلة شفهية حقيقية بالصوت مع تقييم أداء تفصيلي في النهاية.","interview.linkCv":"ربط الـ CV",
@@ -1901,6 +1903,7 @@
             "nav.section.account":"Account & Support","nav.about":"About Us","nav.profile":"Profile","nav.subscriptions":"Subscriptions","nav.donations":"Donations","nav.support":"Support",
             "nav.section.legal":"Legal","nav.terms":"Terms of Use","nav.privacy":"Privacy Policy",
             "account.guest":"Guest (this device)","account.signinHint":"Sign in with Google to save your photo & points",
+            "authgate.title":"Sign in","authgate.subtitle":"If you can't enter as a guest right now (usually a connection issue), sign in with Google or your email.","authgate.googleBtn":"Sign in with Google","authgate.orEmail":"or with email","authgate.tabLogin":"Log in","authgate.tabSignup":"Create account","authgate.namePh":"Your full name","authgate.emailPh":"Email","authgate.passwordPh":"Password","authgate.confirmPh":"Confirm password","authgate.submitLogin":"Log in","authgate.submitSignup":"Create account","authgate.privacyNote":"Your data is stored securely, and your password is encrypted — even we can't see it.",
             "trial.left":"Trials remaining","trial.upgrade":"Upgrade to full plan",
             "copy":"Copy","download":"Download",
             "interview.desc":"Practice a real spoken interview with detailed performance feedback at the end.","interview.linkCv":"Link CV",
@@ -1980,6 +1983,7 @@
             "nav.section.account":"Compte et assistance","nav.about":"À propos de nous","nav.profile":"Profil","nav.subscriptions":"Abonnements","nav.donations":"Dons","nav.support":"Assistance et contact",
             "nav.section.legal":"Mentions légales","nav.terms":"Conditions d'utilisation","nav.privacy":"Politique de confidentialité",
             "account.guest":"Invité (cet appareil)","account.signinHint":"Connectez-vous avec Google pour enregistrer votre photo et vos points",
+            "authgate.title":"Connexion","authgate.subtitle":"Si vous ne pouvez pas entrer en tant qu'invité pour le moment (généralement un problème de connexion), connectez-vous avec Google ou votre e-mail.","authgate.googleBtn":"Se connecter avec Google","authgate.orEmail":"ou par e-mail","authgate.tabLogin":"Connexion","authgate.tabSignup":"Créer un compte","authgate.namePh":"Votre nom complet","authgate.emailPh":"E-mail","authgate.passwordPh":"Mot de passe","authgate.confirmPh":"Confirmer le mot de passe","authgate.submitLogin":"Connexion","authgate.submitSignup":"Créer le compte","authgate.privacyNote":"Vos données sont stockées en toute sécurité, et votre mot de passe est chiffré — même nous ne pouvons pas le voir.",
             "trial.left":"Essais restants","trial.upgrade":"Passer à l'offre complète",
             "copy":"Copier","download":"Télécharger",
             "interview.desc":"Entraînez-vous à un véritable entretien oral avec une évaluation détaillée à la fin.","interview.linkCv":"Lier le CV",
@@ -2057,6 +2061,7 @@
             "nav.section.account":"Cuenta y soporte","nav.about":"Sobre nosotros","nav.profile":"Perfil","nav.subscriptions":"Suscripciones","nav.donations":"Donaciones","nav.support":"Soporte y contacto",
             "nav.section.legal":"Legal","nav.terms":"Términos de uso","nav.privacy":"Política de privacidad",
             "account.guest":"Invitado (este dispositivo)","account.signinHint":"Inicia sesión con Google para guardar tu foto y puntos",
+            "authgate.title":"Iniciar sesión","authgate.subtitle":"Si no puedes entrar como invitado ahora (normalmente un problema de conexión), inicia sesión con Google o tu correo.","authgate.googleBtn":"Iniciar sesión con Google","authgate.orEmail":"o por correo","authgate.tabLogin":"Iniciar sesión","authgate.tabSignup":"Crear cuenta","authgate.namePh":"Tu nombre completo","authgate.emailPh":"Correo electrónico","authgate.passwordPh":"Contraseña","authgate.confirmPh":"Confirmar contraseña","authgate.submitLogin":"Iniciar sesión","authgate.submitSignup":"Crear cuenta","authgate.privacyNote":"Tus datos se guardan de forma segura, y tu contraseña está cifrada — ni nosotros podemos verla.",
             "trial.left":"Intentos restantes","trial.upgrade":"Actualizar al plan completo",
             "copy":"Copiar","download":"Descargar",
             "interview.desc":"Practica una entrevista oral real con una evaluación de desempeño detallada al final.","interview.linkCv":"Vincular CV",
@@ -2134,6 +2139,7 @@
             "nav.section.account":"Hesap ve Destek","nav.about":"Hakkımızda","nav.profile":"Profil","nav.subscriptions":"Abonelikler","nav.donations":"Bağışlar","nav.support":"Destek ve İletişim",
             "nav.section.legal":"Yasal","nav.terms":"Kullanım Şartları","nav.privacy":"Gizlilik Politikası",
             "account.guest":"Misafir (bu cihaz)","account.signinHint":"Fotoğrafını ve puanlarını kaydetmek için Google ile giriş yap",
+            "authgate.title":"Giriş yap","authgate.subtitle":"Şu anda misafir olarak giremiyorsan (genellikle bağlantı sorunu), Google veya e-postanla giriş yap.","authgate.googleBtn":"Google ile Giriş Yap","authgate.orEmail":"veya e-posta ile","authgate.tabLogin":"Giriş yap","authgate.tabSignup":"Hesap oluştur","authgate.namePh":"Ad Soyad","authgate.emailPh":"E-posta","authgate.passwordPh":"Şifre","authgate.confirmPh":"Şifreyi onayla","authgate.submitLogin":"Giriş yap","authgate.submitSignup":"Hesap oluştur","authgate.privacyNote":"Verilerin güvenli şekilde saklanır, şifren şifrelenir — biz bile göremeyiz.",
             "trial.left":"Kalan deneme hakkı","trial.upgrade":"Tam pakete yükselt",
             "copy":"Kopyala","download":"İndir",
             "interview.desc":"Sonunda ayrıntılı performans değerlendirmesiyle gerçek bir sözlü mülakatı deneyimle.","interview.linkCv":"CV'yi Bağla",
@@ -2211,6 +2217,7 @@
             "nav.section.account":"Konto & Support","nav.about":"Über uns","nav.profile":"Profil","nav.subscriptions":"Abonnements","nav.donations":"Spenden","nav.support":"Support & Kontakt",
             "nav.section.legal":"Rechtliches","nav.terms":"Nutzungsbedingungen","nav.privacy":"Datenschutzerklärung",
             "account.guest":"Gast (dieses Gerät)","account.signinHint":"Melde dich mit Google an, um dein Foto und deine Punkte zu speichern",
+            "authgate.title":"Anmelden","authgate.subtitle":"Falls du gerade nicht als Gast einsteigen kannst (meist ein Verbindungsproblem), melde dich mit Google oder deiner E-Mail an.","authgate.googleBtn":"Mit Google anmelden","authgate.orEmail":"oder per E-Mail","authgate.tabLogin":"Anmelden","authgate.tabSignup":"Konto erstellen","authgate.namePh":"Dein vollständiger Name","authgate.emailPh":"E-Mail","authgate.passwordPh":"Passwort","authgate.confirmPh":"Passwort bestätigen","authgate.submitLogin":"Anmelden","authgate.submitSignup":"Konto erstellen","authgate.privacyNote":"Deine Daten werden sicher gespeichert, dein Passwort ist verschlüsselt — nicht einmal wir können es sehen.",
             "trial.left":"Verbleibende Versuche","trial.upgrade":"Auf vollständigen Plan upgraden",
             "copy":"Kopieren","download":"Herunterladen",
             "interview.desc":"Übe ein echtes mündliches Vorstellungsgespräch mit einer detaillierten Leistungsbewertung am Ende.","interview.linkCv":"Lebenslauf verknüpfen",
@@ -2738,14 +2745,21 @@
         }).catch(e => console.warn('تعذر تحميل البيانات من الخادم', e));
     }
     fbAuth.onAuthStateChanged(user => {
-        if (user && !user.isAnonymous) {
-            // مسجل بحساب حقيقي (جوجل أو إيميل) - نفتح الموقع ونزامن بياناته
+        if (user) {
+            // فيه هوية فعلية دلوقتي (حساب حقيقي بجوجل/إيميل، أو حتى هوية زائر مؤقتة) - نفتح الموقع فوراً من غير ما نجبره يسجل
             hideAuthGate();
-            loadProfileFromCloud(user.uid);
-            attachCloudUsageListener(user.uid);
+            if (!user.isAnonymous) {
+                loadProfileFromCloud(user.uid);
+                attachCloudUsageListener(user.uid);
+            }
         } else {
-            // مفيش حساب حقيقي مسجل - نمنع الدخول للموقع لحد ما يسجل فعلاً
-            showAuthGate();
+            // مفيش أي هوية لسه، حتى مؤقتة - نجهّز هوية زائر تلقائياً عشان يدخل الموقع على طول
+            // من غير أي شاشة تسجيل إجبارية. لو فشل (غالباً لعدم وجود إنترنت أول مرة على الإطلاق)
+            // نوريله شاشة الدخول كحل بديل بس.
+            fbAuth.signInAnonymously().catch(err => {
+                console.warn('تعذر تجهيز هوية الزائر التلقائية', err);
+                showAuthGate();
+            });
         }
     });
     async function getAuthHeader() {
@@ -2900,7 +2914,8 @@
         authGateMode = mode;
         document.getElementById('auth-gate-name-wrap').classList.toggle('hidden', mode !== 'signup');
         document.getElementById('auth-gate-confirm-wrap').classList.toggle('hidden', mode !== 'signup');
-        document.getElementById('auth-gate-submit-btn').innerText = mode === 'signup' ? 'إنشاء الحساب' : 'تسجيل الدخول';
+        const authDict = I18N[currentUiLang] || I18N.ar;
+        document.getElementById('auth-gate-submit-btn').innerText = mode === 'signup' ? (authDict['authgate.submitSignup'] || 'إنشاء الحساب') : (authDict['authgate.submitLogin'] || 'تسجيل الدخول');
         document.getElementById('auth-gate-tab-login').classList.toggle('auth-tab-active', mode === 'login');
         document.getElementById('auth-gate-tab-signup').classList.toggle('auth-tab-active', mode === 'signup');
         const status = document.getElementById('auth-gate-status');
@@ -3250,12 +3265,12 @@
         navigator.clipboard.writeText(text).then(() => flashCopied(btn));
     }
     function copyChatTranscript() {
-        const text = chatHistory.filter(m => m.role !== 'system').map(m => (m.role === 'assistant' ? 'أحمد: ' : 'أنت: ') + m.content).join('\n\n');
+        const text = chatHistory.filter(m => m.role !== 'system').map(m => (m.role === 'assistant' ? currentInterviewerName + ': ' : 'أنت: ') + stripArabicDiacritics(m.content)).join('\n\n');
         navigator.clipboard.writeText(text);
         showToast(currentUiLang === 'en' ? 'Conversation copied!' : 'تم نسخ المحادثة!', 'success');
     }
     function downloadChatTranscript() {
-        const text = chatHistory.filter(m => m.role !== 'system').map(m => (m.role === 'assistant' ? 'أحمد: ' : 'أنت: ') + m.content).join('\n\n');
+        const text = chatHistory.filter(m => m.role !== 'system').map(m => (m.role === 'assistant' ? currentInterviewerName + ': ' : 'أنت: ') + stripArabicDiacritics(m.content)).join('\n\n');
         triggerDownload(text, 'interview-transcript.txt');
     }
 
@@ -3395,7 +3410,7 @@
         if (!isVoiceEnabled) return;
         stopSpeaking(); // نوقف أي صوت شغال قبل ما نبدأ الجديد، عشان محدش يتراكب فوق التاني
         const indicator = document.getElementById('ai-speaking-indicator');
-        document.getElementById('status-text').innerText = "أحمد (HR) يتحدث...";
+        document.getElementById('status-text').innerText = `${currentInterviewerName} (HR) يتحدث...`;
         indicator.classList.remove('hidden');
         try {
             const langVoices = EDGE_TTS_VOICES[currentAppLang] || EDGE_TTS_VOICES["ar-EG"];
@@ -3434,7 +3449,7 @@
     function saveInterviewState() {
         try {
             localStorage.setItem(INTERVIEW_STATE_KEY, JSON.stringify({
-                interviewRole, selectedNationality, chatHistory, speakingStats, savedAt: Date.now()
+                interviewRole, selectedNationality, chatHistory, speakingStats, currentInterviewerName, savedAt: Date.now()
             }));
         } catch (e) { /* التخزين ممكن يكون ممتلئ، مش مشكلة كبيرة نكمل من غير حفظ */ }
     }
@@ -3463,6 +3478,7 @@
         if (!saved) return;
         interviewRole = saved.interviewRole; selectedNationality = saved.selectedNationality;
         chatHistory = saved.chatHistory; speakingStats = saved.speakingStats || [];
+        currentInterviewerName = saved.currentInterviewerName || (voiceGenderPref === 'female' ? 'مريم' : 'أحمد');
         document.getElementById('interview-resume-banner').classList.add('hidden');
         document.getElementById('interview-setup-box').classList.add('hidden');
         document.getElementById('chat-interface').classList.remove('hidden');
@@ -3470,7 +3486,7 @@
         const box = document.getElementById('chat-history');
         box.innerHTML = '';
         chatHistory.filter(m => m.role !== 'system').forEach(m => appendChatMessage(m.role === 'assistant' ? 'ai' : 'user', m.content));
-        showToast("كملنا من نفس مكانك. أحمد لسه فاكر كل اللي اتكلمتوا فيه.", 'success');
+        showToast(`كملنا من نفس مكانك. ${currentInterviewerName} لسه فاكر كل اللي اتكلمتوا فيه.`, 'success');
     }
     function discardInterviewSession() {
         clearInterviewState();
@@ -3484,6 +3500,7 @@
         selectedNationality = document.getElementById('interviewer-nationality').value;
         if (!interviewRole) return showToast("يرجى كتابة اسم الوظيفة أولاً.", 'error');
 
+        currentInterviewerName = voiceGenderPref === 'female' ? 'مريم' : 'أحمد';
         document.getElementById('interview-setup-box').classList.add('hidden');
         document.getElementById('interview-resume-banner').classList.add('hidden');
         document.getElementById('chat-interface').classList.remove('hidden');
@@ -3492,7 +3509,7 @@
         speakingStats = [];
         clearInterviewState();
 
-        const systemPrompt = `أنت مدير HR خبير واسمك (أحمد).
+        const systemPrompt = `أنت ${voiceGenderPref === 'female' ? 'مديرة' : 'مدير'} HR خبير${voiceGenderPref === 'female' ? 'ة' : ''} واسمك (${currentInterviewerName}).
 تجري مقابلة عمل مع المتقدم لوظيفة: (${interviewRole}).
 الشخصية المطلوب المحاكاة بها: (${selectedNationality}).
 ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
@@ -3522,7 +3539,7 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
                 document.getElementById('interview-setup-box').classList.remove('hidden');
                 return;
             }
-            const fallback = "أهلاً بيك! أنا أحمد مدير التوظيف، جاهز نبدأ؟ عرفني بنفسك وبخبرتك في المجال ده.";
+            const fallback = `أهلاً بيك! أنا ${currentInterviewerName} ${voiceGenderPref === 'female' ? 'مديرة' : 'مدير'} التوظيف، جاهز${voiceGenderPref === 'female' ? 'ة' : ''} نبدأ؟ عرفني بنفسك وبخبرتك في المجال ده.`;
             appendChatMessage("ai", fallback); speakText(fallback);
         }
     }
@@ -3535,7 +3552,7 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
         inputField.value = "";
         saveInterviewState();
         const indicator = document.getElementById('ai-speaking-indicator');
-        document.getElementById('status-text').innerText = "أحمد يفكر في الرد...";
+        document.getElementById('status-text').innerText = `${currentInterviewerName} يفكر في الرد...`;
         indicator.classList.remove('hidden');
         chatHistory.push({ role: "user", content: userMsg });
         try {
@@ -3618,7 +3635,7 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
             const totalFillers = speakingStats.reduce((a, s) => a + s.fillers, 0);
             voiceInsights = `تحدث بالميكروفون في ${speakingStats.length} إجابة. متوسط السرعة ${avgWpm} كلمة/دقيقة (الطبيعي الهادئ 110-150). كلمات التردد الكلية: ${totalFillers}. استخدمهم كمؤشر تقريبي فقط.`;
         }
-        const transcript = chatHistory.filter(m => m.role !== 'system').map(m => (m.role === 'assistant' ? 'أحمد: ' : 'المتقدم: ') + m.content).join('\n');
+        const transcript = chatHistory.filter(m => m.role !== 'system').map(m => (m.role === 'assistant' ? currentInterviewerName + ': ' : 'المتقدم: ') + m.content).join('\n');
 
         const prompt = [
             { role: "system", content: `أنت خبير تدريب مقابلات محترف وصريح جداً. حلل نص المقابلة وابنِ تقرير بنفس الترتيب: 1) تقييم عام من 100 مع السبب 2) نقاط قوة بأمثلة حقيقية من كلامه 3) نقاط تحسين محددة إجابة بإجابة 4) مستوى الثقة والتوتر بناءً على أسلوب كلامه وبيانات السرعة/التردد المرفقة، بصراحة ووضوح 5) 3-5 نصائح عملية فورية 6) خلاصة تحفيزية قصيرة. اكتب بأسلوب واضح مباشر بدون رموز markdown.` },
@@ -4788,6 +4805,12 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
         return bold.split('\n').filter(l => l.trim().length > 0).map(l => `<p class="mb-2">${l}</p>`).join('');
     }
     function handleKeyPress(e) { if (e.key === 'Enter') sendUserAnswer(); }
+    // بنشيل علامات التشكيل (الفتحة/الضمة/الكسرة/السكون/الشدة...) من أي نص عربي قبل ما نعرضه على الشاشة
+    // أو نصدّره كملف/نسخه — التشكيل بيفضل موجود في النص الأصلي المُرسل للصوت (speakText) عشان النطق يبقى مضبوط،
+    // بس المستخدم مش عايز يشوفه ظاهر في المحادثة نفسها.
+    function stripArabicDiacritics(str) {
+        return String(str == null ? '' : str).replace(/[\u0610-\u061A\u064B-\u065F\u06D6-\u06ED\u0670]/g, '');
+    }
     // بنعقّم أي نص جاي من المستخدم أو من رد الـ AI قبل ما نحقنه في innerHTML، عشان نمنع XSS
     // (لو حد كتب <img src=x onerror=...> كإجابة، أو لو رد الـ AI نفسه طلع فيه HTML بسبب prompt injection).
     function escapeHtml(str) {
@@ -4798,10 +4821,11 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
     function appendChatMessage(sender, message, isRawHtml) {
         const box = document.getElementById('chat-history');
         const div = document.createElement('div');
-        const safeMessage = isRawHtml ? message : escapeHtml(message);
+        const displayMessage = sender === "ai" ? stripArabicDiacritics(message) : message;
+        const safeMessage = isRawHtml ? displayMessage : escapeHtml(displayMessage);
         if (sender === "ai") {
             div.className = "panel border border-[var(--border)] p-3 rounded-xl text-xs sm:text-sm space-y-1";
-            div.innerHTML = `<div class="flex items-center gap-1 text-slate-300 font-bold text-[10px]"><i class="fa-solid fa-user-tie"></i> أحمد (HR)</div><div>${safeMessage}</div>`;
+            div.innerHTML = `<div class="flex items-center gap-1 text-slate-300 font-bold text-[10px]"><i class="fa-solid fa-user-tie"></i> ${escapeHtml(currentInterviewerName)} (HR)</div><div>${safeMessage}</div>`;
         } else {
             div.className = "bg-[#262b32] border border-[var(--border)] p-3 rounded-xl text-xs sm:text-sm space-y-1 mr-4";
             div.innerHTML = `<div class="flex items-center gap-1 text-slate-400 font-bold text-[10px]"><i class="fa-solid fa-user"></i> أنت</div><div>${safeMessage}</div>`;
