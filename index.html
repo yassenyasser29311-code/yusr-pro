@@ -445,8 +445,7 @@
                     <i class="fa-solid fa-headset"></i>
                 </button>
                 <select id="lang-picker" class="input-field rounded-lg text-[11px] px-2 py-1.5" onchange="setAppLanguage(this.value)">
-                    <option value="ar-EG">العربية (مصر)</option>
-                    <option value="ar-SA">العربية (خليجي)</option>
+                    <option value="ar-EG">العربية</option>
                     <option value="en-US">English</option>
                     <option value="fr-FR">Français</option>
                     <option value="es-ES">Español</option>
@@ -487,10 +486,8 @@
                             <div>
                                 <label class="block text-xs text-slate-400 mb-1.5" data-i18n="interview.personaLabel">شخصية المحاور</label>
                                 <select id="interviewer-nationality" class="w-full input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
-                                    <option value="رجل مصري طبيعي بلهجة عامية مصرية هادئة">رجل مصري (HR مصري)</option>
-                                    <option value="رجل سعودي بلهجة عامية سعودية">رجل سعودي (HR خليجي)</option>
-                                    <option value="لغة عربية فصحى رسمية">محيط رسمي (فصحى)</option>
-                                    <option value="a calm professional English-speaking HR manager">English HR (Professional)</option>
+                                    <option value="مدير توظيف محترف يتحدث اللغة العربية بأسلوب واضح ومتميز، ويكتب كل كلمة عربية في رده مشكّلة بالكامل بعلامات التشكيل (الفتحة والضمة والكسرة والسكون والشدة) عشان يتنطق صح فور تحويله لصوت">عربي متميز</option>
+                                    <option value="a calm, professional, distinguished English-speaking HR manager who always writes in clear, well-articulated, natural English">English متميز</option>
                                 </select>
                             </div>
                         </div>
@@ -1039,8 +1036,7 @@
                             <label class="block text-xs text-slate-400 mb-1.5" data-i18n="tr.sourceLangLabel">لغة الكلام المصدر</label>
                             <select id="transcribe-source-lang" class="w-full input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
                                 <option value="">🔎 الكشف التلقائي للغة</option>
-                                <option value="ar-EG">العربية (مصر)</option>
-                                <option value="ar-SA">العربية (خليجي)</option>
+                                <option value="ar-EG">العربية</option>
                                 <option value="en-US">English</option>
                                 <option value="fr-FR">Français</option>
                                 <option value="es-ES">Español</option>
@@ -1747,7 +1743,6 @@
     // بتتقرأ حسب لغة الواجهة الحالية (currentAppLang) فمفيش حاجة تتعدّل يدوي لما المستخدم يغيّر اللغة.
     const EDGE_TTS_VOICES = {
         "ar-EG": { male: "ar-EG-ShakirNeural", female: "ar-EG-SalmaNeural" },
-        "ar-SA": { male: "ar-SA-HamedNeural", female: "ar-SA-ZariyahNeural" },
         "en-US": { male: "en-US-GuyNeural", female: "en-US-JennyNeural" },
         "fr-FR": { male: "fr-FR-HenriNeural", female: "fr-FR-DeniseNeural" },
         "es-ES": { male: "es-ES-AlvaroNeural", female: "es-ES-ElviraNeural" },
@@ -3504,7 +3499,8 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
 تعليمات:
 1. اتكلم بطبيعية وسلاسة كأنك محاور حقيقي.
 2. وجه سؤالاً واحداً مختصراً في كل مرة (سطرين كحد أقصى).
-3. ابدأ فوراً بالتحية وسؤاله عن نفسه بخبرته.`;
+3. ابدأ فوراً بالتحية وسؤاله عن نفسه بخبرته.
+4. لو ردك بالعربي، اكتبه بالفصحى مشكولاً بالكامل بعلامات التشكيل (فتحة/ضمة/كسرة/سكون/شدة) على كل كلمة عشان النطق الصوتي يبقى مضبوط. لو ردك بالإنجليزي، اكتبه بإنجليزية واضحة وسليمة النطق.`;
 
         chatHistory = [{ role: "system", content: systemPrompt }];
         appendChatMessage("ai", "جاري الاتصال بالمحاور...");
