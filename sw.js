@@ -1,47 +1,65 @@
 // ================================================================
 //  YUSR Pro — Service Worker (تخزين هيكل الموقع عشان يفتح أوفلاين)
 // ================================================================
-// اللي بيعمله ده: بيحفظ نسخة من صفحة الموقع (HTML/CSS/JS) في تخزين
-// المتصفح (Cache Storage) أول مرة تفتح فيها الموقع وانت متصل بالنت.
-// المرة الجاية (حتى لو معاك نت أو النت بطيء/واقع)، الموقع هيفتح فوراً
-// من النسخة المحفوظة دي بدل ما تشوف صفحة "لا يوجد اتصال" من المتصفح.
+// اللي بيعمله ده: بيحفظ نسخة من صفحة الموقع (HTML/CSS/JS) + المكتبات
+// الخارجية الأساسية (Tailwind، Firebase) في تخزين المتصفح أول مرة تفتح
+// فيها الموقع وانت متصل بالنت. المرة الجاية (حتى لو معاك نت بطيء أو واقع)،
+// الموقع هيفتح فورًا من النسخة المحفوظة دي بدل ما يبعت طلبات للنت وتفشل.
 //
-// ملحوظة مهمة وصريحة: ده بيخلي *واجهة* الموقع تفتح أوفلاين بس.
-// أدوات الذكاء الاصطناعي (المقابلة، التلخيص، التفريغ الصوتي، ...)
-// لازم اتصال حقيقي بالنت وقت الاستخدام لأنها بتتصل بسيرفر خارجي
-// (Groq)، وده مستحيل تقنيًا يشتغل من غير نت أيًا كان الكود. اللي
-// بيحصل بدل كده: لو حاولت تستخدم أداة ذكاء اصطناعي وانت أوفلاين،
-// هتاخد رسالة واضحة "مفيش اتصال بالإنترنت" بدل ما الأداة تعلّق.
+// ملحوظة مهمة وصريحة: ده بيخلي *واجهة* الموقع تفتح أوفلاين بس (الشكل،
+// الأزرار، شاشة تسجيل الدخول تتخبي صح، ...). أدوات الذكاء الاصطناعي
+// (المقابلة، التلخيص، التفريغ الصوتي، الصوت) لازم اتصال حقيقي بالنت وقت
+// الاستخدام لأنها بتتصل بسيرفر خارجي (Groq/edge-tts)، وده مستحيل تقنيًا
+// يشتغل من غير نت أيًا كان الكود. لو حاولت تستخدمهم أوفلاين هتاخد رسالة
+// واضحة "مفيش اتصال بالإنترنت" بدل ما الأداة تعلّق أو تفشل بصمت.
 //
 // عشان أي تحديث جديد في app.js/styles.css يوصل فعلاً للمستخدمين
 // (ومتفضلش نسخة قديمة متخزنة للأبد)، غيّر رقم CACHE_VERSION في كل
 // مرة تنشر فيها تحديث حقيقي على الكود.
 // ================================================================
 
-const CACHE_VERSION = "v1";
+const CACHE_VERSION = "v2";
 const CACHE_NAME = `yusr-pro-shell-${CACHE_VERSION}`;
 
-// أهم ملفات "هيكل" الموقع اللي المفروض تتخزن عشان يفتح أوفلاين.
-// ملحوظة: لو غيّرت اسم أي ملف من دول أو ضفت ملف جديد أساسي، حدّث القائمة دي.
-const APP_SHELL_FILES = [
+// ملفات "هيكل" الموقع بتاعتك (نفس الدومين) — لو غيّرت اسم أو رقم نسخة
+// أي ملف من دول حدّث القائمة دي.
+const SAME_ORIGIN_FILES = [
   "/",
   "/index.html",
   "/app.js?v=1",
   "/styles.css?v=1",
 ];
 
+// مكتبات خارجية (CDN) لازمة عشان الموقع يبان صح أوفلاين. دي روابط
+// من مواقع تانية فبنطلبها بطريقة "no-cors" (منقدرش نتأكد من status
+// بتاعها بدقة، بس بنخزنها زي ما هي عشان تشتغل).
+const CDN_FILES = [
+  "https://cdn.tailwindcss.com",
+  "https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js",
+  "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js",
+  "https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js",
+  "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js",
+];
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) =>
-      // addAll بتفشل كلها لو ملف واحد فشل، فبنحاول كل ملف لوحده
-      // عشان فشل ملف واحد (زي CDN خارجي بطيء) ميوقفش تخزين الباقي.
-      Promise.all(
-        APP_SHELL_FILES.map((url) =>
-          cache.add(url).catch((err) => {
-            console.warn("SW: تعذر تخزين", url, err);
-          })
-        )
-      )
+      Promise.all([
+        // ملفاتنا احنا: fetch عادي (cors) عشان نقدر نتأكد إنها اتحمّلت صح
+        ...SAME_ORIGIN_FILES.map((url) =>
+          fetch(url).then((res) => {
+            if (res && res.ok) return cache.put(url, res);
+          }).catch((err) => console.warn("SW: تعذر تخزين", url, err))
+        ),
+        // مكتبات الـ CDN: لازم no-cors عشان الطلب ينجح أصلاً حتى لو
+        // مفيش CORS headers من المزوّد، والرد بيبقى "opaque" (منقدرش
+        // نشوف الـ status بتاعه، بس نخزنه على أساس إنه نجح).
+        ...CDN_FILES.map((url) =>
+          fetch(url, { mode: "no-cors" }).then((res) => {
+            if (res) return cache.put(url, res);
+          }).catch((err) => console.warn("SW: تعذر تخزين CDN", url, err))
+        ),
+      ])
     ).then(() => self.skipWaiting())
   );
 });
@@ -80,9 +98,14 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     caches.open(CACHE_NAME).then((cache) =>
       cache.match(req).then((cached) => {
-        const networkFetch = fetch(req)
+        const networkFetch = fetch(req, req.mode === "no-cors" ? req : undefined)
           .then((networkRes) => {
-            if (networkRes && networkRes.ok) cache.put(req, networkRes.clone());
+            // networkRes.ok مبيبقاش true للردود الـ "opaque" (مكتبات CDN من
+            // غير CORS)، فبنخزنها برضه لو النوع opaque لأننا منقدرش نتأكد
+            // من الـ status بتاعها أصلاً.
+            if (networkRes && (networkRes.ok || networkRes.type === "opaque")) {
+              cache.put(req, networkRes.clone());
+            }
             return networkRes;
           })
           .catch(() => null);
