@@ -1691,7 +1691,7 @@
 (function () {
     // ⚠️ ضع رابط الـ Cloudflare Worker بتاعك هنا (نفس اللي app.js بيكلمه فعليًا)
     // مثال: "https://yusr-worker.your-subdomain.workers.dev"
-    const ADMIN_API_BASE = "https://yusr-worker.yassen-yasser29311.workers.dev/";
+    const ADMIN_API_BASE = "https://yusr-worker.yassen-yasser29311.workers.dev";
 
     const PLAN_NAMES = ["مجاني", "الأساسية", "الاحترافية", "السنوية"];
     let adminToken = sessionStorage.getItem("yusr_admin_token") || null;
@@ -1821,7 +1821,8 @@
             adminUsersCache = list.users || [];
             adminRenderUsers();
         } catch (e) {
-            adminToast("تعذر تحميل بيانات لوحة التحكم.", "error");
+            adminToast("خطأ: " + (e.status || "") + " - " + (e.message || "unknown"), "error");
+            console.log(e);
         }
     };
 
