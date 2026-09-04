@@ -1708,7 +1708,7 @@
         options = options || {};
         const headers = Object.assign({ "Content-Type": "application/json" }, options.headers || {});
         if (adminToken) headers["X-Admin-Token"] = adminToken;
-        const res = await fetch(ADMIN_API_BASE + path, Object.assign({}, options, { headers }));
+        const res = await fetch(ADMIN_API_BASE + path, Object.assign({ method: "POST" }, options, { headers }));
         let data = {};
         try { data = await res.json(); } catch (e) {}
         if (!res.ok) throw Object.assign(new Error(data.error || "request_failed"), { data, status: res.status });
