@@ -170,9 +170,14 @@
 <!-- ============ ADMIN DASHBOARD (full screen, only reachable after adminGate success) ============ -->
 <div id="admin-dashboard" class="hidden fixed inset-0 z-[105] overflow-y-auto" style="background:var(--bg);">
     <div class="max-w-6xl mx-auto p-4 sm:p-6 space-y-5">
-        <div class="flex items-center justify-between gap-3">
-            <h1 class="font-tajawal font-bold text-lg text-slate-100 flex items-center gap-2"><i class="fa-solid fa-user-shield text-amber-300"></i> لوحة تحكم الأدمن</h1>
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+            <h1 class="font-tajawal font-bold text-lg text-slate-100 flex items-center gap-2">
+                <i class="fa-solid fa-user-shield text-amber-300"></i> لوحة تحكم الأدمن
+                <span id="admin-role-badge" class="hidden admin-badge" style="font-size:.6rem;"></span>
+            </h1>
             <div class="flex items-center gap-2">
+                <button id="admin-backup-btn" onclick="adminBackupNow()" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-database"></i> نسخة احتياطية</button>
+                <button onclick="adminExportUsersCsv()" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-file-csv"></i> تصدير Excel/CSV</button>
                 <button onclick="adminRefreshAll()" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-rotate"></i> تحديث</button>
                 <button onclick="adminLogout()" class="chip hover:bg-red-500/10 hover:text-red-300"><i class="fa-solid fa-arrow-right-from-bracket"></i> خروج</button>
             </div>
@@ -220,6 +225,27 @@
                 </table>
             </div>
             <p id="admin-users-empty" class="hidden text-[11px] text-slate-500 text-center py-4">لا يوجد مستخدمين مطابقين.</p>
+        </div>
+
+        <!-- Activity log -->
+        <div class="panel rounded-2xl p-4 sm:p-5 space-y-3">
+            <div class="flex items-center justify-between gap-2 flex-wrap">
+                <p class="section-eyebrow mb-0"><i class="fa-solid fa-clock-rotate-left"></i> سجل نشاط الأدمن</p>
+                <button onclick="adminLoadActivityLog()" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-rotate"></i> تحديث السجل</button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-[11px] text-right border-collapse">
+                    <thead>
+                        <tr class="text-slate-500 border-b border-[var(--border)]">
+                            <th class="py-2 px-2 font-bold">الوقت</th>
+                            <th class="py-2 px-2 font-bold">العملية</th>
+                            <th class="py-2 px-2 font-bold">التفاصيل</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-log-tbody"></tbody>
+                </table>
+            </div>
+            <p id="admin-log-empty" class="hidden text-[11px] text-slate-500 text-center py-4">لا يوجد أي نشاط مسجّل بعد.</p>
         </div>
     </div>
 </div>
@@ -1695,9 +1721,31 @@
 
     const PLAN_NAMES = ["مجاني", "الأساسية", "الاحترافية", "السنوية"];
     let adminToken = sessionStorage.getItem("yusr_admin_token") || null;
+    let adminRole = sessionStorage.getItem("yusr_admin_role") || null; // "superadmin" أو "viewer"
     let adminUsersCache = [];
     let secretTapCount = 0;
     let secretTapTimer = null;
+
+    // ---- دور "viewer" بيشوف بس من غير ما يعدل أي حاجة (شوف نظام الأدوار في الووركر) ----
+    function isViewerRole() { return adminRole === "viewer"; }
+
+    function applyAdminRoleUI() {
+        const badge = document.getElementById("admin-role-badge");
+        if (adminRole) {
+            badge.classList.remove("hidden");
+            if (isViewerRole()) {
+                badge.textContent = "مشاهدة فقط";
+                badge.className = "admin-badge admin-badge-suspended";
+            } else {
+                badge.textContent = "صلاحية كاملة";
+                badge.className = "admin-badge admin-badge-online";
+            }
+        } else {
+            badge.classList.add("hidden");
+        }
+        const backupBtn = document.getElementById("admin-backup-btn");
+        if (backupBtn) backupBtn.classList.toggle("hidden", isViewerRole());
+    }
 
     function adminToast(msg, type) {
         if (typeof showToast === "function") showToast(msg, type || "info");
@@ -1778,7 +1826,10 @@
             const data = await adminFetch("/adminConfirm", { method: "POST", body: JSON.stringify({ confirmToken: pendingConfirmToken, code }) });
             if (data.adminToken) {
                 adminToken = data.adminToken;
+                adminRole = data.role || "superadmin";
                 sessionStorage.setItem("yusr_admin_token", adminToken);
+                sessionStorage.setItem("yusr_admin_role", adminRole);
+                applyAdminRoleUI();
                 document.getElementById("admin-gate-modal").classList.add("hidden");
                 document.getElementById("admin-dashboard").classList.remove("hidden");
                 adminRefreshAll();
@@ -1792,7 +1843,9 @@
 
     window.adminLogout = function () {
         adminToken = null;
+        adminRole = null;
         sessionStorage.removeItem("yusr_admin_token");
+        sessionStorage.removeItem("yusr_admin_role");
         document.getElementById("admin-dashboard").classList.add("hidden");
     };
 
@@ -1800,17 +1853,22 @@
     async function adminTryRestoreSession() {
         if (!adminToken || ADMIN_API_BASE.indexOf("http") !== 0) return;
         try {
-            await adminFetch("/adminMe");
+            const me = await adminFetch("/adminMe");
+            adminRole = me.role || adminRole || "superadmin";
+            sessionStorage.setItem("yusr_admin_role", adminRole);
+            applyAdminRoleUI();
             document.getElementById("admin-dashboard").classList.remove("hidden");
             adminRefreshAll();
         } catch (e) {
             adminToken = null;
+            adminRole = null;
             sessionStorage.removeItem("yusr_admin_token");
+            sessionStorage.removeItem("yusr_admin_role");
         }
     }
     adminTryRestoreSession();
 
-    // ---- تحميل الإحصائيات + قائمة المستخدمين ----
+    // ---- تحميل الإحصائيات + قائمة المستخدمين + سجل النشاط ----
     window.adminRefreshAll = async function () {
         try {
             const [stats, list] = await Promise.all([
@@ -1823,6 +1881,69 @@
         } catch (e) {
             adminToast("خطأ: " + (e.status || "") + " - " + (e.message || "unknown"), "error");
             console.log(e);
+        }
+        adminLoadActivityLog();
+    };
+
+    // ---- سجل نشاط الأدمن ----
+    window.adminLoadActivityLog = async function () {
+        const tbody = document.getElementById("admin-log-tbody");
+        const empty = document.getElementById("admin-log-empty");
+        try {
+            const data = await adminFetch("/adminActivityLog");
+            const logs = data.logs || [];
+            tbody.innerHTML = "";
+            empty.classList.toggle("hidden", logs.length > 0);
+            logs.forEach(entry => {
+                const tr = document.createElement("tr");
+                const time = entry.time ? new Date(entry.time).toLocaleString("ar-EG") : "-";
+                const details = entry.details ? escapeHtml(JSON.stringify(entry.details)) : "-";
+                tr.innerHTML = `
+                    <td class="text-slate-400 whitespace-nowrap">${escapeHtml(time)}</td>
+                    <td class="font-bold text-slate-200">${escapeHtml(entry.action || "-")}</td>
+                    <td class="text-slate-500" style="max-width:340px; overflow-wrap:anywhere;">${details}</td>`;
+                tbody.appendChild(tr);
+            });
+        } catch (e) {
+            empty.classList.remove("hidden");
+            empty.textContent = "تعذر تحميل سجل النشاط.";
+        }
+    };
+
+    // ---- تصدير كل المستخدمين كملف CSV (بيتفتح في Excel عادي) ----
+    window.adminExportUsersCsv = function () {
+        if (!adminUsersCache.length) { adminToast("مفيش بيانات مستخدمين لتصديرها بعد.", "error"); return; }
+        const headers = ["UID", "الإيميل", "الاسم", "الباقة", "سقف مخصص", "الاستخدام الشهري", "موقوف", "أونلاين"];
+        const rows = adminUsersCache.map(u => [
+            u.uid, u.email || "", u.displayName || "", u.plan || "",
+            u.customLimit ?? "", u.usageThisMonth ?? 0, u.suspended ? "نعم" : "لا", u.online ? "نعم" : "لا"
+        ]);
+        const csvEscape = v => `"${String(v).replace(/"/g, '""')}"`;
+        const csv = "\uFEFF" + [headers, ...rows].map(r => r.map(csvEscape).join(",")).join("\r\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `yusr-users-${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(a); a.click(); a.remove();
+    };
+
+    // ---- نسخة احتياطية فورية لكل قاعدة البيانات (superadmin بس) ----
+    window.adminBackupNow = async function () {
+        if (isViewerRole()) { adminToast("دور المشاهدة مش مسموح له بعمل نسخة احتياطية.", "error"); return; }
+        const btn = document.getElementById("admin-backup-btn");
+        btn.disabled = true;
+        try {
+            const data = await adminFetch("/adminBackupNow");
+            const blob = new Blob([JSON.stringify(data.data, null, 2)], { type: "application/json" });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = `yusr-backup-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
+            document.body.appendChild(a); a.click(); a.remove();
+            adminToast("اتنزلت النسخة الاحتياطية.", "success");
+        } catch (e) {
+            adminToast("تعذر إنشاء النسخة الاحتياطية.", "error");
+        } finally {
+            btn.disabled = false;
         }
     };
 
@@ -1871,6 +1992,7 @@
         tbody.innerHTML = "";
         empty.classList.toggle("hidden", filtered.length > 0);
 
+        const readOnly = isViewerRole();
         filtered.forEach(u => {
             const tr = document.createElement("tr");
             const planOptions = PLAN_NAMES.map(p => `<option value="${p}" ${p === u.plan ? "selected" : ""}>${p}</option>`).join("");
@@ -1879,13 +2001,14 @@
                     <p class="font-bold text-slate-200">${escapeHtml(u.displayName || "بدون اسم")}</p>
                     <p class="text-slate-500 text-[10px]">${escapeHtml(u.email || u.uid)}</p>
                 </td>
-                <td><select class="admin-mini-input" style="width:auto" onchange="adminUserAction('${u.uid}','setPlan',this.value)">${planOptions}</select></td>
+                <td><select class="admin-mini-input" style="width:auto" ${readOnly ? "disabled" : ""} onchange="adminUserAction('${u.uid}','setPlan',this.value)">${planOptions}</select></td>
                 <td class="text-center">${u.usageThisMonth ?? 0}</td>
-                <td><input type="number" min="0" class="admin-mini-input" placeholder="افتراضي" value="${u.customLimit ?? ""}" onchange="adminUserAction('${u.uid}','setCustomLimit', this.value === '' ? null : this.value)"></td>
+                <td><input type="number" min="0" class="admin-mini-input" placeholder="افتراضي" value="${u.customLimit ?? ""}" ${readOnly ? "disabled" : ""} onchange="adminUserAction('${u.uid}','setCustomLimit', this.value === '' ? null : this.value)"></td>
                 <td>
                     ${u.suspended ? '<span class="admin-badge admin-badge-suspended">موقوف</span>' : (u.online ? '<span class="admin-badge admin-badge-online"><span class="dot"></span>أونلاين</span>' : '<span class="admin-badge admin-badge-offline">غير متصل</span>')}
                 </td>
                 <td>
+                    ${readOnly ? '<span class="text-slate-600 text-[10px]">مشاهدة فقط</span>' : `
                     <div class="flex flex-wrap gap-1">
                         ${u.suspended
                             ? `<button class="admin-mini-btn" onclick="adminUserAction('${u.uid}','activate')">تفعيل</button>`
@@ -1893,13 +2016,14 @@
                         }
                         <button class="admin-mini-btn" onclick="adminUserAction('${u.uid}','resetUsage')">تصفير الاستخدام</button>
                         ${u.email ? `<button class="admin-mini-btn" onclick="adminSendPasswordReset('${u.uid}', '${u.email}')">إرسال رابط استعادة الباسورد</button>` : ""}
-                    </div>
+                    </div>`}
                 </td>`;
             tbody.appendChild(tr);
         });
     };
 
     window.adminUserAction = async function (uid, action, value) {
+        if (isViewerRole()) { adminToast("دور المشاهدة مش مسموح له بالتعديل.", "error"); return; }
         try {
             await adminFetch("/adminUserAction", { method: "POST", body: JSON.stringify({ uid, action, value }) });
             adminToast("تم بنجاح.", "success");
@@ -1910,6 +2034,7 @@
     };
 
     window.adminSendPasswordReset = async function (uid, email) {
+        if (isViewerRole()) { adminToast("دور المشاهدة مش مسموح له بالتعديل.", "error"); return; }
         try {
             await adminFetch("/adminSendPasswordReset", { method: "POST", body: JSON.stringify({ email }) });
             adminToast("اتبعت رابط استعادة الباسورد على " + email, "success");

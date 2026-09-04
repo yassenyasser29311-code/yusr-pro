@@ -154,9 +154,9 @@
     .no-scrollbar::-webkit-scrollbar { display: none; }
 
     /* ---- Admin dashboard ---- */
-    #admin-users-tbody tr { border-bottom: 1px solid var(--border); }
-    #admin-users-tbody tr:hover { background: var(--panel-2); }
-    #admin-users-tbody td { padding: .55rem .5rem; vertical-align: middle; }
+    #admin-users-tbody tr, #admin-log-tbody tr { border-bottom: 1px solid var(--border); }
+    #admin-users-tbody tr:hover, #admin-log-tbody tr:hover { background: var(--panel-2); }
+    #admin-users-tbody td, #admin-log-tbody td { padding: .55rem .5rem; vertical-align: middle; }
     .admin-badge { display:inline-flex; align-items:center; gap:.3rem; font-size:.62rem; font-weight:700; padding:.2rem .6rem; border-radius:999px; }
     .admin-badge-online { color:#34d399; background:rgba(52,211,153,.12); border:1px solid rgba(52,211,153,.3); }
     .admin-badge-offline { color:#8a8a8a; background:rgba(138,138,138,.1); border:1px solid rgba(138,138,138,.25); }
