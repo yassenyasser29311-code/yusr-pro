@@ -1266,6 +1266,17 @@
                 statusEl.className = 'text-[11px] text-center text-red-400';
             });
     }
+    // ============ Admin access gate ============
+    // ملحوظة: لوحة الأدمن بالكامل (تسجيل الدخول بخطوتين + الداشبورد) بقت
+    // مستقلة تمامًا في <script> جوه index.html نفسه (شوف آخر الملف)، وبتتكلم
+    // مباشرة مع /adminLogin و/adminConfirm و/adminMe و/adminListUsers و
+    // /adminStats و/adminUserAction و/adminSendPasswordReset على الووركر —
+    // بنفس بيانات الدخول المضبوطة هناك (يوزر "يس" / باسورد "032011" / كود
+    // التأكيد "293" بشكل افتراضي، والمقارنة الحقيقية بتتم جوه الووركر بس).
+    // مفيش داعي لأي كود أدمن هنا في app.js، فاتشالت النسخة القديمة اللي كانت
+    // بتدور على عناصر (admin-username, admin-otp-box...) مش موجودة في
+    // الواجهة الحالية عشان محدش يتلخبط بيها.
+
     function addPoints(n) {
         const p = getProfile(); p.points = (p.points || 0) + n; saveProfile(p);
         syncProfileToCloud(p);
@@ -1700,6 +1711,25 @@
         const indicator = document.getElementById('ai-speaking-indicator');
         document.getElementById('status-text').innerText = `${currentInterviewerName} (HR) يتحدث...`;
         indicator.classList.remove('hidden');
+
+        // بنستخدم صوت المتصفح المحلي (Web Speech API) الأول لأنه بيشتغل فورًا من غير أي
+        // طلب شبكة - عشان الصوت يتشغّل فور ظهور النص من غير أي تأخير.
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text.replace(/[*_#`~]/g, ''));
+            const bestVoice = getBestBrowserVoice(voiceGenderPref);
+            if (bestVoice) { utterance.voice = bestVoice; utterance.lang = bestVoice.lang; }
+            else utterance.lang = currentAppLang;
+            utterance.pitch = voiceGenderPref === 'female' ? 1.15 : 0.9;
+            utterance.rate = 0.95;
+            utterance.onend = () => indicator.classList.add('hidden');
+            utterance.onerror = () => indicator.classList.add('hidden');
+            window.speechSynthesis.speak(utterance);
+            return;
+        }
+
+        // احتياطي فقط: لو المتصفح مش بيدعم Web Speech API خالص (نادر)، بنستخدم Edge TTS
+        // عن طريق السيرفر - ده بيتضمن طلب شبكة وبالتالي تأخير بسيط، بس بيحصل في الحالة دي بس.
         try {
             const langVoices = EDGE_TTS_VOICES[currentAppLang] || EDGE_TTS_VOICES["ar-EG"];
             const voice = langVoices[voiceGenderPref] || langVoices.male;
@@ -1718,19 +1748,7 @@
                 return;
             } else console.warn("Edge TTS error:", response.status);
         } catch (e) { console.error("Edge TTS Voice Error:", e); }
-
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance(text.replace(/[*_#`~]/g, ''));
-            const bestVoice = getBestBrowserVoice(voiceGenderPref);
-            if (bestVoice) { utterance.voice = bestVoice; utterance.lang = bestVoice.lang; }
-            else utterance.lang = currentAppLang;
-            utterance.pitch = voiceGenderPref === 'female' ? 1.15 : 0.9;
-            utterance.rate = 0.95;
-            utterance.onend = () => indicator.classList.add('hidden');
-            utterance.onerror = () => indicator.classList.add('hidden');
-            window.speechSynthesis.speak(utterance);
-        } else indicator.classList.add('hidden');
+        indicator.classList.add('hidden');
     }
 
     // ============ Interview session persistence (يخلي المحاور "يفتكر" حتى لو قفلت الصفحة أو رجعت بعد شوية) ============
@@ -1938,9 +1956,85 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
         try {
             const reportText = await callGroqConversation(prompt);
             renderResult(body, reportText, 'performance-report.txt');
-            addProgressEntry(interviewRole, reportText);
+            addProgressEntry(interviewRole, reportText, {
+                transcript: chatHistory.filter(m => m.role !== 'system'),
+                nationality: selectedNationality,
+                interviewerName: currentInterviewerName
+            });
         }
         catch (e) { body.innerHTML = errorHTML("تعذر توليد التقرير الآن، جرب تاني بعد شوية."); }
+    }
+
+    // ============ End interview (نهائي تمامًا - مفيش استكمال بعده) ============
+    // الفرق عن "تقييم الأداء": الزرار ده بيقفل الجلسة خالص ويرجعك لشاشة الإعداد.
+    // لو عايز تغيّر اللغة أو شخصية المحاور، لازم تبدأ مقابلة جديدة من الصفر.
+    async function endInterviewSession() {
+        const answered = chatHistory.filter(m => m.role === 'user').length;
+
+        if (!answered) {
+            if (!confirm("لسه ماكلمتش المحاور خالص. تحب تقفل المقابلة من غير ما تتحفظ في الأرشيف؟")) return;
+            resetInterviewToSetup();
+            return;
+        }
+
+        const confirmMsg = "متأكد إنك عايز تنهي المقابلة؟\n\n" +
+            "الإجراء ده نهائي تمامًا: مش هينفع تكمل الجلسة دي تاني بعد كده.\n" +
+            "لو عايز تغيّر اللغة أو الشخص اللي بيقابلك، هتحتاج تبدأ مقابلة جديدة من الأول.\n\n" +
+            "هنولّد تقييم أداء نهائي ونحفظ المقابلة كاملة (المحادثة + التقرير) في أرشيف المقابلات بشكل دائم.";
+        if (!confirm(confirmMsg)) return;
+
+        stopSpeaking();
+        openReportModal();
+        const body = document.getElementById('report-body');
+        body.innerHTML = spinnerHTML("جاري إنهاء المقابلة وتحليل أدائك...");
+
+        const fullTranscript = chatHistory.filter(m => m.role !== 'system');
+        let reportText;
+
+        if (answered >= 2) {
+            let voiceInsights = "المتقدم كتب أغلب إجاباته بدل التحدث، فمفيش بيانات كافية عن سرعة الكلام أو التردد.";
+            if (speakingStats.length > 0) {
+                const avgWpm = Math.round(speakingStats.reduce((a, s) => a + (s.wpm || 0), 0) / speakingStats.length);
+                const totalFillers = speakingStats.reduce((a, s) => a + s.fillers, 0);
+                voiceInsights = `تحدث بالميكروفون في ${speakingStats.length} إجابة. متوسط السرعة ${avgWpm} كلمة/دقيقة (الطبيعي الهادئ 110-150). كلمات التردد الكلية: ${totalFillers}. استخدمهم كمؤشر تقريبي فقط.`;
+            }
+            const transcriptText = fullTranscript.map(m => (m.role === 'assistant' ? currentInterviewerName + ': ' : 'المتقدم: ') + m.content).join('\n');
+            const prompt = [
+                { role: "system", content: `أنت خبير تدريب مقابلات محترف وصريح جداً. حلل نص المقابلة وابنِ تقرير بنفس الترتيب: 1) تقييم عام من 100 مع السبب 2) نقاط قوة بأمثلة حقيقية من كلامه 3) نقاط تحسين محددة إجابة بإجابة 4) مستوى الثقة والتوتر بناءً على أسلوب كلامه وبيانات السرعة/التردد المرفقة، بصراحة ووضوح 5) 3-5 نصائح عملية فورية 6) خلاصة تحفيزية قصيرة. اكتب بأسلوب واضح مباشر بدون رموز markdown.` },
+                { role: "user", content: `بيانات صوتية:\n${voiceInsights}\n\nنص المقابلة:\n${transcriptText}` }
+            ];
+            try {
+                reportText = await callGroqConversation(prompt);
+                renderResult(body, reportText, 'performance-report.txt');
+            } catch (e) {
+                reportText = "تعذر توليد تقييم تفصيلي لهذه الجلسة، لكن المحادثة كاملة اتحفظت في الأرشيف.";
+                body.innerHTML = errorHTML("تعذر توليد تقييم تفصيلي، لكن اطمن: المحادثة كاملة اتحفظت في أرشيف المقابلات من غير تقييم.");
+            }
+        } else {
+            reportText = "الجلسة دي كانت قصيرة (أقل من إجابتين) فمفيش تقييم تفصيلي، لكن المحادثة اتحفظت كاملة في الأرشيف.";
+            body.innerHTML = `<p class="text-xs text-slate-400 leading-relaxed">${reportText}</p>`;
+        }
+
+        addProgressEntry(interviewRole, reportText, {
+            transcript: fullTranscript,
+            nationality: selectedNationality,
+            interviewerName: currentInterviewerName
+        });
+
+        resetInterviewToSetup();
+        showToast("المقابلة اتقفلت وتحفظت كاملة في الأرشيف. لو عايز تجرب لغة أو محاور مختلف، ابدأ جلسة جديدة.", 'success');
+    }
+
+    // بترجع شاشة الإعداد لحالتها الأولى وتمسح أي جلسة محفوظة، بحيث معندهاش استكمال بعد كده
+    function resetInterviewToSetup() {
+        clearInterviewState();
+        chatHistory = [];
+        speakingStats = [];
+        document.getElementById('chat-interface').classList.add('hidden');
+        document.getElementById('chat-interface').classList.remove('flex');
+        document.getElementById('chat-history').innerHTML = '';
+        document.getElementById('interview-setup-box').classList.remove('hidden');
+        checkInterviewResumeBanner();
     }
 
     // ============ FAQ generator ============
@@ -2426,10 +2520,13 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
             }
             if (!faceReady || !vid || vid.readyState < 2) return;
             try {
-                const det = await faceapi.detectSingleFace(vid, new faceapi.TinyFaceDetectorOptions()).withFaceExpressions();
-                videoMockAnalysisSamples.push(det ? { expressions: det.expressions, box: det.detection.box, videoW: vid.videoWidth, videoH: vid.videoHeight } : { expressions: null });
+                // inputSize أعلى من الافتراضي (416) بيدي دقة اكتشاف أحسن، خصوصاً لو الوجه مش قريب جداً
+                // من الكاميرا. scoreThreshold ثابت وبنفلتر تحت كمان بثقة أعلى عشان نرفض أي كشف واهي.
+                const det = await faceapi.detectSingleFace(vid, new faceapi.TinyFaceDetectorOptions({ inputSize: 512, scoreThreshold: 0.5 })).withFaceExpressions();
+                const confidentDet = det && det.detection && det.detection.score >= 0.6 ? det : null;
+                videoMockAnalysisSamples.push(confidentDet ? { expressions: confidentDet.expressions, box: confidentDet.detection.box, videoW: vid.videoWidth, videoH: vid.videoHeight } : { expressions: null });
             } catch (e) { /* تجاهل عينة فشلت وكمّل اللي بعدها */ }
-        }, 900);
+        }, 700);
     }
     function stopVideoMockAnalysisSampling() {
         if (videoMockAnalysisTimer) { clearInterval(videoMockAnalysisTimer); videoMockAnalysisTimer = null; }
@@ -2437,7 +2534,9 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
     }
     function summarizeFaceExpressions(samples) {
         const valid = samples.filter(s => s.expressions);
-        if (!valid.length) return null;
+        // لازم عدد أدنى من العينات الموثوقة عشان النسب المحسوبة تبقى ذات دلالة إحصائية
+        // مش مبنية على كشفة واحدة عشوائية (نفس منطق summarizeVolume).
+        if (valid.length < 3) return null;
         const dims = ['neutral', 'happy', 'sad', 'angry', 'fearful', 'disgusted', 'surprised'];
         const sums = {}; dims.forEach(d => sums[d] = 0);
         let centered = 0;
@@ -2521,7 +2620,48 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
     async function startVideoMockCamera() {
         const status = document.getElementById('video-mock-status');
         try {
-            videoMockStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            // بنبني constraints للفيديو بتطلب دقة كويسة، وبنلغي أي تأثيرات تلقائية بتغيّر الإطار
+            // (زي auto-framing/تتبّع الوجه أو تكبير رقمي تلقائي) لو المتصفح بيدعم التحكم فيها،
+            // عشان الكاميرا تفضل ثابتة زي كاميرا موبايل عادية من غير أي "تعويض" لحركتك.
+            const supportedConstraints = (navigator.mediaDevices.getSupportedConstraints && navigator.mediaDevices.getSupportedConstraints()) || {};
+            const videoConstraints = {
+                width: { ideal: 1280 }, height: { ideal: 720 },
+                // كاميرا أمامية ثابتة (نفس اللي هيستخدمها المستخدم يبص فيها للشاشة)، عشان الموبايل
+                // ميحاولش يبدّل لعدسة تانية (مثلاً واسعة/تليفوتو) لوحده أثناء الجلسة.
+                facingMode: { ideal: 'user' },
+                frameRate: { ideal: 30, max: 30 }
+            };
+            if (supportedConstraints.resizeMode) videoConstraints.resizeMode = 'none';
+            if (supportedConstraints.faceFraming) videoConstraints.faceFraming = false;
+            if (supportedConstraints.backgroundBlur) videoConstraints.backgroundBlur = false;
+            if (supportedConstraints.backgroundReplacement) videoConstraints.backgroundReplacement = 'none';
+            if (supportedConstraints.eyeGazeCorrection) videoConstraints.eyeGazeCorrection = false;
+            if (supportedConstraints.pan) videoConstraints.pan = false;
+            if (supportedConstraints.tilt) videoConstraints.tilt = false;
+            if (supportedConstraints.zoom) videoConstraints.zoom = false;
+
+            videoMockStream = await navigator.mediaDevices.getUserMedia({
+                video: videoConstraints,
+                // autoGainControl بيسوّي شدة الصوت تلقائياً وبيخفي تذبذب نبرتك الطبيعي، فبنقفله
+                // عشان قياس "تذبذب شدة الصوت" في التقرير يبقى حقيقي مش مُسطّح صناعياً.
+                audio: { autoGainControl: false }
+            });
+
+            // بعض الأنظمة (زي Windows Studio Effects أو macOS Center Stage) بتفعّل تتبّع/تكبير
+            // تلقائي على مستوى النظام مش بس بالـ constraints، فبنحاول كمان نصفّر أي zoom/pan/tilt
+            // شغال فعلياً على التراك نفسه لو الكاميرا بتدعم القراءة/التحكم في القيم دي.
+            try {
+                const [videoTrack] = videoMockStream.getVideoTracks();
+                const caps = videoTrack && videoTrack.getCapabilities ? videoTrack.getCapabilities() : null;
+                if (caps) {
+                    const resetConstraints = {};
+                    if (caps.zoom) resetConstraints.zoom = caps.zoom.min ?? 1;
+                    if (caps.pan) resetConstraints.pan = caps.pan.min ?? 0;
+                    if (caps.tilt) resetConstraints.tilt = caps.tilt.min ?? 0;
+                    if (Object.keys(resetConstraints).length) await videoTrack.applyConstraints({ advanced: [resetConstraints] });
+                }
+            } catch (e) { console.warn('تعذر تصفير zoom/pan/tilt التلقائي على الكاميرا:', e); }
+
             const vid = document.getElementById('video-mock-preview');
             vid.srcObject = videoMockStream; vid.classList.remove('hidden');
             document.getElementById('video-mock-start-btn').classList.add('hidden');
@@ -2721,12 +2861,22 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
     // ============ Progress Tracking ============
     function loadProgressHistory() { return JSON.parse(localStorage.getItem('yusr_progress_history') || '[]'); }
     function saveProgressHistory(list) { localStorage.setItem('yusr_progress_history', JSON.stringify(list)); }
-    function addProgressEntry(role, reportText) {
+    // extra: { transcript: [{role, content}], nationality, interviewerName } — بتتحفظ كاملة عشان
+    // الأرشيف يفضل فيه المقابلة كلها مش بس ملخص التقييم.
+    function addProgressEntry(role, reportText, extra = {}) {
         const list = loadProgressHistory();
         const scoreMatch = reportText.match(/(\d{1,3})\s*(?:\/\s*100|من\s*100)/);
         let score = scoreMatch ? parseInt(scoreMatch[1], 10) : null;
         if (score !== null && (score < 0 || score > 100)) score = null;
-        list.unshift({ date: new Date().toISOString(), role: role || 'وظيفة غير محددة', score, report: reportText });
+        list.unshift({
+            date: new Date().toISOString(),
+            role: role || 'وظيفة غير محددة',
+            score,
+            report: reportText,
+            transcript: Array.isArray(extra.transcript) ? extra.transcript : null,
+            nationality: extra.nationality || null,
+            interviewerName: extra.interviewerName || null
+        });
         if (list.length > 50) list.length = 50;
         saveProgressHistory(list);
     }
@@ -2789,11 +2939,22 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
         }
 
         const container = document.getElementById('progress-list');
-        if (!list.length) { container.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">لسه معملتش أي جلسة تدريب مُقيّمة. روح لصفحة "مقابلة تدريبية صوتية" واعمل "تقييم أداء" في آخر الجلسة عشان تتسجل هنا.</p>`; return; }
-        container.innerHTML = list.map((e, i) => `
+        if (!list.length) { container.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">لسه معملتش أي جلسة تدريب متحفظة. روح لصفحة "مقابلة تدريبية صوتية" واعمل "إنهاء المقابلة" أو "تقييم الأداء" عشان تتسجل هنا في الأرشيف.</p>`; return; }
+        container.innerHTML = list.map((e, i) => {
+            const meta = [e.interviewerName ? `المحاور: ${escapeHtml(e.interviewerName)}` : '', e.nationality ? escapeHtml(e.nationality) : ''].filter(Boolean).join(' · ');
+            const transcriptHtml = Array.isArray(e.transcript) && e.transcript.length
+                ? `<div class="mt-2.5 pt-2.5 border-t border-[var(--border)]">
+                        <p class="text-[10.5px] font-bold text-slate-400 mb-1.5"><i class="fa-solid fa-comments"></i> نص المحادثة كاملاً</p>
+                        <div class="space-y-1.5 max-h-[220px] overflow-y-auto pr-1">
+                            ${e.transcript.map(m => `<p class="text-[11px] leading-relaxed"><span class="font-bold ${m.role === 'assistant' ? 'text-[var(--accent-strong)]' : 'text-slate-300'}">${m.role === 'assistant' ? escapeHtml(e.interviewerName || 'المحاور') : 'المتقدم'}:</span> ${escapeHtml(m.content)}</p>`).join('')}
+                        </div>
+                   </div>`
+                : '';
+            return `
             <div class="panel-2 rounded-xl p-3">
                 <div class="flex justify-between items-center gap-2 cursor-pointer" onclick="document.getElementById('progress-detail-${i}').classList.toggle('hidden')">
                     <div class="flex items-center gap-2 min-w-0">
+                        <i class="fa-solid fa-box-archive text-[10px] text-slate-500 shrink-0" title="محفوظة بشكل دائم"></i>
                         <span class="text-[10px] text-slate-500 shrink-0">${new Date(e.date).toLocaleDateString('ar-EG')}</span>
                         <span class="text-xs font-bold text-slate-200 truncate">${escapeHtml(e.role)}</span>
                     </div>
@@ -2802,9 +2963,13 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
                         <i class="fa-solid fa-chevron-down text-[10px] text-slate-500"></i>
                     </div>
                 </div>
-                <div id="progress-detail-${i}" class="hidden mt-2 pt-2 border-t border-[var(--border)] text-xs leading-relaxed">${formatReportText(e.report)}</div>
+                <div id="progress-detail-${i}" class="hidden mt-2 pt-2 border-t border-[var(--border)] text-xs leading-relaxed">
+                    ${meta ? `<p class="text-[10.5px] text-slate-500 mb-1.5">${meta}</p>` : ''}
+                    ${formatReportText(e.report)}
+                    ${transcriptHtml}
+                </div>
             </div>
-        `).join('');
+        `; }).join('');
     }
     async function runProgressCompare() {
         const list = loadProgressHistory();

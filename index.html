@@ -139,6 +139,91 @@
     </div>
 </div>
 
+<!-- ============ ADMIN GATE (hidden, secret entry point) ============ -->
+<!-- يتفتح بس بالضغط على شعار "يس" في أعلى القائمة الجانبية 5 مرات ورا بعض -->
+<div id="admin-gate-modal" class="hidden fixed inset-0 z-[110] flex items-center justify-center p-4 modal-backdrop">
+    <div class="panel modal-pop max-w-xs w-full rounded-2xl p-5 space-y-4 text-right">
+        <!-- Step 1: username + password -->
+        <div id="admin-gate-step1" class="space-y-3">
+            <div class="text-center space-y-1">
+                <div class="w-10 h-10 rounded-full bg-[var(--panel-2)] flex items-center justify-center mx-auto text-slate-400"><i class="fa-solid fa-user-lock"></i></div>
+                <h3 class="text-sm font-bold text-slate-100">دخول</h3>
+            </div>
+            <input id="admin-gate-username" type="text" placeholder="الاسم" class="w-full input-field rounded-xl px-3 py-2.5 text-xs" autocomplete="off">
+            <input id="admin-gate-password" type="password" placeholder="كلمة المرور" class="w-full input-field rounded-xl px-3 py-2.5 text-xs" dir="ltr" autocomplete="off">
+            <button onclick="adminGateSubmitLogin()" id="admin-gate-login-btn" class="w-full py-2.5 btn-primary font-bold text-xs rounded-xl">دخول</button>
+        </div>
+        <!-- Step 2: confirmation code -->
+        <div id="admin-gate-step2" class="hidden space-y-3">
+            <div class="text-center space-y-1">
+                <div class="w-10 h-10 rounded-full bg-[var(--panel-2)] flex items-center justify-center mx-auto text-slate-400"><i class="fa-solid fa-shield-halved"></i></div>
+                <h3 class="text-sm font-bold text-slate-100">كود التأكيد</h3>
+            </div>
+            <input id="admin-gate-code" type="text" placeholder="الكود" class="w-full input-field rounded-xl px-3 py-2.5 text-xs text-center tracking-widest" dir="ltr" autocomplete="off">
+            <button onclick="adminGateSubmitConfirm()" id="admin-gate-confirm-btn" class="w-full py-2.5 btn-primary font-bold text-xs rounded-xl">تأكيد</button>
+        </div>
+        <p id="admin-gate-status" class="text-[11px] text-center hidden"></p>
+        <button onclick="adminGateClose()" class="w-full py-2 chip justify-center hover:bg-[var(--panel-2)]">إلغاء</button>
+    </div>
+</div>
+
+<!-- ============ ADMIN DASHBOARD (full screen, only reachable after adminGate success) ============ -->
+<div id="admin-dashboard" class="hidden fixed inset-0 z-[105] overflow-y-auto" style="background:var(--bg);">
+    <div class="max-w-6xl mx-auto p-4 sm:p-6 space-y-5">
+        <div class="flex items-center justify-between gap-3">
+            <h1 class="font-tajawal font-bold text-lg text-slate-100 flex items-center gap-2"><i class="fa-solid fa-user-shield text-amber-300"></i> لوحة تحكم الأدمن</h1>
+            <div class="flex items-center gap-2">
+                <button onclick="adminRefreshAll()" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-rotate"></i> تحديث</button>
+                <button onclick="adminLogout()" class="chip hover:bg-red-500/10 hover:text-red-300"><i class="fa-solid fa-arrow-right-from-bracket"></i> خروج</button>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="stat-card-v2"><div class="stat-icon" style="background:rgba(138,180,248,.14); color:var(--accent-strong);"><i class="fa-solid fa-users"></i></div><p id="admin-stat-total" class="text-xl font-bold text-slate-100">-</p><p class="text-[10px] text-slate-500">إجمالي المستخدمين</p></div>
+            <div class="stat-card-v2"><div class="stat-icon" style="background:rgba(52,211,153,.14); color:#34d399;"><i class="fa-solid fa-signal"></i></div><p id="admin-stat-online" class="text-xl font-bold text-slate-100">-</p><p class="text-[10px] text-slate-500">أونلاين دلوقتي</p></div>
+            <div class="stat-card-v2"><div class="stat-icon" style="background:rgba(248,113,113,.14); color:#f87171;"><i class="fa-solid fa-ban"></i></div><p id="admin-stat-suspended" class="text-xl font-bold text-slate-100">-</p><p class="text-[10px] text-slate-500">حسابات موقوفة</p></div>
+            <div class="stat-card-v2"><div class="stat-icon" style="background:rgba(253,186,116,.14); color:#fdba74;"><i class="fa-solid fa-crown"></i></div><p id="admin-stat-topplan" class="text-[13px] font-bold text-slate-100">-</p><p class="text-[10px] text-slate-500">أكتر باقة مبيعًا</p></div>
+        </div>
+
+        <!-- Plan distribution -->
+        <div class="panel rounded-2xl p-4 sm:p-5">
+            <p class="section-eyebrow"><i class="fa-solid fa-chart-pie"></i> توزيع الباقات</p>
+            <div id="admin-plan-breakdown" class="grid grid-cols-2 sm:grid-cols-4 gap-2"></div>
+        </div>
+
+        <!-- Online users -->
+        <div class="panel rounded-2xl p-4 sm:p-5">
+            <p class="section-eyebrow"><i class="fa-solid fa-tower-broadcast"></i> أونلاين دلوقتي</p>
+            <div id="admin-online-list" class="flex flex-wrap gap-2"><span class="text-[11px] text-slate-500">لا أحد أونلاين حاليًا</span></div>
+        </div>
+
+        <!-- Users table -->
+        <div class="panel rounded-2xl p-4 sm:p-5 space-y-3">
+            <div class="flex items-center justify-between gap-2 flex-wrap">
+                <p class="section-eyebrow mb-0"><i class="fa-solid fa-table-list"></i> كل المستخدمين</p>
+                <input id="admin-user-search" type="text" placeholder="دور بالإيميل أو الاسم..." class="input-field rounded-xl px-3 py-2 text-xs w-56" oninput="adminRenderUsers()">
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-[11px] text-right border-collapse">
+                    <thead>
+                        <tr class="text-slate-500 border-b border-[var(--border)]">
+                            <th class="py-2 px-2 font-bold">المستخدم</th>
+                            <th class="py-2 px-2 font-bold">الباقة</th>
+                            <th class="py-2 px-2 font-bold">الاستخدام الشهري</th>
+                            <th class="py-2 px-2 font-bold">سقف مخصص</th>
+                            <th class="py-2 px-2 font-bold">الحالة</th>
+                            <th class="py-2 px-2 font-bold">إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-users-tbody"></tbody>
+                </table>
+            </div>
+            <p id="admin-users-empty" class="hidden text-[11px] text-slate-500 text-center py-4">لا يوجد مستخدمين مطابقين.</p>
+        </div>
+    </div>
+</div>
+
 <div class="blob-field"><div class="blob blob-a"></div><div class="blob blob-b"></div><div class="blob blob-c"></div></div>
 
 <div id="app-root" class="flex min-h-screen">
@@ -146,7 +231,7 @@
     <!-- ============ SIDEBAR ============ -->
     <aside id="sidebar" class="fixed lg:static top-0 right-0 h-full z-40 flex flex-col shrink-0">
         <div class="flex items-center gap-2.5 px-4 py-4 border-b border-[var(--border)]">
-            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-slate-400 to-slate-600 flex items-center justify-center font-extrabold text-slate-950 text-base shrink-0">يس</div>
+            <div id="brand-mark-secret" onclick="adminGateSecretTap()" class="w-9 h-9 rounded-xl bg-gradient-to-tr from-slate-400 to-slate-600 flex items-center justify-center font-extrabold text-slate-950 text-base shrink-0 select-none cursor-default">يس</div>
             <div class="sidebar-label overflow-hidden">
                 <p class="font-tajawal font-bold text-sm text-slate-100 leading-tight">يُسْر Pro</p>
                 <p class="text-[10px] text-slate-500">YUSR Platform</p>
@@ -346,11 +431,15 @@
                     </div>
 
                     <div id="chat-interface" class="hidden flex-col space-y-3">
-                        <div class="flex justify-end gap-2">
+                        <div class="flex justify-end gap-2 flex-wrap">
                             <button onclick="copyChatTranscript()" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-copy"></i> <span data-i18n="copy">نسخ المحادثة</span></button>
                             <button onclick="screenshotElement('chat-history', 'yusr-interview-chat.png')" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-camera"></i> تصوير المحادثة</button>
                             <button onclick="downloadChatTranscript()" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-download"></i> <span data-i18n="download">تنزيل</span></button>
+                            <button onclick="endInterviewSession()" class="chip bg-red-500/10 text-red-300 border-red-500/25 hover:bg-red-500/20" title="إنهاء المقابلة نهائيًا وحفظها في الأرشيف">
+                                <i class="fa-solid fa-flag-checkered"></i> إنهاء المقابلة
+                            </button>
                         </div>
+                        <p class="text-[10px] text-slate-500 -mt-1.5 text-center"><i class="fa-solid fa-circle-info"></i> إنهاء المقابلة إجراء نهائي — الجلسة دي مش هيتم استكمالها بعد كده. لو عايز لغة أو محاور مختلف، ابدأ مقابلة جديدة.</p>
                         <div id="chat-history" class="h-[320px] sm:h-[380px] overflow-y-auto space-y-3 p-3 panel-2 rounded-xl flex-1"></div>
                         <div id="ai-speaking-indicator" class="hidden flex items-center justify-between gap-2 text-[11px] text-slate-300 panel-2 py-1.5 px-2.5 rounded-lg">
                             <div class="flex items-center gap-2">
@@ -570,13 +659,17 @@
                 </div>
             </section>
 
-            <!-- ================= PROGRESS TRACKING ================= -->
+            <!-- ================= PROGRESS TRACKING / ARCHIVE ================= -->
             <section id="view-progress" class="view">
                 <div class="panel rounded-2xl p-4 sm:p-5 space-y-3">
-                    <p class="text-xs text-slate-400">بدل ما كل مقابلة تبقى منفصلة، صفحة واحدة بتجمّع كل تقارير أداءك في "مقابلة تدريبية صوتية" وتوريك تطورك بمرور الوقت.</p>
+                    <p class="text-xs text-slate-400">أرشيف مقابلاتك: بدل ما كل مقابلة تبقى منفصلة، صفحة واحدة بتجمّع كل مقابلاتك ونصوصها وتقارير أداءك من "مقابلة تدريبية صوتية" وتوريك تطورك بمرور الوقت.</p>
+                    <div class="panel-2 rounded-xl px-3 py-2.5 text-[11px] text-emerald-200/90 bg-emerald-500/[.06] border border-emerald-500/20 flex items-start gap-2">
+                        <i class="fa-solid fa-box-archive mt-0.5 text-emerald-400"></i>
+                        <span><b>أرشيف دائم مش مؤقت:</b> كل مقابلة بتتحفظ هنا بشكل دائم على جهازك (نص المحادثة كامل + تقرير الأداء)، وهتفضل موجودة حتى لو قفلت المتصفح أو رجعت تاني بعد مدة طويلة — لحد ما تمسحها إنت بنفسك بزرار "مسح السجل" تحت.</span>
+                    </div>
                     <div class="panel-2 rounded-xl px-3 py-2.5 text-[11px] text-amber-200/90 bg-amber-500/[.06] border border-amber-500/20 flex items-start gap-2">
                         <i class="fa-solid fa-triangle-exclamation mt-0.5 text-amber-400"></i>
-                        <span><b>مهم عشان الصفحة دي تتحدّث:</b> التسجيل هنا بيحصل بس لما تضغط زرار "تقييم الأداء" (<i class="fa-solid fa-chart-line text-amber-300"></i>) في نهاية كل جلسة في صفحة "مقابلة تدريبية صوتية". مجرد إنك تتكلم من غير ما تضغط تقييم، الجلسة مش هتتسجل هنا ولا هتدخل في حساب تطورك. كرر ده في كل جلسة عشان الرسم البياني والمقارنة يبقوا حقيقيين.</span>
+                        <span><b>مهم عشان الصفحة دي تتحدّث:</b> التسجيل هنا بيحصل لما تضغط زرار "إنهاء المقابلة" (<i class="fa-solid fa-flag-checkered text-amber-300"></i>) أو "تقييم الأداء" (<i class="fa-solid fa-chart-line text-amber-300"></i>) في صفحة "مقابلة تدريبية صوتية". مجرد إنك تتكلم من غير ما تعمل أي منهم، الجلسة مش هتتسجل هنا ولا هتدخل في حساب تطورك. كرر ده في كل جلسة عشان الأرشيف والرسم البياني يبقوا كاملين.</span>
                     </div>
                     <div id="progress-stats" class="grid grid-cols-3 gap-2"></div>
                     <div class="panel-2 rounded-xl p-3.5 space-y-2.5">
@@ -975,129 +1068,143 @@
                 </div>
             </section>
 
-            <!-- ================= PROFILE (LinkedIn-style) ================= -->
+            <!-- ================= PROFILE v3 (full redesign) ================= -->
             <section id="view-profile" class="view">
-                <!-- Quick links: shortcuts to the pages people usually jump to right after opening their profile -->
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-                    <button onclick="switchViewByName('cv')" class="panel-2 rounded-xl p-3 text-center lift-hover">
-                        <i class="fa-solid fa-file-lines text-sm text-slate-300"></i>
-                        <p class="text-[10.5px] text-slate-400 mt-1">السيرة الذاتية</p>
-                    </button>
-                    <button onclick="switchViewByName('portfolio')" class="panel-2 rounded-xl p-3 text-center lift-hover">
-                        <i class="fa-solid fa-briefcase text-sm text-slate-300"></i>
-                        <p class="text-[10.5px] text-slate-400 mt-1">البورتفوليو</p>
-                    </button>
-                    <button onclick="switchViewByName('progress')" class="panel-2 rounded-xl p-3 text-center lift-hover">
-                        <i class="fa-solid fa-chart-line text-sm text-slate-300"></i>
-                        <p class="text-[10.5px] text-slate-400 mt-1">متابعة التقدم</p>
-                    </button>
-                    <button onclick="switchViewByName('subscriptions')" class="panel-2 rounded-xl p-3 text-center lift-hover">
-                        <i class="fa-solid fa-gem text-sm text-slate-300"></i>
-                        <p class="text-[10.5px] text-slate-400 mt-1">الباقات</p>
-                    </button>
-                </div>
 
-                <p class="text-[11px] font-bold text-slate-500 mb-2 flex items-center gap-2"><i class="fa-solid fa-user-pen"></i> البيانات الشخصية</p>
-                <div class="panel rounded-2xl overflow-hidden">
-                    <div class="profile-cover"></div>
-                    <div class="px-4 sm:px-5 pb-5 space-y-4">
-                        <div class="flex items-end justify-between">
-                            <label for="profile-photo-input" class="profile-avatar-lg cursor-pointer flex items-center justify-center">
+                <!-- ===== HERO: cover + avatar + name/title + plan pill + quick actions ===== -->
+                <div class="profile-hero rounded-2xl overflow-hidden">
+                    <div class="relative p-4 sm:p-6 pb-5">
+                        <div class="flex flex-col sm:flex-row sm:items-end gap-4">
+                            <label for="profile-photo-input" class="profile-avatar-xl cursor-pointer">
                                 <img id="profile-photo-preview" class="hidden w-full h-full object-cover" alt="صورة الملف الشخصي" />
-                                <i id="profile-photo-icon" class="fa-solid fa-camera text-slate-500"></i>
+                                <i id="profile-photo-icon" class="fa-solid fa-camera text-slate-500 text-xl"></i>
+                                <div class="avatar-edit-hint"><i class="fa-solid fa-pen"></i>&nbsp;تغيير</div>
                             </label>
                             <input type="file" id="profile-photo-input" accept="image/*" class="hidden" onchange="handleProfilePhotoUpload(event)">
-                            <div class="mb-1">
-                                <span id="profile-points" class="points-badge text-[11px] px-3 py-1.5 rounded-full flex items-center gap-1.5"><i class="fa-solid fa-star"></i> <span id="profile-points-count">0</span> <span data-i18n="profile.points">نقطة</span></span>
-                            </div>
-                        </div>
-                        <div>
-                            <input type="text" id="profile-name" data-i18n-ph="profile.namePh" placeholder="اسمك الكامل" class="input-field rounded-xl px-3.5 py-2 text-sm font-bold w-full sm:w-72">
-                            <input type="text" id="profile-title" data-i18n-ph="profile.titlePh" placeholder="المسمى الوظيفي (مثلاً: مطوّر واجهات أمامية)" class="input-field rounded-xl px-3.5 py-2 text-xs w-full sm:w-72 mt-2">
-                        </div>
 
-                        <div id="google-signin-area" class="panel-2 rounded-xl p-3 flex items-center gap-3">
-                            <div id="g_id_signin_container"></div>
-                            <button onclick="mockGoogleSignIn()" class="g-signin-btn flex items-center gap-2">
-                                <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
-                                <span data-i18n="profile.googleBtn">تسجيل الدخول بحساب جوجل</span>
-                            </button>
-                            <p class="text-[10.5px] text-slate-500 flex-1" data-i18n="profile.googleHint">تسجيل الدخول بيحفظ اسمك وصورتك ونقاطك على نفس الجهاز — المحاولات المجانية بتُحسب على الجهاز/المتصفح مش على الحساب.</p>
-                        </div>
-
-                        <div id="google-signedin-area" class="hidden panel-2 rounded-xl p-3 flex items-center gap-3">
-                            <div class="signedin-avatar">
-                                <img id="signedin-avatar-img" class="hidden" alt="صورة الحساب" />
-                                <i id="signedin-avatar-icon" class="fa-solid fa-user text-slate-500"></i>
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-center gap-2 flex-wrap">
-                                    <p id="signedin-name" class="text-xs font-bold text-slate-100 truncate">-</p>
-                                    <span class="signedin-badge"><span class="dot"></span><span data-i18n="profile.connected">متصل بجوجل</span></span>
+                            <div class="flex-1 min-w-0 space-y-2">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span id="profile-points" class="points-badge text-[11px] px-3 py-1.5 rounded-full flex items-center gap-1.5"><i class="fa-solid fa-star"></i> <span id="profile-points-count">0</span> <span data-i18n="profile.points">نقطة</span></span>
+                                    <span class="plan-pill"><i class="fa-solid fa-gem"></i> <span id="profile-stat-plan" data-i18n="profile.planFree">مجاني</span></span>
                                 </div>
-                                <p id="signedin-email" class="text-[10.5px] text-slate-500 truncate">-</p>
+                                <input type="text" id="profile-name" data-i18n-ph="profile.namePh" placeholder="اسمك الكامل" class="input-field rounded-xl px-3.5 py-2 text-base font-extrabold w-full sm:max-w-sm">
+                                <input type="text" id="profile-title" data-i18n-ph="profile.titlePh" placeholder="المسمى الوظيفي (مثلاً: مطوّر واجهات أمامية)" class="input-field rounded-xl px-3.5 py-2 text-xs w-full sm:max-w-sm">
                             </div>
-                            <button onclick="logoutAccount()" class="g-logout-btn flex items-center gap-2 shrink-0">
-                                <i class="fa-solid fa-arrow-right-from-bracket"></i>
-                                <span data-i18n="profile.logoutBtn">تسجيل الخروج</span>
+
+                            <button onclick="saveProfileInfo()" class="btn-accent acc-profile font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 shrink-0 self-start sm:self-end">
+                                <i class="fa-solid fa-floppy-disk"></i> <span data-i18n="profile.save">حفظ البيانات</span>
                             </button>
                         </div>
 
-                        <button onclick="saveProfileInfo()" class="btn-accent acc-profile font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2">
-                            <i class="fa-solid fa-floppy-disk"></i> <span data-i18n="profile.save">حفظ البيانات</span>
-                        </button>
-
-                        <div class="grid grid-cols-3 gap-3 pt-2 border-t border-[var(--border)]">
-                            <div class="panel-2 rounded-xl p-3 text-center">
-                                <p id="profile-stat-usage" class="text-lg font-bold text-slate-100">0</p>
-                                <p class="text-[10px] text-slate-500" data-i18n="profile.statUsage">مرات استخدام الأدوات</p>
-                            </div>
-                            <div class="panel-2 rounded-xl p-3 text-center">
-                                <p id="profile-stat-device" class="text-[11px] font-bold text-slate-100 truncate">-</p>
-                                <p class="text-[10px] text-slate-500" data-i18n="profile.statDevice">معرّف الجهاز</p>
-                            </div>
-                            <div class="panel-2 rounded-xl p-3 text-center">
-                                <p id="profile-stat-plan" class="text-[11px] font-bold text-slate-100" data-i18n="profile.planFree">مجاني</p>
-                                <p class="text-[10px] text-slate-500" data-i18n="profile.statPlan">باقتك الحالية</p>
-                            </div>
+                        <!-- Quick shortcuts -->
+                        <div class="flex items-center gap-2 overflow-x-auto pt-4 mt-4 border-t border-[var(--border)] no-scrollbar">
+                            <button onclick="switchViewByName('cv')" class="quick-pill"><i class="fa-solid fa-file-lines"></i> السيرة الذاتية</button>
+                            <button onclick="switchViewByName('portfolio')" class="quick-pill"><i class="fa-solid fa-briefcase"></i> البورتفوليو</button>
+                            <button onclick="switchViewByName('progress')" class="quick-pill"><i class="fa-solid fa-chart-line"></i> متابعة التقدم</button>
+                            <button onclick="switchViewByName('subscriptions')" class="quick-pill"><i class="fa-solid fa-gem"></i> الباقات</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Account overview: subscriptions, purchases, totals -->
-                <div class="panel rounded-2xl p-4 sm:p-5 space-y-4 mt-4" id="profile-account-panel">
-                    <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2"><i class="fa-solid fa-wallet"></i> نظرة عامة على حسابك</h3>
-
-                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        <div class="panel-2 rounded-xl p-3.5 text-center">
-                            <p id="profile-current-plan" class="text-sm font-bold text-slate-100">مجاني</p>
-                            <p class="text-[10px] text-slate-500 mt-0.5">باقتك الحالية</p>
-                        </div>
-                        <div class="panel-2 rounded-xl p-3.5 text-center">
-                            <p id="profile-total-count" class="text-sm font-bold text-slate-100">0</p>
-                            <p class="text-[10px] text-slate-500 mt-0.5">عدد الاشتراكات/المشتريات</p>
-                        </div>
-                        <div class="panel-2 rounded-xl p-3.5 text-center col-span-2 sm:col-span-1 border border-amber-500/25">
-                            <p id="profile-total-spent" class="text-sm font-bold text-amber-300">0 ج.م</p>
-                            <p class="text-[10px] text-slate-500 mt-0.5">إجمالي المدفوع على حسابك</p>
-                        </div>
+                <!-- ===== Stat cards row ===== -->
+                <div class="grid grid-cols-3 gap-3 mt-4">
+                    <div class="stat-card-v2">
+                        <div class="stat-icon" style="background:rgba(138,180,248,.14); color:var(--accent-strong);"><i class="fa-solid fa-bolt"></i></div>
+                        <p id="profile-stat-usage" class="text-lg font-bold text-slate-100">0</p>
+                        <p class="text-[10px] text-slate-500" data-i18n="profile.statUsage">مرات استخدام الأدوات</p>
                     </div>
-
-                    <div class="space-y-2">
-                        <div class="flex items-center justify-between">
-                            <p class="text-xs font-bold text-slate-300 flex items-center gap-2"><i class="fa-solid fa-gem"></i> الاشتراكات والمشتريات</p>
-                            <button onclick="openPricingModal()" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-plus"></i> اشترك في باقة</button>
-                        </div>
-                        <div id="profile-purchases-list" class="space-y-2"></div>
+                    <div class="stat-card-v2">
+                        <div class="stat-icon" style="background:rgba(94,234,212,.14); color:#5eead4;"><i class="fa-solid fa-mobile-screen"></i></div>
+                        <p id="profile-stat-device" class="text-[11px] font-bold text-slate-100 truncate">-</p>
+                        <p class="text-[10px] text-slate-500" data-i18n="profile.statDevice">معرّف الجهاز</p>
+                    </div>
+                    <div class="stat-card-v2">
+                        <div class="stat-icon" style="background:rgba(253,186,116,.14); color:#fdba74;"><i class="fa-solid fa-shield-halved"></i></div>
+                        <p id="profile-stat-privacy" class="text-[11px] font-bold text-slate-100">آمن</p>
+                        <p class="text-[10px] text-slate-500">حالة حسابك</p>
                     </div>
                 </div>
 
-                <!-- Privacy & local data controls -->
-                <div class="panel rounded-2xl p-4 sm:p-5 space-y-3 mt-4" id="profile-privacy-panel">
-                    <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2"><i class="fa-solid fa-shield-halved"></i> الخصوصية وبياناتك</h3>
-                    <p class="text-[11px] text-slate-500 leading-relaxed">بيانات الملف الشخصي وسجل التدريب وسجل الاستخدام متخزنة على جهازك (المتصفح) بشكل أساسي، ولو سجّلت دخول بجوجل بتتزامن نسخة منها مع حسابك عشان تلاقيها من أي جهاز. صور الـ CV وملفات الصوت/الفيديو بتتبعت للمعالجة وقت الاستخدام بس ومش بتتخزن دائم على السيرفر.</p>
-                    <div class="flex flex-wrap gap-2">
-                        <button onclick="clearLocalAppData()" class="chip hover:bg-red-500/10 hover:text-red-300"><i class="fa-solid fa-trash-can"></i> امسح كل بياناتي المحفوظة على الجهاز ده</button>
+                <div class="grid lg:grid-cols-3 gap-4 mt-4 items-start">
+                    <!-- ===== Main column ===== -->
+                    <div class="lg:col-span-2 space-y-4">
+                        <!-- Google account -->
+                        <div class="panel rounded-2xl p-4 sm:p-5">
+                            <p class="section-eyebrow"><i class="fa-solid fa-user-shield"></i> حساب الدخول</p>
+                            <div id="google-signin-area" class="panel-2 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                                <div id="g_id_signin_container"></div>
+                                <button onclick="mockGoogleSignIn()" class="g-signin-btn flex items-center gap-2">
+                                    <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
+                                    <span data-i18n="profile.googleBtn">تسجيل الدخول بحساب جوجل</span>
+                                </button>
+                                <p class="text-[10.5px] text-slate-500 flex-1" data-i18n="profile.googleHint">تسجيل الدخول بيحفظ اسمك وصورتك ونقاطك على نفس الجهاز — المحاولات المجانية بتُحسب على الجهاز/المتصفح مش على الحساب.</p>
+                            </div>
+
+                            <div id="google-signedin-area" class="hidden panel-2 rounded-xl p-3 flex items-center gap-3">
+                                <div class="signedin-avatar">
+                                    <img id="signedin-avatar-img" class="hidden" alt="صورة الحساب" />
+                                    <i id="signedin-avatar-icon" class="fa-solid fa-user text-slate-500"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 flex-wrap">
+                                        <p id="signedin-name" class="text-xs font-bold text-slate-100 truncate">-</p>
+                                        <span class="signedin-badge"><span class="dot"></span><span data-i18n="profile.connected">متصل بجوجل</span></span>
+                                    </div>
+                                    <p id="signedin-email" class="text-[10.5px] text-slate-500 truncate">-</p>
+                                </div>
+                                <button onclick="logoutAccount()" class="g-logout-btn flex items-center gap-2 shrink-0">
+                                    <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                                    <span data-i18n="profile.logoutBtn">تسجيل الخروج</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Account overview: subscriptions, purchases, totals -->
+                        <div class="panel rounded-2xl p-4 sm:p-5 space-y-4" id="profile-account-panel">
+                            <p class="section-eyebrow"><i class="fa-solid fa-wallet"></i> نظرة عامة على حسابك</p>
+
+                            <div class="grid grid-cols-2 gap-3">
+                                <div class="purchase-row justify-center flex-col text-center gap-1 py-3">
+                                    <p id="profile-current-plan" class="text-sm font-bold text-slate-100">مجاني</p>
+                                    <p class="text-[10px] text-slate-500">باقتك الحالية</p>
+                                </div>
+                                <div class="purchase-row justify-center flex-col text-center gap-1 py-3">
+                                    <p id="profile-total-count" class="text-sm font-bold text-slate-100">0</p>
+                                    <p class="text-[10px] text-slate-500">عدد الاشتراكات/المشتريات</p>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <p class="text-xs font-bold text-slate-300 flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left"></i> سجل الاشتراكات والمشتريات</p>
+                                    <button onclick="openPricingModal()" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-plus"></i> اشترك في باقة</button>
+                                </div>
+                                <div id="profile-purchases-list" class="space-y-2"></div>
+                            </div>
+                        </div>
+
+                        <!-- Privacy & local data controls -->
+                        <div class="panel rounded-2xl p-4 sm:p-5 space-y-3" id="profile-privacy-panel">
+                            <p class="section-eyebrow"><i class="fa-solid fa-lock"></i> الخصوصية وبياناتك</p>
+                            <p class="text-[11px] text-slate-500 leading-relaxed">بيانات الملف الشخصي وسجل التدريب وسجل الاستخدام متخزنة على جهازك (المتصفح) بشكل أساسي، ولو سجّلت دخول بجوجل بتتزامن نسخة منها مع حسابك عشان تلاقيها من أي جهاز. صور الـ CV وملفات الصوت/الفيديو بتتبعت للمعالجة وقت الاستخدام بس ومش بتتخزن دائم على السيرفر.</p>
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="clearLocalAppData()" class="chip hover:bg-red-500/10 hover:text-red-300"><i class="fa-solid fa-trash-can"></i> امسح كل بياناتي المحفوظة على الجهاز ده</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== Side column: membership card ===== -->
+                    <div class="space-y-4">
+                        <div class="membership-card">
+                            <p class="text-[11px] font-bold text-violet-300 flex items-center gap-1.5 relative"><i class="fa-solid fa-crown"></i> عضويتك</p>
+                            <p id="profile-total-spent" class="text-2xl font-extrabold text-white mt-2 relative">0 ج.م</p>
+                            <p class="text-[10.5px] text-slate-400 relative">إجمالي المدفوع على حسابك</p>
+                            <button onclick="switchViewByName('subscriptions')" class="btn-primary w-full text-xs font-bold py-2.5 rounded-xl mt-4 relative">ترقية الباقة</button>
+                        </div>
+                        <div class="panel rounded-2xl p-4 space-y-2.5">
+                            <p class="section-eyebrow"><i class="fa-solid fa-lightbulb"></i> نصايح سريعة</p>
+                            <p class="text-[11px] text-slate-400 leading-relaxed">كمّل بياناتك وصورتك عشان يبقى شكل الـ CV والبورتفوليو بتوعك أحسن، وتقدر تتابع تقدمك بدقة من صفحة "متابعة التقدم".</p>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -1547,7 +1654,7 @@
     </div>
 </div>
 
-<script src="app.js?v=1"></script>
+<script src="app.js?v=2"></script>
 <script>
     // ============ تسجيل Service Worker (يخلي الموقع نفسه يفتح أوفلاين) ============
     if ('serviceWorker' in navigator) {
@@ -1571,6 +1678,245 @@
             showToast('النت رجع تاني، تقدر تكمل عادي.', 'success');
         }
     });
+</script>
+
+<!-- ============================================================
+     ADMIN PANEL — مستقل تمامًا عن app.js، بيكلم الووركر بتاعك مباشرة
+     عن طريق نفس الـ endpoints الجاهزة فيه (/adminLogin, /adminConfirm...)
+
+     مطلوب منك حاجة واحدة بس: حط رابط الـ Worker بتاعك تحت مكان
+     "ضع رابط الووركر هنا". من غيره لوحة الأدمن مش هتقدر تكلم السيرفر.
+     ============================================================ -->
+<script>
+(function () {
+    // ⚠️ ضع رابط الـ Cloudflare Worker بتاعك هنا (نفس اللي app.js بيكلمه فعليًا)
+    // مثال: "https://yusr-worker.your-subdomain.workers.dev"
+    const ADMIN_API_BASE = "https://yusr-worker.yassen-yasser29311.workers.dev/";
+
+    const PLAN_NAMES = ["مجاني", "الأساسية", "الاحترافية", "السنوية"];
+    let adminToken = sessionStorage.getItem("yusr_admin_token") || null;
+    let adminUsersCache = [];
+    let secretTapCount = 0;
+    let secretTapTimer = null;
+
+    function adminToast(msg, type) {
+        if (typeof showToast === "function") showToast(msg, type || "info");
+        else alert(msg);
+    }
+
+    async function adminFetch(path, options) {
+        options = options || {};
+        const headers = Object.assign({ "Content-Type": "application/json" }, options.headers || {});
+        if (adminToken) headers["X-Admin-Token"] = adminToken;
+        const res = await fetch(ADMIN_API_BASE + path, Object.assign({}, options, { headers }));
+        let data = {};
+        try { data = await res.json(); } catch (e) {}
+        if (!res.ok) throw Object.assign(new Error(data.error || "request_failed"), { data, status: res.status });
+        return data;
+    }
+
+    // ---- Secret entry point: اضغط شعار "يس" أعلى القائمة الجانبية 5 مرات ----
+    window.adminGateSecretTap = function () {
+        secretTapCount++;
+        clearTimeout(secretTapTimer);
+        secretTapTimer = setTimeout(() => { secretTapCount = 0; }, 2500);
+        if (secretTapCount >= 5) {
+            secretTapCount = 0;
+            document.getElementById("admin-gate-step1").classList.remove("hidden");
+            document.getElementById("admin-gate-step2").classList.add("hidden");
+            document.getElementById("admin-gate-status").classList.add("hidden");
+            document.getElementById("admin-gate-username").value = "";
+            document.getElementById("admin-gate-password").value = "";
+            document.getElementById("admin-gate-modal").classList.remove("hidden");
+        }
+    };
+
+    window.adminGateClose = function () {
+        document.getElementById("admin-gate-modal").classList.add("hidden");
+    };
+
+    function adminGateSetStatus(msg, isError) {
+        const el = document.getElementById("admin-gate-status");
+        el.textContent = msg;
+        el.className = "text-[11px] text-center " + (isError ? "text-red-400" : "text-emerald-400");
+        el.classList.remove("hidden");
+    }
+
+    let pendingConfirmToken = null;
+
+    window.adminGateSubmitLogin = async function () {
+        if (ADMIN_API_BASE.indexOf("http") !== 0) {
+            adminGateSetStatus("لازم تحط رابط الـ Worker جوه الكود الأول.", true);
+            return;
+        }
+        const username = document.getElementById("admin-gate-username").value.trim();
+        const password = document.getElementById("admin-gate-password").value;
+        const btn = document.getElementById("admin-gate-login-btn");
+        btn.disabled = true;
+        try {
+            const data = await adminFetch("/adminLogin", { method: "POST", body: JSON.stringify({ username, password }) });
+            if (data.needsConfirmation && data.confirmToken) {
+                pendingConfirmToken = data.confirmToken;
+                document.getElementById("admin-gate-step1").classList.add("hidden");
+                document.getElementById("admin-gate-step2").classList.remove("hidden");
+                document.getElementById("admin-gate-status").classList.add("hidden");
+                document.getElementById("admin-gate-code").value = "";
+                document.getElementById("admin-gate-code").focus();
+            }
+        } catch (e) {
+            adminGateSetStatus("بيانات غير صحيحة.", true);
+        } finally {
+            btn.disabled = false;
+        }
+    };
+
+    window.adminGateSubmitConfirm = async function () {
+        const code = document.getElementById("admin-gate-code").value.trim();
+        const btn = document.getElementById("admin-gate-confirm-btn");
+        btn.disabled = true;
+        try {
+            const data = await adminFetch("/adminConfirm", { method: "POST", body: JSON.stringify({ confirmToken: pendingConfirmToken, code }) });
+            if (data.adminToken) {
+                adminToken = data.adminToken;
+                sessionStorage.setItem("yusr_admin_token", adminToken);
+                document.getElementById("admin-gate-modal").classList.add("hidden");
+                document.getElementById("admin-dashboard").classList.remove("hidden");
+                adminRefreshAll();
+            }
+        } catch (e) {
+            adminGateSetStatus("كود غير صحيح أو انتهت صلاحيته.", true);
+        } finally {
+            btn.disabled = false;
+        }
+    };
+
+    window.adminLogout = function () {
+        adminToken = null;
+        sessionStorage.removeItem("yusr_admin_token");
+        document.getElementById("admin-dashboard").classList.add("hidden");
+    };
+
+    // ---- لو فيه جلسة أدمن سابقة صالحة في نفس التبويب، رجّعها تلقائي ----
+    async function adminTryRestoreSession() {
+        if (!adminToken || ADMIN_API_BASE.indexOf("http") !== 0) return;
+        try {
+            await adminFetch("/adminMe");
+            document.getElementById("admin-dashboard").classList.remove("hidden");
+            adminRefreshAll();
+        } catch (e) {
+            adminToken = null;
+            sessionStorage.removeItem("yusr_admin_token");
+        }
+    }
+    adminTryRestoreSession();
+
+    // ---- تحميل الإحصائيات + قائمة المستخدمين ----
+    window.adminRefreshAll = async function () {
+        try {
+            const [stats, list] = await Promise.all([
+                adminFetch("/adminStats"),
+                adminFetch("/adminListUsers")
+            ]);
+            renderAdminStats(stats);
+            adminUsersCache = list.users || [];
+            adminRenderUsers();
+        } catch (e) {
+            adminToast("تعذر تحميل بيانات لوحة التحكم.", "error");
+        }
+    };
+
+    function renderAdminStats(stats) {
+        document.getElementById("admin-stat-total").textContent = stats.totalUsers ?? "-";
+        document.getElementById("admin-stat-online").textContent = stats.onlineCount ?? "-";
+        document.getElementById("admin-stat-suspended").textContent = stats.suspendedCount ?? "-";
+
+        const planCounts = stats.planCounts || {};
+        let topPlan = "-", topCount = -1;
+        const breakdown = document.getElementById("admin-plan-breakdown");
+        breakdown.innerHTML = "";
+        PLAN_NAMES.forEach((p) => {
+            const c = planCounts[p] || 0;
+            if (c > topCount) { topCount = c; topPlan = p; }
+            const div = document.createElement("div");
+            div.className = "admin-plan-chip";
+            div.innerHTML = `<p class="text-sm font-bold text-slate-100">${c}</p><p class="text-[10px] text-slate-500 mt-0.5">${p}</p>`;
+            breakdown.appendChild(div);
+        });
+        document.getElementById("admin-stat-topplan").textContent = topCount > 0 ? topPlan : "-";
+
+        const onlineList = document.getElementById("admin-online-list");
+        const online = stats.onlineUsers || [];
+        if (!online.length) {
+            onlineList.innerHTML = '<span class="text-[11px] text-slate-500">لا أحد أونلاين حاليًا</span>';
+        } else {
+            onlineList.innerHTML = online.map(u =>
+                `<span class="admin-badge admin-badge-online"><span class="dot"></span>${escapeHtml(u.displayName || u.email || u.uid)}</span>`
+            ).join("");
+        }
+    }
+
+    function escapeHtml(s) {
+        return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+
+    window.adminRenderUsers = function () {
+        const q = (document.getElementById("admin-user-search").value || "").trim().toLowerCase();
+        const tbody = document.getElementById("admin-users-tbody");
+        const empty = document.getElementById("admin-users-empty");
+        const filtered = adminUsersCache.filter(u => {
+            if (!q) return true;
+            return (u.email || "").toLowerCase().includes(q) || (u.displayName || "").toLowerCase().includes(q) || u.uid.toLowerCase().includes(q);
+        });
+        tbody.innerHTML = "";
+        empty.classList.toggle("hidden", filtered.length > 0);
+
+        filtered.forEach(u => {
+            const tr = document.createElement("tr");
+            const planOptions = PLAN_NAMES.map(p => `<option value="${p}" ${p === u.plan ? "selected" : ""}>${p}</option>`).join("");
+            tr.innerHTML = `
+                <td>
+                    <p class="font-bold text-slate-200">${escapeHtml(u.displayName || "بدون اسم")}</p>
+                    <p class="text-slate-500 text-[10px]">${escapeHtml(u.email || u.uid)}</p>
+                </td>
+                <td><select class="admin-mini-input" style="width:auto" onchange="adminUserAction('${u.uid}','setPlan',this.value)">${planOptions}</select></td>
+                <td class="text-center">${u.usageThisMonth ?? 0}</td>
+                <td><input type="number" min="0" class="admin-mini-input" placeholder="افتراضي" value="${u.customLimit ?? ""}" onchange="adminUserAction('${u.uid}','setCustomLimit', this.value === '' ? null : this.value)"></td>
+                <td>
+                    ${u.suspended ? '<span class="admin-badge admin-badge-suspended">موقوف</span>' : (u.online ? '<span class="admin-badge admin-badge-online"><span class="dot"></span>أونلاين</span>' : '<span class="admin-badge admin-badge-offline">غير متصل</span>')}
+                </td>
+                <td>
+                    <div class="flex flex-wrap gap-1">
+                        ${u.suspended
+                            ? `<button class="admin-mini-btn" onclick="adminUserAction('${u.uid}','activate')">تفعيل</button>`
+                            : `<button class="admin-mini-btn" onclick="adminUserAction('${u.uid}','suspend')">إيقاف</button>`
+                        }
+                        <button class="admin-mini-btn" onclick="adminUserAction('${u.uid}','resetUsage')">تصفير الاستخدام</button>
+                        ${u.email ? `<button class="admin-mini-btn" onclick="adminSendPasswordReset('${u.uid}', '${u.email}')">إرسال رابط استعادة الباسورد</button>` : ""}
+                    </div>
+                </td>`;
+            tbody.appendChild(tr);
+        });
+    };
+
+    window.adminUserAction = async function (uid, action, value) {
+        try {
+            await adminFetch("/adminUserAction", { method: "POST", body: JSON.stringify({ uid, action, value }) });
+            adminToast("تم بنجاح.", "success");
+            adminRefreshAll();
+        } catch (e) {
+            adminToast("الإجراء فشل.", "error");
+        }
+    };
+
+    window.adminSendPasswordReset = async function (uid, email) {
+        try {
+            await adminFetch("/adminSendPasswordReset", { method: "POST", body: JSON.stringify({ email }) });
+            adminToast("اتبعت رابط استعادة الباسورد على " + email, "success");
+        } catch (e) {
+            adminToast("تعذر إرسال الرابط.", "error");
+        }
+    };
+})();
 </script>
 </body>
 </html>

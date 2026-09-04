@@ -18,15 +18,16 @@
 // مرة تنشر فيها تحديث حقيقي على الكود.
 // ================================================================
 
-const CACHE_VERSION = "v2";
+const CACHE_VERSION = "v3";
 const CACHE_NAME = `yusr-pro-shell-${CACHE_VERSION}`;
 
 // ملفات "هيكل" الموقع بتاعتك (نفس الدومين) — لو غيّرت اسم أو رقم نسخة
 // أي ملف من دول حدّث القائمة دي.
+// ⚠️ لازم رقم النسخة هنا يطابق بالظبط رقم النسخة في وسم <script src="app.js?v=..."> جوه index.html.
 const SAME_ORIGIN_FILES = [
   "/",
   "/index.html",
-  "/app.js?v=1",
+  "/app.js?v=2",
   "/styles.css?v=1",
 ];
 
