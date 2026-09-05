@@ -1620,7 +1620,23 @@
         } catch (e) { console.warn('تعذر قراءة بيانات جوجل', e); showToast('تعذّر تسجيل الدخول بجوجل، جرب تاني.', 'error'); }
     }
     function handleGoogleTokenResponse(tokenResponse) {
-        if (!tokenResponse || !tokenResponse.access_token) return;
+        // قبل كده: لو جوجل قفل النافذة من غير ما يرجّع access_token صحيح (حصل رفض
+        // للطلب، أو الحساب مش من الحسابات المسموح لها لو الـ OAuth consent screen
+        // لسه في وضع "Testing" في Google Cloud Console، أو الدومين مش authorized) -
+        // كان الكود بيرجع (return) بصمت تام من غير أي رسالة، فبيبان للمستخدم إن
+        // النافذة "فتحت واختار الحساب وقفلت ومحصلش حاجة" بالظبط زي ما وصفت.
+        // دلوقتي بنوري رسالة واضحة فيها سبب الفشل الحقيقي من جوجل نفسه.
+        if (!tokenResponse || !tokenResponse.access_token) {
+            const errCode = tokenResponse && (tokenResponse.error || tokenResponse.type);
+            console.warn('جوجل رجع من غير توكن صحيح', tokenResponse);
+            const msgMap = {
+                'access_denied': 'تم رفض الدخول من جوجل - إما إنك لغيت الموافقة، أو الحساب ده مش من الحسابات المسموح بيها على تطبيق جوجل لسه (لو الـ OAuth consent screen في وضع Testing لازم تضيف الإيميل في قايمة test users في Google Cloud Console).',
+                'popup_closed': 'اتقفلت نافذة جوجل قبل ما تكمل تسجيل الدخول.',
+                'popup_failed_to_open': 'المتصفح منع فتح نافذة جوجل (popup blocker). سيبّه يفتح النوافذ المنبثقة لهذا الموقع وجرب تاني.'
+            };
+            showToast(msgMap[errCode] || ('تعذّر تسجيل الدخول بجوجل' + (errCode ? (' (' + errCode + ')') : '') + '، جرب تاني.'), 'error');
+            return;
+        }
         fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
             headers: { Authorization: 'Bearer ' + tokenResponse.access_token }
         })
@@ -1650,7 +1666,14 @@
                 googleTokenClient = window.google.accounts.oauth2.initTokenClient({
                     client_id: GOOGLE_CLIENT_ID,
                     scope: 'openid email profile',
-                    callback: handleGoogleTokenResponse
+                    callback: handleGoogleTokenResponse,
+                    error_callback: function (err) {
+                        // جوجل بينادي على الدالة دي بس (مش الـ callback العادي) لما
+                        // النافذة تتقفل من غير ما توافق، أو المتصفح يمنع فتحها، أو
+                        // فيه مشكلة إعداد - وده اللي كان بيخلي الموقع يفضل ساكت تمامًا.
+                        console.warn('جوجل رجع خطأ في نافذة تسجيل الدخول', err);
+                        handleGoogleTokenResponse({ error: err && err.type });
+                    }
                 });
             }
             window.google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleGoogleCredential });
