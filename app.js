@@ -1419,14 +1419,21 @@
         p = p || getProfile();
         const signedOutArea = document.getElementById('google-signin-area');
         const signedInArea = document.getElementById('google-signedin-area');
-        if (p.google) {
+        // التسجيل بقى إجباري، يعني أي حد واصل للصفحة دي أصلاً هو مسجّل دخول فعلاً
+        // (بجوجل أو بإيميل وباسورد) - فلازم يبان له زرار "تسجيل خروج" في الحالتين،
+        // مش بس لما يكون داخل بجوجل تحديدًا. قبل كده المستخدمين اللي داخلين بإيميل
+        // وباسورد ما كانش بيظهرلهم أي زرار خروج خالص.
+        const authedUser = fbAuth.currentUser && !fbAuth.currentUser.isAnonymous ? fbAuth.currentUser : null;
+        if (p.google || authedUser) {
             signedOutArea.classList.add('hidden');
             signedInArea.classList.remove('hidden');
-            document.getElementById('signedin-name').textContent = p.google.name || p.name || '-';
-            document.getElementById('signedin-email').textContent = p.google.email || '';
+            const name = (p.google && p.google.name) || p.name || (authedUser && authedUser.email) || '-';
+            const email = (p.google && p.google.email) || (authedUser && authedUser.email) || '';
+            document.getElementById('signedin-name').textContent = name;
+            document.getElementById('signedin-email').textContent = email;
             const img = document.getElementById('signedin-avatar-img');
             const icon = document.getElementById('signedin-avatar-icon');
-            if (p.google.picture) {
+            if (p.google && p.google.picture) {
                 img.src = p.google.picture;
                 img.classList.remove('hidden');
                 icon.classList.add('hidden');
@@ -1453,7 +1460,7 @@
         showToast('لو الإيميل ده متسجل عندنا، وصلك رابط لتغيير كلمة المرور.', 'success');
     }
     function logoutAccount() {
-        const sure = confirm(currentUiLang === 'en' ? 'Log out of your Google account on this device?' : 'تسجيل الخروج من حساب جوجل على الجهاز ده؟');
+        const sure = confirm(currentUiLang === 'en' ? 'Log out of your account on this device?' : 'تسجيل الخروج من حسابك على الجهاز ده؟');
         if (!sure) return;
         const p = getProfile();
         p.google = null;
@@ -1464,6 +1471,9 @@
             }
         } catch (e) {}
         googleTokenClient = null;
+        // fbAuth.signOut() بيشغّل onAuthStateChanged تلقائيًا، وده اللي بيرجّع
+        // المستخدم فورًا لشاشة تسجيل الدخول الإجبارية (showAuthGate) - مفيش
+        // داعي نستدعيها هنا يدويًا عشان منعملش استدعاء مزدوج.
         fbAuth.signOut().catch(() => {});
         refreshProfileView();
         showToast(currentUiLang === 'en' ? 'Logged out. You can sign in again anytime.' : 'تم تسجيل الخروج. تقدر تسجل دخول تاني في أي وقت.');
@@ -1574,40 +1584,63 @@
     // regardless of sign-in (see getDeviceId/checkDeviceTrial above), by design.
     const GOOGLE_CLIENT_ID = "1088995951323-c6aeisqni683ishtav76e33vcbjdve7c.apps.googleusercontent.com";
     let googleTokenClient = null;
+    function googleSignInErrorMessage(e) {
+        const code = e && e.code;
+        const map = {
+            'auth/account-exists-with-different-credential': 'الإيميل ده متسجل بالفعل بطريقة تانية (إيميل وباسورد). سجّل دخولك بالإيميل والباسورد بدل جوجل.',
+            'auth/network-request-failed': 'مشكلة في الاتصال بالإنترنت أثناء تسجيل الدخول بجوجل، جرب تاني.',
+            'auth/popup-closed-by-user': 'اتقفلت نافذة تسجيل الدخول بجوجل قبل ما تكمل.',
+            'auth/invalid-credential': 'تعذّر التحقق من حساب جوجل، جرب تاني.'
+        };
+        return (code && map[code]) || 'تعذّر تسجيل الدخول بجوجل، جرب تاني.';
+    }
+    // ملحوظة مهمة: قبل كده كنا بنحفظ بيانات جوجل محليًا (p.google) ونحدّث الواجهة
+    // إنه "متصل بجوجل" *قبل* ما نتأكد إن تسجيل الدخول الحقيقي على فايربيز نجح -
+    // فلو fbAuth.signInWithCredential فشل (مشكلة شبكة، أو الحساب متسجل قبل كده
+    // بطريقة تانية...) كانت الواجهة بتوهم المستخدم إنه "سجّل دخول" فعلاً وهو
+    // في الحقيقة لسه مسجّلش، والخطأ كان بيروح للـ console بس من غير ما حد يشوفه.
+    // دلوقتي: مبنحدّثش أي حاجة محليًا إلا بعد ما فايربيز يأكّد إن الدخول نجح فعلاً،
+    // ولو فشل بنوريه رسالة واضحة (toast) بدل ما نسكت.
     function handleGoogleCredential(response) {
         try {
             const payload = JSON.parse(decodeURIComponent(escape(atob(response.credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')))));
-            const p = getProfile();
-            p.google = { email: payload.email, picture: payload.picture, name: payload.name };
-            if (!p.name) p.name = payload.name;
-            if (!p.photo) p.photo = payload.picture;
-            saveProfile(p);
-            refreshProfileView();
             const cred = firebase.auth.GoogleAuthProvider.credential(response.credential);
             fbAuth.signInWithCredential(cred)
-                .then(result => { syncProfileToCloud(getProfile()); loadProfileFromCloud(result.user.uid); })
-                .catch(e => console.warn('تعذر تسجيل الدخول على الخادم', e));
-        } catch (e) { console.warn('تعذر قراءة بيانات جوجل', e); }
+                .then(result => {
+                    const p = getProfile();
+                    p.google = { email: payload.email, picture: payload.picture, name: payload.name };
+                    if (!p.name) p.name = payload.name;
+                    if (!p.photo) p.photo = payload.picture;
+                    saveProfile(p);
+                    refreshProfileView();
+                    syncProfileToCloud(getProfile());
+                    loadProfileFromCloud(result.user.uid);
+                })
+                .catch(e => { console.warn('تعذر تسجيل الدخول على الخادم', e); showToast(googleSignInErrorMessage(e), 'error'); });
+        } catch (e) { console.warn('تعذر قراءة بيانات جوجل', e); showToast('تعذّر تسجيل الدخول بجوجل، جرب تاني.', 'error'); }
     }
     function handleGoogleTokenResponse(tokenResponse) {
         if (!tokenResponse || !tokenResponse.access_token) return;
         fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
             headers: { Authorization: 'Bearer ' + tokenResponse.access_token }
         })
-        .then(res => res.json())
+        .then(res => { if (!res.ok) throw new Error('userinfo_failed'); return res.json(); })
         .then(info => {
-            const p = getProfile();
-            p.google = { email: info.email, picture: info.picture, name: info.name };
-            if (!p.name) p.name = info.name;
-            if (!p.photo) p.photo = info.picture;
-            saveProfile(p);
-            refreshProfileView();
             const cred = firebase.auth.GoogleAuthProvider.credential(null, tokenResponse.access_token);
             fbAuth.signInWithCredential(cred)
-                .then(result => { syncProfileToCloud(getProfile()); loadProfileFromCloud(result.user.uid); })
-                .catch(e => console.warn('تعذر تسجيل الدخول على الخادم', e));
+                .then(result => {
+                    const p = getProfile();
+                    p.google = { email: info.email, picture: info.picture, name: info.name };
+                    if (!p.name) p.name = info.name;
+                    if (!p.photo) p.photo = info.picture;
+                    saveProfile(p);
+                    refreshProfileView();
+                    syncProfileToCloud(getProfile());
+                    loadProfileFromCloud(result.user.uid);
+                })
+                .catch(e => { console.warn('تعذر تسجيل الدخول على الخادم', e); showToast(googleSignInErrorMessage(e), 'error'); });
         })
-        .catch(e => console.warn('تعذر قراءة بيانات جوجل', e));
+        .catch(e => { console.warn('تعذر قراءة بيانات جوجل', e); showToast('تعذّر جلب بيانات حساب جوجل، جرب تاني.', 'error'); });
     }
     function initGoogleSignIn() {
         if (GOOGLE_CLIENT_ID.includes('YOUR_GOOGLE_CLIENT_ID')) return false;

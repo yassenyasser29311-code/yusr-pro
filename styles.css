@@ -210,17 +210,28 @@
     .no-scrollbar::-webkit-scrollbar { display: none; }
 
     /* ---- Admin dashboard ---- */
+    /* تثبيت عام: أي نص جوه لوحة الأدمن (الداشبورد أو شاشة الدخول) بيرث line-height
+       طبيعي وهوامش صفر، عشان لو أي عنصر جواه أكتر من سطر (زي الاسم فوق الإيميل في
+       جدول المستخدمين) الأسطر تتباعد صح بدل ما تتراكب فوق بعضها. */
+    #admin-dashboard, #admin-gate-modal, #admin-user-modal, #admin-confirm-modal { line-height: 1.6; }
+    #admin-dashboard p, #admin-gate-modal p, #admin-user-modal p, #admin-confirm-modal p,
+    #admin-dashboard h1, #admin-dashboard h3, #admin-gate-modal h3, #admin-user-modal h3 { margin: 0; line-height: 1.5; }
     #admin-users-tbody tr, #admin-log-tbody tr { border-bottom: 1px solid var(--border); }
     #admin-users-tbody tr:hover, #admin-log-tbody tr:hover { background: var(--panel-2); }
-    #admin-users-tbody td, #admin-log-tbody td { padding: .55rem .5rem; vertical-align: middle; }
-    .admin-badge { display:inline-flex; align-items:center; gap:.3rem; font-size:.62rem; font-weight:700; padding:.2rem .6rem; border-radius:999px; }
+    #admin-users-tbody td, #admin-log-tbody td { padding: .6rem .5rem; vertical-align: middle; line-height: 1.6; }
+    #admin-users-tbody td > button { display: flex; flex-direction: column; align-items: flex-end; gap: .15rem; line-height: 1.5; }
+    /* أزرار فيها أيقونة + نص (زي زرار "نسخة احتياطية" أو "إدارة") لازم تبقى flex
+       بمسافة واضحة بين الأيقونة والكلام، عشان الأيقونة ما تتلزقش في الحرف اللي جنبها */
+    .admin-mini-btn, #admin-dashboard .chip { display: inline-flex; align-items: center; gap: .4rem; line-height: 1.4; }
+    .admin-badge { display:inline-flex; align-items:center; gap:.3rem; font-size:.62rem; font-weight:700; padding:.2rem .6rem; border-radius:999px; line-height: 1.4; }
     .admin-badge-online { color:#34d399; background:rgba(52,211,153,.12); border:1px solid rgba(52,211,153,.3); }
     .admin-badge-offline { color:#8a8a8a; background:rgba(138,138,138,.1); border:1px solid rgba(138,138,138,.25); }
     .admin-badge-suspended { color:#f87171; background:rgba(248,113,113,.12); border:1px solid rgba(248,113,113,.3); }
+    .admin-badge .dot { width:6px; height:6px; border-radius:999px; background: currentColor; flex-shrink: 0; }
     .admin-mini-btn { font-size:.62rem; font-weight:700; padding:.3rem .55rem; border-radius:.5rem; background:var(--panel-2); border:1px solid var(--border); color:var(--muted); white-space:nowrap; }
     .admin-mini-btn:hover { color:var(--text); border-color:#6b7280; }
-    .admin-mini-input { width:64px; background:#14171b; border:1px solid var(--border); color:var(--text); border-radius:.5rem; padding:.25rem .4rem; font-size:.68rem; text-align:center; }
-    .admin-plan-chip { background:var(--panel-2); border:1px solid var(--border); border-radius:.8rem; padding:.6rem .7rem; text-align:center; }
+    .admin-mini-input { width:64px; background:#14171b; border:1px solid var(--border); color:var(--text); border-radius:.5rem; padding:.25rem .4rem; font-size:.68rem; text-align:center; line-height: 1.4; }
+    .admin-plan-chip { background:var(--panel-2); border:1px solid var(--border); border-radius:.8rem; padding:.6rem .7rem; text-align:center; line-height: 1.5; }
 
     .g-signin-btn { background:#fff; color:#3c4043; border:1px solid #dadce0; border-radius:999px; font-weight:600; padding:.65rem 1.25rem; font-size:.85rem; letter-spacing:.1px; box-shadow:0 1px 3px rgba(0,0,0,.15); transition: box-shadow .18s ease, transform .18s ease, background .18s ease; }
     .g-signin-btn:hover { box-shadow:0 3px 10px rgba(0,0,0,.28); transform: translateY(-1px); background:#f8f9fa; }

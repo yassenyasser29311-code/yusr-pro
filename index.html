@@ -92,13 +92,15 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Tajawal:wght@500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=3">
+<link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body class="min-h-screen">
 <div id="toast-container" aria-live="polite"></div>
 
-<!-- Modal: mandatory sign-in screen - shown by showAuthGate() to ANY visitor who isn't logged in with a real account (Google or email/password). No guest/anonymous access anymore. -->
-<div id="auth-gate-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4" style="background:#000000;">
+<!-- Modal: mandatory sign-in screen - shown by showAuthGate() to ANY visitor who isn't logged in with a real account (Google or email/password). No guest/anonymous access anymore.
+     ملحوظة: مبيّن دلوقتي بشكل افتراضي (مش hidden) عشان محدش يشوف ولا ثانية من محتوى
+     الموقع قبل ما فايربيز يتأكد إنه فعلاً مسجّل دخول - hideAuthGate() هي اللي هتقفله. -->
+<div id="auth-gate-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4" style="background:#000000;">
     <div class="panel modal-pop max-w-sm w-full rounded-2xl p-5 space-y-4 text-right">
         <div class="text-center space-y-1">
             <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-slate-400 to-slate-600 flex items-center justify-center mx-auto font-extrabold text-slate-950 text-base">يس</div>
@@ -359,7 +361,7 @@
 
 <div class="blob-field"><div class="blob blob-a"></div><div class="blob blob-b"></div><div class="blob blob-c"></div></div>
 
-<div id="app-root" class="flex min-h-screen">
+<div id="app-root" class="hidden flex min-h-screen">
 
     <!-- ============ SIDEBAR ============ -->
     <aside id="sidebar" class="fixed lg:static top-0 right-0 h-full z-40 flex flex-col shrink-0">
@@ -1799,7 +1801,7 @@
     </div>
 </div>
 
-<script src="app.js?v=3"></script>
+<script src="app.js?v=4"></script>
 <script>
     // ============ تسجيل Service Worker (يخلي الموقع نفسه يفتح أوفلاين) ============
     if ('serviceWorker' in navigator) {
