@@ -219,7 +219,21 @@
     #admin-users-tbody tr, #admin-log-tbody tr { border-bottom: 1px solid var(--border); }
     #admin-users-tbody tr:hover, #admin-log-tbody tr:hover { background: var(--panel-2); }
     #admin-users-tbody td, #admin-log-tbody td { padding: .6rem .5rem; vertical-align: middle; line-height: 1.6; }
-    #admin-users-tbody td > button { display: flex; flex-direction: column; align-items: flex-end; gap: .15rem; line-height: 1.5; }
+    /* أهم فيكس هنا: قاعدة عامة في الملف بتحط word-break:break-word على كل th/td
+       عشان النصوص الطويلة (إيميلات...) متكسرش الشاشة - بس على عمود ضيق جدًا (زي
+       "الاستخدام الشهري" أو "سقف مخصص" في جدول الأدمن على الموبايل) القاعدة دي
+       كانت بتخلي كل حرف ينزل سطر لوحده (الحروف فوق بعضها بالظبط). الحل: نمنع
+       الكسر جوه عناوين وخلايا جداول الأدمن ونخليها سطر واحد ثابت، والجدول نفسه
+       ياخد عرض أدنى كافي عشان الـ overflow-x-auto (اللي موجود بالفعل حواليه) هو
+       اللي يعمل سكرول أفقي بدل ما يزنق كل عمود لحد ما يفضّل حرف واحد بس. */
+    #admin-users-tbody th, #admin-users-tbody td,
+    #admin-log-tbody th, #admin-log-tbody td,
+    #admin-dashboard table thead th {
+        white-space: nowrap; word-break: normal; overflow-wrap: normal;
+    }
+    #admin-dashboard table { min-width: 640px; }
+    #admin-users-tbody td > button { display: flex; flex-direction: column; align-items: flex-end; gap: .15rem; line-height: 1.5; white-space: normal; }
+    #admin-users-tbody td > button p { white-space: normal; }
     /* أزرار فيها أيقونة + نص (زي زرار "نسخة احتياطية" أو "إدارة") لازم تبقى flex
        بمسافة واضحة بين الأيقونة والكلام، عشان الأيقونة ما تتلزقش في الحرف اللي جنبها */
     .admin-mini-btn, #admin-dashboard .chip { display: inline-flex; align-items: center; gap: .4rem; line-height: 1.4; }
