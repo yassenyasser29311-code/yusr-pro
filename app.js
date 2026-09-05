@@ -1149,13 +1149,18 @@
             return;
         }
         const deviceId = getDeviceId();
+        const currentUser = (typeof fbAuth !== 'undefined' && fbAuth.currentUser) ? fbAuth.currentUser : null;
         const requestData = {
             plan: pendingPlanRequest.name,
             price: pendingPlanRequest.price,
             period: pendingPlanRequest.period,
             name, phone, ref,
             deviceId,
-            status: 'قيد المراجعة',
+            uid: currentUser ? currentUser.uid : null,
+            email: currentUser ? (currentUser.email || null) : null,
+            // status بالإنجليزي عشان لوحة تحكم الأدمن تقدر تفلتر عليه بسهولة:
+            // "pending" لسه محتاج مراجعة، "approved"/"rejected" بعد ما وائل يرد عليه.
+            status: 'pending',
             createdAt: firebase.database.ServerValue.TIMESTAMP
         };
         try {
@@ -1891,6 +1896,34 @@
         if (indicator) indicator.classList.add('hidden');
     }
 
+    // كاش بسيط لصوت Edge TTS: بيسمحلنا نجهّز (نطلب من السيرفر) صوت نص معيّن في
+    // الخلفية بدري (مثلاً فور ما نص "قدّم نفسك" يتولّد)، فلما المستخدم يدوس "تشغيل
+    // الصوت" الصوت يطلع فورًا من غير ما يستنى رحلة السيرفر تاني - ده اللي بيخلي
+    // الصوت "يظهر بسرعة" بدل ما ياخد ثانية/تلاتة وهو بيحمّل.
+    const ttsAudioCache = new Map();
+    function ttsCacheKey(text, voice) { return `${voice}::${text}`; }
+    async function fetchEdgeTtsBlob(text, voice) {
+        const response = await fetch(`${CLOUD_FUNCTIONS_BASE}/edgeTtsSpeak`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", ...(await getAuthHeader()) },
+            body: JSON.stringify({ text, voice })
+        });
+        if (!response.ok) throw new Error(`Edge TTS error: ${response.status}`);
+        return await response.blob();
+    }
+    // بيتنادى بدري (من غير انتظار/await) عشان يجهّز الصوت في الكاش قبل ما المستخدم
+    // يدوس زرار التشغيل أصلاً. أي خطأ هنا بنتجاهله بهدوء - speakText هيحاول تاني عادي.
+    function prefetchTtsAudio(text) {
+        if (!text) return;
+        try {
+            const langVoices = EDGE_TTS_VOICES[currentAppLang] || EDGE_TTS_VOICES["ar-EG"];
+            const voice = langVoices[voiceGenderPref] || langVoices.male;
+            const key = ttsCacheKey(text, voice);
+            if (ttsAudioCache.has(key)) return;
+            const pending = fetchEdgeTtsBlob(text, voice).catch((e) => { ttsAudioCache.delete(key); throw e; });
+            ttsAudioCache.set(key, pending);
+        } catch (e) { /* التجهيز المسبق اختياري بحت، أي فشل هنا مش مهم */ }
+    }
     async function speakText(text) {
         if (!isVoiceEnabled) return;
         stopSpeaking(); // نوقف أي صوت شغال قبل ما نبدأ الجديد، عشان محدش يتراكب فوق التاني
@@ -1923,20 +1956,17 @@
         try {
             const langVoices = EDGE_TTS_VOICES[currentAppLang] || EDGE_TTS_VOICES["ar-EG"];
             const voice = langVoices[voiceGenderPref] || langVoices.male;
-            const response = await fetch(`${CLOUD_FUNCTIONS_BASE}/edgeTtsSpeak`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json", ...(await getAuthHeader()) },
-                body: JSON.stringify({ text, voice })
-            });
-            if (response.ok) {
-                const blob = await response.blob();
-                const audio = new Audio(URL.createObjectURL(blob));
-                currentSpeakingAudio = audio;
-                audio.onended = () => { indicator.classList.add('hidden'); if (currentSpeakingAudio === audio) currentSpeakingAudio = null; };
-                audio.onpause = () => { indicator.classList.add('hidden'); };
-                await audio.play();
-                return;
-            } else console.warn("Edge TTS error:", response.status);
+            const key = ttsCacheKey(text, voice);
+            // لو الصوت ده كان اتجهّز مسبقًا (prefetchTtsAudio) هياخده جاهز من الكاش
+            // فورًا من غير ما يستنى رحلة سيرفر جديدة تاني.
+            const blob = await (ttsAudioCache.get(key) || fetchEdgeTtsBlob(text, voice));
+            ttsAudioCache.delete(key);
+            const audio = new Audio(URL.createObjectURL(blob));
+            currentSpeakingAudio = audio;
+            audio.onended = () => { indicator.classList.add('hidden'); if (currentSpeakingAudio === audio) currentSpeakingAudio = null; };
+            audio.onpause = () => { indicator.classList.add('hidden'); };
+            await audio.play();
+            return;
         } catch (e) { console.error("Edge TTS Voice Error:", e); }
         indicator.classList.add('hidden');
     }
@@ -3402,6 +3432,9 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
             const estSeconds = Math.round((wordCount / 140) * 60); // ~140 كلمة عربي/دقيقة بمعدل كلام هادئ وواضح
             document.getElementById('pitch-timing').innerText = `عدد الكلمات: ${wordCount} — يقابل تقريباً ${estSeconds} ثانية بمعدل كلام هادئ وواضح.`;
             document.getElementById('pitch-audio-box').classList.remove('hidden');
+            // نجهّز صوت التقديم في الخلفية من دلوقتي (من غير ما ننتظره)، عشان لما
+            // المستخدم يدوس "تشغيل الصوت" يطلع فورًا من غير أي تأخير محسوس.
+            prefetchTtsAudio(lastPitchText);
         } catch (e) { box.innerHTML = errorHTML('تعذر توليد النص، حاول تاني.'); }
     }
     function previewPitchAudio() {

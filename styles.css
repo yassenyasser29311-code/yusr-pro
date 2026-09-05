@@ -22,16 +22,22 @@
     .bg-\[\#2a2f36\], .bg-\[\#20252c\], .bg-\[\#262b32\] { background-color: #1a1a1a !important; }
     /* Floating animated blobs used behind the header/hero */
     .blob-field { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
-    .blob { position: absolute; border-radius: 50%; filter: blur(60px); opacity: .35; will-change: transform; }
-    .blob-a { width: 320px; height: 320px; background: radial-gradient(circle at 30% 30%, var(--grad1), transparent 70%); top: -80px; right: -60px; animation: floatBlob 16s ease-in-out infinite; }
-    .blob-b { width: 260px; height: 260px; background: radial-gradient(circle at 30% 30%, var(--grad3), transparent 70%); bottom: -60px; left: -40px; animation: floatBlob 20s ease-in-out infinite reverse; }
-    .blob-c { width: 220px; height: 220px; background: radial-gradient(circle at 30% 30%, var(--grad2), transparent 70%); top: 40%; left: 50%; animation: floatBlob 24s ease-in-out infinite; }
+    .blob { position: absolute; border-radius: 50%; filter: blur(50px); opacity: .55; will-change: transform; }
+    .blob-a { width: 380px; height: 380px; background: radial-gradient(circle at 30% 30%, var(--grad1), transparent 70%); top: -80px; right: -60px; animation: floatBlob 14s ease-in-out infinite; }
+    .blob-b { width: 320px; height: 320px; background: radial-gradient(circle at 30% 30%, var(--grad3), transparent 70%); bottom: -60px; left: -40px; animation: floatBlob 17s ease-in-out infinite reverse; }
+    .blob-c { width: 280px; height: 280px; background: radial-gradient(circle at 30% 30%, var(--grad2), transparent 70%); top: 40%; left: 50%; animation: floatBlob 20s ease-in-out infinite; }
+    .blob-d { width: 240px; height: 240px; background: radial-gradient(circle at 30% 30%, var(--grad4), transparent 70%); bottom: 10%; right: 15%; animation: floatBlob 22s ease-in-out infinite reverse; }
     @keyframes floatBlob {
         0%,100% { transform: translate(0,0) scale(1); }
-        33% { transform: translate(20px,-30px) scale(1.08); }
-        66% { transform: translate(-25px,20px) scale(0.95); }
+        25% { transform: translate(35px,-50px) scale(1.12); }
+        50% { transform: translate(-20px,30px) scale(0.92); }
+        75% { transform: translate(-40px,-20px) scale(1.06); }
     }
     @media (prefers-reduced-motion: reduce) { .blob { animation: none !important; } }
+    /* معاينة كاميرا محاكي المقابلة: بنعكسها أفقياً زي أي مرآة/كاميرا سيلفي عادية
+       (عشان المستخدم يبص فيها ويحس إنها طبيعية)، من غير ما نأثر على الفيديو
+       المسجَّل فعلياً - الانعكاس ده بصري بس (CSS) ومش بيغيّر الـ MediaStream نفسه. */
+    .video-mirrored { transform: scaleX(-1); }
     .gradient-text { background: linear-gradient(90deg, var(--grad1), var(--grad2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
    * { scrollbar-width: thin; scrollbar-color: #3a4048 transparent; }
     *, *::before, *::after { box-sizing: border-box; }
