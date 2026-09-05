@@ -112,7 +112,7 @@
             "nav.section.account":"الحساب والدعم","nav.about":"من نحن","nav.profile":"الملف الشخصي","nav.subscriptions":"الاشتراكات","nav.donations":"التبرعات","nav.support":"الدعم والتواصل",
             "nav.section.legal":"قانوني","nav.terms":"شروط الاستخدام","nav.privacy":"سياسة الخصوصية",
             "account.guest":"زائر (الجهاز ده)","account.signinHint":"سجّل دخول بجوجل لحفظ صورتك ونقاطك",
-            "authgate.title":"سجّل دخولك","authgate.subtitle":"لو مش قادر تدخل كزائر دلوقتي (غالبًا بسبب الإنترنت)، سجّل دخول بجوجل أو بإيميلك.","authgate.googleBtn":"تسجيل الدخول بجوجل","authgate.orEmail":"أو بالإيميل","authgate.tabLogin":"تسجيل الدخول","authgate.tabSignup":"إنشاء حساب","authgate.namePh":"اسمك الكامل","authgate.emailPh":"الإيميل","authgate.passwordPh":"كلمة المرور","authgate.confirmPh":"تأكيد كلمة المرور","authgate.submitLogin":"تسجيل الدخول","authgate.submitSignup":"إنشاء الحساب","authgate.privacyNote":"بياناتك بتتحفظ بشكل آمن، وكلمة المرور متشفّرة ومش بنقدر نشوفها إحنا كأصحاب الموقع.",
+            "authgate.title":"سجّل دخولك","authgate.subtitle":"لازم تسجّل دخول بجوجل أو بإيميلك عشان تستخدم الموقع.","authgate.googleBtn":"تسجيل الدخول بجوجل","authgate.orEmail":"أو بالإيميل","authgate.tabLogin":"تسجيل الدخول","authgate.tabSignup":"إنشاء حساب","authgate.namePh":"اسمك الكامل","authgate.emailPh":"الإيميل","authgate.passwordPh":"كلمة المرور","authgate.confirmPh":"تأكيد كلمة المرور","authgate.submitLogin":"تسجيل الدخول","authgate.submitSignup":"إنشاء الحساب","authgate.privacyNote":"بياناتك بتتحفظ بشكل آمن، وكلمة المرور متشفّرة ومش بنقدر نشوفها إحنا كأصحاب الموقع.",
             "trial.left":"المحاولات المتبقية","trial.upgrade":"ترقية للباقة الكاملة",
             "copy":"نسخ","download":"تنزيل",
             "interview.desc":"تدرّب على مقابلة شفهية حقيقية بالصوت مع تقييم أداء تفصيلي في النهاية.","interview.linkCv":"ربط الـ CV",
@@ -159,7 +159,7 @@
             "terms.pageTitle":"شروط الاستخدام","terms.betaNotice":"صفحة \"الاشتراكات\" تعرض باقات حقيقية. الدفع بيتم يدوياً عن طريق تحويل فودافون كاش / إنستاباي على الأرقام الموضّحة، وبعد إرسال بيانات التحويل بيتم تفعيل الباقة يدوياً خلال ساعات قليلة بعد المراجعة.",
             "terms.s1.title":"1. قبول الشروط","terms.s1.body":"باستخدامك منصة \"يُسْر Pro\"، إنت بتوافق على الشروط دي.",
             "terms.s2.title":"2. طبيعة الخدمة","terms.s2.body":"يُسْر منصة مساعدة بالذكاء الاصطناعي لتجهيز الباحثين عن عمل: مقابلات تدريبية صوتية، بناء سيرة ذاتية وبورتفوليو، تدقيق أكاديمي، تلخيص مستندات، وتفريغ صوتي. الردود والاقتراحات مولّدة بالذكاء الاصطناعي وبتُعتبر مساعدة استرشادية، مش ضمان لنتيجة أو قبول وظيفي.",
-            "terms.s3.title":"3. الحساب والاستخدام المسموح","terms.s3.body":"تقدر تستخدم المنصة كزائر (بهوية مجهولة تلقائية) أو بتسجيل الدخول بحساب جوجل لحفظ بياناتك. إنت مسؤول عن أي نشاط بيحصل من حسابك. ممنوع: محاولة تجاوز حدود الاستخدام العادلة، إرسال طلبات آلية مكثفة (bots)، أو محاولة الوصول لأي جزء من النظام غير مصرّح لك بيه.",
+            "terms.s3.title":"3. الحساب والاستخدام المسموح","terms.s3.body":"لازم تسجّل دخول بحساب جوجل أو بإيميلك عشان تقدر تستخدم المنصة. إنت مسؤول عن أي نشاط بيحصل من حسابك. ممنوع: محاولة تجاوز حدود الاستخدام العادلة، إرسال طلبات آلية مكثفة (bots)، أو محاولة الوصول لأي جزء من النظام غير مصرّح لك بيه.",
             "terms.s4.title":"4. حدود الاستخدام العادل","terms.s4.body":"لضمان استمرار الخدمة لكل المستخدمين، أدوات الذكاء الاصطناعي (المحادثة، تفريغ الصوت، تحويل النص لصوت) عليها حد أقصى يومي وشهري للاستخدام. لو وصلت للحد، هتحتاج تستنى لحد ما يتجدد.",
             "terms.s5.title":"5. المحتوى بتاعك","terms.s5.body":"أي محتوى بتكتبه أو ترفعه (بيانات السيرة الذاتية، البورتفوليو، تسجيلات صوتية) بيفضل ملكك إنت. إحنا بنعالجه بس عشان نقدّملك الخدمة، ومش بنستخدمه لأي غرض تاني ولا بنبيعه.",
             "terms.s6.title":"6. إخلاء المسؤولية","terms.s6.body":"الخدمة بتتقدم \"كما هي\" من غير ضمانات. إحنا مش مسؤولين عن أي قرار وظيفي أو مهني تاخده بناءً على مخرجات الذكاء الاصطناعي، وننصحك دايماً تراجع أي محتوى مهم بنفسك قبل استخدامه.",
@@ -168,7 +168,7 @@
             "privacy.pageTitle":"سياسة الخصوصية",
             "privacy.s1.title":"1. مين بيجمع البيانات","privacy.s1.body":"منصة \"يُسْر Pro\" هي اللي بتجمع وتعالج بياناتك، بهدف وحيد: تقديم الخدمة اللي بتستخدمها.",
             "privacy.s2.title":"2. البيانات اللي بنجمعها",
-            "privacy.s2.li1":"<b class=\"text-slate-200\">بيانات الحساب:</b> لو سجّلت دخول بجوجل، بناخد اسمك وصورتك وإيميلك من جوجل مباشرة. لو دخلت كزائر، بنديك هوية مجهولة (anonymous) بس عشان نميّزك من غيرك.",
+            "privacy.s2.li1":"<b class=\"text-slate-200\">بيانات الحساب:</b> لازم تسجّل دخول بجوجل أو بإيميلك عشان تستخدم الموقع. لو سجّلت دخول بجوجل، بناخد اسمك وصورتك وإيميلك من جوجل مباشرة.",
             "privacy.s2.li2":"<b class=\"text-slate-200\">محتوى تستخدمه:</b> بيانات السيرة الذاتية، البورتفوليو، النصوص اللي بتكتبها أو تلخّصها، والتسجيلات الصوتية اللي بترفعها لأدوات المقابلات أو تفريغ الصوت.",
             "privacy.s2.li3":"<b class=\"text-slate-200\">بيانات استخدام تقنية:</b> عدد مرات استخدامك للأدوات (لتطبيق حدود الاستخدام العادل)، ومحفوظة محلياً على جهازك (localStorage) بيانات زي \"عدد المحاولات المتبقية\".",
             "privacy.s3.title":"3. إزاي بنستخدم بياناتك","privacy.s3.body":"بنستخدم بياناتك بس عشان: (أ) نشغّل أدوات الذكاء الاصطناعي (بنبعت النص أو الصوت اللي بترفعه لشركات معالجة متخصصة عشان تولّدلك الرد، من غير ما تتخزن مفاتيح أو بيانات دخول عندهم)، (ب) نحفظلك ملفك الشخصي عشان يفضل موجود لما ترجع، (ج) نحسّن الخدمة ونمنع إساءة الاستخدام.",
@@ -191,7 +191,7 @@
             "nav.section.account":"Account & Support","nav.about":"About Us","nav.profile":"Profile","nav.subscriptions":"Subscriptions","nav.donations":"Donations","nav.support":"Support",
             "nav.section.legal":"Legal","nav.terms":"Terms of Use","nav.privacy":"Privacy Policy",
             "account.guest":"Guest (this device)","account.signinHint":"Sign in with Google to save your photo & points",
-            "authgate.title":"Sign in","authgate.subtitle":"If you can't enter as a guest right now (usually a connection issue), sign in with Google or your email.","authgate.googleBtn":"Sign in with Google","authgate.orEmail":"or with email","authgate.tabLogin":"Log in","authgate.tabSignup":"Create account","authgate.namePh":"Your full name","authgate.emailPh":"Email","authgate.passwordPh":"Password","authgate.confirmPh":"Confirm password","authgate.submitLogin":"Log in","authgate.submitSignup":"Create account","authgate.privacyNote":"Your data is stored securely, and your password is encrypted — even we can't see it.",
+            "authgate.title":"Sign in","authgate.subtitle":"You need to sign in with Google or your email to use the site.","authgate.googleBtn":"Sign in with Google","authgate.orEmail":"or with email","authgate.tabLogin":"Log in","authgate.tabSignup":"Create account","authgate.namePh":"Your full name","authgate.emailPh":"Email","authgate.passwordPh":"Password","authgate.confirmPh":"Confirm password","authgate.submitLogin":"Log in","authgate.submitSignup":"Create account","authgate.privacyNote":"Your data is stored securely, and your password is encrypted — even we can't see it.",
             "trial.left":"Trials remaining","trial.upgrade":"Upgrade to full plan",
             "copy":"Copy","download":"Download",
             "interview.desc":"Practice a real spoken interview with detailed performance feedback at the end.","interview.linkCv":"Link CV",
@@ -238,7 +238,7 @@
             "terms.pageTitle":"Terms of Use","terms.betaNotice":"The \"Subscriptions\" page shows real paid plans. Payment is made manually via Vodafone Cash / InstaPay transfer to the numbers shown, and after you submit your transfer details your plan is activated manually within a few hours once the transfer is reviewed.",
             "terms.s1.title":"1. Acceptance of Terms","terms.s1.body":"By using the \"YUSR Pro\" platform, you agree to these terms.",
             "terms.s2.title":"2. Nature of the Service","terms.s2.body":"YUSR is an AI-powered platform that helps job seekers get ready: voice mock interviews, CV and portfolio building, academic writing review, document summarizing, and transcription. Responses and suggestions are AI-generated and are meant as guidance only, not a guarantee of any outcome or job offer.",
-            "terms.s3.title":"3. Account & Permitted Use","terms.s3.body":"You can use the platform as a guest (automatic anonymous identity) or sign in with a Google account to save your data. You're responsible for any activity on your account. Prohibited: attempting to bypass fair usage limits, sending automated bulk requests (bots), or trying to access any part of the system you're not authorized for.",
+            "terms.s3.title":"3. Account & Permitted Use","terms.s3.body":"You must sign in with a Google account or your email to use the platform. You're responsible for any activity on your account. Prohibited: attempting to bypass fair usage limits, sending automated bulk requests (bots), or trying to access any part of the system you're not authorized for.",
             "terms.s4.title":"4. Fair Usage Limits","terms.s4.body":"To keep the service running for everyone, the AI tools (chat, transcription, text-to-speech) have a daily and monthly usage cap. If you reach the limit, you'll need to wait until it resets.",
             "terms.s5.title":"5. Your Content","terms.s5.body":"Any content you write or upload (CV data, portfolio, voice recordings) remains yours. We only process it to provide you the service, and never use it for any other purpose or sell it.",
             "terms.s6.title":"6. Disclaimer","terms.s6.body":"The service is provided \"as is\" with no warranties. We are not responsible for any career or professional decision you make based on AI outputs, and we always recommend reviewing important content yourself before using it.",
@@ -247,7 +247,7 @@
             "privacy.pageTitle":"Privacy Policy",
             "privacy.s1.title":"1. Who Collects the Data","privacy.s1.body":"The \"YUSR Pro\" platform is the one collecting and processing your data, for one purpose only: providing the service you use.",
             "privacy.s2.title":"2. Data We Collect",
-            "privacy.s2.li1":"<b class=\"text-slate-200\">Account data:</b> If you sign in with Google, we get your name, photo, and email directly from Google. If you enter as a guest, we give you an anonymous identity just to tell you apart from other users.",
+            "privacy.s2.li1":"<b class=\"text-slate-200\">Account data:</b> You must sign in with Google or your email to use the site. If you sign in with Google, we get your name, photo, and email directly from Google.",
             "privacy.s2.li2":"<b class=\"text-slate-200\">Content you use:</b> CV data, portfolio, texts you write or summarize, and voice recordings you upload to the interview or transcription tools.",
             "privacy.s2.li3":"<b class=\"text-slate-200\">Technical usage data:</b> how many times you've used each tool (to apply fair usage limits), stored locally on your device (localStorage), such as \"remaining trials\".",
             "privacy.s3.title":"3. How We Use Your Data","privacy.s3.body":"We use your data only to: (a) run the AI tools (we send the text or audio you upload to specialized processing companies to generate the response, without storing your keys or login data with them), (b) save your profile so it's there when you come back, (c) improve the service and prevent abuse.",
@@ -1033,22 +1033,22 @@
         }).catch(e => console.warn('تعذر تحميل البيانات من الخادم', e));
     }
     fbAuth.onAuthStateChanged(user => {
-        if (user) {
-            // فيه هوية فعلية دلوقتي (حساب حقيقي بجوجل/إيميل، أو حتى هوية زائر مؤقتة) - نفتح الموقع فوراً من غير ما نجبره يسجل
+        // تسجيل الدخول بقى إجباري لأي حد يستخدم الموقع - مفيش دخول كزائر (anonymous)
+        // خالص دلوقتي. السبب مش بس شكلي: السيرفر (worker.js) أصلاً بيرفض أي طلب
+        // (شات/تفريغ صوت/نطق) جاي بتوكن زائر (anonymous_not_allowed) - وده كان
+        // السبب الحقيقي وراء "الصوت مش شغال تمام" لأي حد داخل كزائر، لأن كل
+        // طلبات الصوت كانت بترجع 401 من غير ما يفهم المستخدم ليه.
+        if (user && !user.isAnonymous) {
             hideAuthGate();
-            if (!user.isAnonymous) {
-                loadProfileFromCloud(user.uid);
-                attachCloudUsageListener(user.uid);
-            }
-        } else {
-            // مفيش أي هوية لسه، حتى مؤقتة - نجهّز هوية زائر تلقائياً عشان يدخل الموقع على طول
-            // من غير أي شاشة تسجيل إجبارية. لو فشل (غالباً لعدم وجود إنترنت أول مرة على الإطلاق)
-            // نوريله شاشة الدخول كحل بديل بس.
-            fbAuth.signInAnonymously().catch(err => {
-                console.warn('تعذر تجهيز هوية الزائر التلقائية', err);
-                showAuthGate();
-            });
+            loadProfileFromCloud(user.uid);
+            attachCloudUsageListener(user.uid);
+            return;
         }
+        // لو لقينا جلسة زائر قديمة متسجلة من قبل (قبل التحديث ده) نطلعه منها فورًا
+        if (user && user.isAnonymous) {
+            fbAuth.signOut().catch(() => {});
+        }
+        showAuthGate();
     });
     async function getAuthHeader() {
         try {
@@ -1197,6 +1197,9 @@
         document.getElementById('auth-gate-modal').classList.add('hidden');
         document.getElementById('app-root').classList.remove('hidden');
     }
+    // بينادَى من فورم الأدمن لو اتقفل (زرار "إلغاء") قبل ما المستخدم يسجّل دخول
+    // حقيقي أصلاً - عشان يرجع لشاشة تسجيل الدخول العادية بدل ما يفضل معلّق.
+    window.showAuthGateFromAdminCancel = function () { showAuthGate(); };
     let authGateMode = 'login';
     function switchAuthGateTab(mode) {
         authGateMode = mode;
@@ -1223,7 +1226,7 @@
         };
         return map[code] || 'حصل خطأ، حاول تاني.';
     }
-    function submitEmailAuth() {
+    async function submitEmailAuth() {
         const mode = authGateMode;
         const name = document.getElementById('auth-gate-name').value.trim();
         const email = document.getElementById('auth-gate-email').value.trim();
@@ -1233,6 +1236,17 @@
         statusEl.classList.add('hidden');
 
         if (mode === 'signup' && !name) { showToast('اكتب اسمك الأول من فضلك.', 'error'); return; }
+
+        // نفس صفحة تسجيل الدخول العادية بالظبط بيستخدمها أي حد، لكن لو حد كتب في
+        // خانة الإيميل قيمة مش شكلها إيميل (مفيهاش @) وهو في وضع "تسجيل الدخول"،
+        // بنجرب هادي إنها بيانات دخول أدمن الأول (التحقق الحقيقي كله في السيرفر).
+        // لو مش مطابقة، بيكمل بعدها بالظبط برسالة "إيميل غير صحيح" العادية زي أي
+        // حد كتب إيميل غلط الشكل - يعني مفيش أي فرق ملحوظ من برة بين الحالتين.
+        if (mode === 'login' && email && !email.includes('@') && password && typeof window.adminTryLoginFromMainForm === 'function') {
+            const tookOver = await window.adminTryLoginFromMainForm(email, password);
+            if (tookOver) return;
+        }
+
         if (!email || !email.includes('@') || !email.includes('.')) { showToast('اكتب بريد إلكتروني صحيح.', 'error'); return; }
         if (!password || password.length < 6) { showToast('كلمة المرور لازم تكون 6 حروف/أرقام على الأقل.', 'error'); return; }
         if (mode === 'signup' && password !== confirm) { showToast('كلمتا المرور مش متطابقتين.', 'error'); return; }
@@ -1298,6 +1312,13 @@
         const planName = p.plan || 'مجاني';
         document.getElementById('profile-stat-plan').innerText = planName;
         document.getElementById('profile-current-plan').innerText = planName;
+        const membershipPlanEl = document.getElementById('profile-membership-plan');
+        if (membershipPlanEl) membershipPlanEl.innerText = planName;
+        const membershipIdEl = document.getElementById('profile-membership-id');
+        if (membershipIdEl) {
+            const idTail = getDeviceId().replace('DEV-', '').slice(-4).toUpperCase() || '0000';
+            membershipIdEl.innerText = '•••• •••• ' + idTail;
+        }
         updateAccountChip(p);
         renderPurchasesOverview();
         refreshGoogleSigninState(p);
@@ -1325,6 +1346,19 @@
             signedOutArea.classList.remove('hidden');
             signedInArea.classList.add('hidden');
         }
+    }
+    async function requestPasswordChange() {
+        const user = fbAuth.currentUser;
+        const email = user && user.email;
+        if (!email) { showToast('الخاصية دي متاحة بس لو داخل بإيميل وباسورد (حسابات جوجل بتتغيّر من إعدادات جوجل نفسها).', 'error'); return; }
+        try {
+            await fetch(`${CLOUD_FUNCTIONS_BASE}/forgotPassword`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+        } catch (e) { console.warn('تعذر إرسال طلب تغيير الباسورد', e); }
+        showToast('لو الإيميل ده متسجل عندنا، وصلك رابط لتغيير كلمة المرور.', 'success');
     }
     function logoutAccount() {
         const sure = confirm(currentUiLang === 'en' ? 'Log out of your Google account on this device?' : 'تسجيل الخروج من حساب جوجل على الجهاز ده؟');
@@ -1499,7 +1533,7 @@
         } catch (e) { console.warn('تعذر تهيئة تسجيل دخول جوجل', e); }
         return !!googleTokenClient;
     }
-    function mockGoogleSignIn() {
+    function triggerGoogleSignIn() {
         if (GOOGLE_CLIENT_ID.includes('YOUR_GOOGLE_CLIENT_ID')) {
             showToast(currentUiLang === 'en'
                 ? "Google Sign-In needs a real Google OAuth Client ID configured by the site owner in the code (GOOGLE_CLIENT_ID). Once set, this button will open the real Google sign-in popup."

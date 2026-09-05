@@ -97,16 +97,16 @@
 <body class="min-h-screen">
 <div id="toast-container" aria-live="polite"></div>
 
-<!-- Modal: fallback sign-in screen - hidden by default, only shown by showAuthGate() if anonymous entry fails (e.g. no internet on first load). Never blocks the initial view. -->
+<!-- Modal: mandatory sign-in screen - shown by showAuthGate() to ANY visitor who isn't logged in with a real account (Google or email/password). No guest/anonymous access anymore. -->
 <div id="auth-gate-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4" style="background:#000000;">
     <div class="panel modal-pop max-w-sm w-full rounded-2xl p-5 space-y-4 text-right">
         <div class="text-center space-y-1">
             <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-slate-400 to-slate-600 flex items-center justify-center mx-auto font-extrabold text-slate-950 text-base">يس</div>
             <h3 class="text-sm font-bold text-slate-100" data-i18n="authgate.title">سجّل دخولك</h3>
-            <p class="text-[11px] text-slate-400" data-i18n="authgate.subtitle">لو مش قادر تدخل كزائر دلوقتي (غالبًا بسبب الإنترنت)، سجّل دخول بجوجل أو بإيميلك.</p>
+            <p class="text-[11px] text-slate-400" data-i18n="authgate.subtitle">لازم تسجّل دخول بجوجل أو بإيميلك عشان تستخدم الموقع.</p>
         </div>
 
-        <button id="auth-gate-google-btn" onclick="mockGoogleSignIn()" class="g-signin-btn w-full flex items-center justify-center gap-2">
+        <button id="auth-gate-google-btn" onclick="triggerGoogleSignIn()" class="g-signin-btn w-full flex items-center justify-center gap-2">
             <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" width="18" height="18"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
             <span data-i18n="authgate.googleBtn">تسجيل الدخول بجوجل</span>
         </button>
@@ -1159,7 +1159,7 @@
                             <p class="section-eyebrow"><i class="fa-solid fa-user-shield"></i> حساب الدخول</p>
                             <div id="google-signin-area" class="panel-2 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center gap-3">
                                 <div id="g_id_signin_container"></div>
-                                <button onclick="mockGoogleSignIn()" class="g-signin-btn flex items-center gap-2">
+                                <button onclick="triggerGoogleSignIn()" class="g-signin-btn flex items-center gap-2">
                                     <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg>
                                     <span data-i18n="profile.googleBtn">تسجيل الدخول بحساب جوجل</span>
                                 </button>
@@ -1214,6 +1214,7 @@
                             <p class="section-eyebrow"><i class="fa-solid fa-lock"></i> الخصوصية وبياناتك</p>
                             <p class="text-[11px] text-slate-500 leading-relaxed">بيانات الملف الشخصي وسجل التدريب وسجل الاستخدام متخزنة على جهازك (المتصفح) بشكل أساسي، ولو سجّلت دخول بجوجل بتتزامن نسخة منها مع حسابك عشان تلاقيها من أي جهاز. صور الـ CV وملفات الصوت/الفيديو بتتبعت للمعالجة وقت الاستخدام بس ومش بتتخزن دائم على السيرفر.</p>
                             <div class="flex flex-wrap gap-2">
+                                <button onclick="requestPasswordChange()" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-key"></i> تغيير كلمة المرور</button>
                                 <button onclick="clearLocalAppData()" class="chip hover:bg-red-500/10 hover:text-red-300"><i class="fa-solid fa-trash-can"></i> امسح كل بياناتي المحفوظة على الجهاز ده</button>
                             </div>
                         </div>
@@ -1222,10 +1223,21 @@
                     <!-- ===== Side column: membership card ===== -->
                     <div class="space-y-4">
                         <div class="membership-card">
-                            <p class="text-[11px] font-bold text-violet-300 flex items-center gap-1.5 relative"><i class="fa-solid fa-crown"></i> عضويتك</p>
-                            <p id="profile-total-spent" class="text-2xl font-extrabold text-white mt-2 relative">0 ج.م</p>
-                            <p class="text-[10.5px] text-slate-400 relative">إجمالي المدفوع على حسابك</p>
-                            <button onclick="switchViewByName('subscriptions')" class="btn-primary w-full text-xs font-bold py-2.5 rounded-xl mt-4 relative">ترقية الباقة</button>
+                            <div class="membership-card-top">
+                                <p class="text-[11px] font-bold text-slate-300 flex items-center gap-1.5 relative"><i class="fa-solid fa-crown text-amber-300/80"></i> عضويتك</p>
+                                <div class="membership-chip"></div>
+                            </div>
+                            <div>
+                                <p id="profile-membership-plan" class="text-sm font-extrabold text-slate-100 relative">مجاني</p>
+                                <p class="membership-card-id" id="profile-membership-id">•••• •••• ••••</p>
+                            </div>
+                            <div class="membership-card-bottom">
+                                <div>
+                                    <p class="text-[10px] text-slate-500 relative">إجمالي المدفوع</p>
+                                    <p id="profile-total-spent" class="text-xl font-extrabold text-white relative">0 ج.م</p>
+                                </div>
+                                <button onclick="switchViewByName('subscriptions')" class="btn-primary text-[11px] font-bold px-3.5 py-2 rounded-xl relative shrink-0">ترقية الباقة</button>
+                            </div>
                         </div>
                         <div class="panel rounded-2xl p-4 space-y-2.5">
                             <p class="section-eyebrow"><i class="fa-solid fa-lightbulb"></i> نصايح سريعة</p>
@@ -1781,6 +1793,43 @@
 
     window.adminGateClose = function () {
         document.getElementById("admin-gate-modal").classList.add("hidden");
+        // لو المستخدم لسه مسجّلش دخول أصلاً (يعني جاي من فورم تسجيل الدخول العادي
+        // مش من الضغطة السرية على الشعار)، رجّعله شاشة تسجيل الدخول العادية.
+        const appRoot = document.getElementById("app-root");
+        if (appRoot && appRoot.classList.contains("hidden") && typeof window.showAuthGateFromAdminCancel === "function") {
+            window.showAuthGateFromAdminCancel();
+        }
+    };
+
+    // ============================================================
+    // نفس صفحة تسجيل الدخول العادية بالظبط (بند 6 المطلوب): لو حد كتب في
+    // خانة "الإيميل" في فورم تسجيل الدخول العادي قيمة مش شكلها إيميل (يعني
+    // مفيهاش @) بنجرب نبعتها كـ "اسم مستخدم أدمن" لـ /adminLogin هنا بهدوء
+    // قبل ما نرفضها كإيميل غلط. لو مطابقة (يوزر+باسورد الأدمن)، بتظهر خطوة
+    // تأكيد "293" في نفس المودال ده. لو مش مطابقة، بترجع false عادي وفورم
+    // تسجيل الدخول العادي بيكمل برسالة "إيميل غير صحيح" العادية بالظبط -
+    // يعني من برة مفيش أي فرق ملحوظ بين المحاولتين.
+    window.adminTryLoginFromMainForm = async function (usernameOrEmail, password) {
+        if (ADMIN_API_BASE.indexOf("http") !== 0) return false;
+        try {
+            const data = await adminFetch("/adminLogin", { method: "POST", body: JSON.stringify({ username: usernameOrEmail, password }) });
+            if (data && data.needsConfirmation && data.confirmToken) {
+                pendingConfirmToken = data.confirmToken;
+                document.getElementById("app-root").classList.add("hidden");
+                const authGate = document.getElementById("auth-gate-modal");
+                if (authGate) authGate.classList.add("hidden");
+                document.getElementById("admin-gate-step1").classList.add("hidden");
+                document.getElementById("admin-gate-step2").classList.remove("hidden");
+                document.getElementById("admin-gate-status").classList.add("hidden");
+                document.getElementById("admin-gate-code").value = "";
+                document.getElementById("admin-gate-modal").classList.remove("hidden");
+                document.getElementById("admin-gate-code").focus();
+                return true;
+            }
+            return false;
+        } catch (e) {
+            return false;
+        }
     };
 
     function adminGateSetStatus(msg, isError) {
@@ -2016,6 +2065,7 @@
                         }
                         <button class="admin-mini-btn" onclick="adminUserAction('${u.uid}','resetUsage')">تصفير الاستخدام</button>
                         ${u.email ? `<button class="admin-mini-btn" onclick="adminSendPasswordReset('${u.uid}', '${u.email}')">إرسال رابط استعادة الباسورد</button>` : ""}
+                        <button class="admin-mini-btn hover:bg-red-500/10 hover:text-red-300" onclick="adminDeleteUser('${u.uid}')"><i class="fa-solid fa-trash"></i> حذف نهائي</button>
                     </div>`}
                 </td>`;
             tbody.appendChild(tr);
@@ -2030,6 +2080,19 @@
             adminRefreshAll();
         } catch (e) {
             adminToast("الإجراء فشل.", "error");
+        }
+    };
+
+    window.adminDeleteUser = async function (uid) {
+        if (isViewerRole()) { adminToast("دور المشاهدة مش مسموح له بالتعديل.", "error"); return; }
+        if (!confirm("متأكد إنك عايز تمسح كل بيانات المستخدم ده نهائيًا من قاعدة البيانات؟ الإجراء ده مينفعش يترجع.")) return;
+        if (!confirm("تأكيد أخير: هيتشال بالكامل (الاسم/الصورة/النقط/الباقة/سجل الاستخدام) من الداتابيز. لو سجّل دخول تاني بنفس حسابه هيدخل كمستخدم جديد من الصفر. متابعة؟")) return;
+        try {
+            await adminFetch("/adminUserAction", { method: "POST", body: JSON.stringify({ uid, action: "delete" }) });
+            adminToast("اتمسح من قاعدة البيانات بنجاح.", "success");
+            adminRefreshAll();
+        } catch (e) {
+            adminToast("تعذر حذف البيانات.", "error");
         }
     };
 
