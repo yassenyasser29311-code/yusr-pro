@@ -289,7 +289,8 @@
     #support-chat-unread-badge { position: absolute; top: -4px; inset-inline-start: -4px; background: #f87171; color: #fff; font-size: 10px; font-weight: 700; min-width: 18px; height: 18px; border-radius: 999px; display: flex; align-items: center; justify-content: center; padding: 0 4px; border: 2px solid var(--bg); }
     #support-chat-panel { position: fixed; bottom: 84px; inset-inline-end: 20px; z-index: 9998; width: min(92vw, 320px); max-height: 60vh; background: var(--panel); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 12px 32px -8px rgba(0,0,0,.65); display: flex; flex-direction: column; overflow: hidden; }
     #support-chat-panel-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; background: var(--panel-2); font-size: 12.5px; font-weight: 700; color: var(--text); }
-    #support-chat-panel-header button { color: var(--muted); background: transparent; }
+    #support-chat-panel-header button { color: var(--muted); background: transparent; min-width: 40px; min-height: 40px; display: flex; align-items: center; justify-content: center; font-size: 16px; border-radius: 8px; cursor: pointer; }
+    #support-chat-panel-header button:hover, #support-chat-panel-header button:active { color: var(--text); background: rgba(255,255,255,.06); }
     #support-chat-log { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 8px; font-size: 12px; min-height: 120px; }
     #support-chat-log .sc-msg { max-width: 82%; padding: 6px 10px; border-radius: 10px; line-height: 1.5; }
     #support-chat-log .sc-msg.sc-from-admin { align-self: flex-start; background: var(--panel-2); color: var(--text); }

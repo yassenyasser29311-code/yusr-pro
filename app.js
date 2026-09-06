@@ -2002,6 +2002,37 @@
         if (indicator) indicator.classList.add('hidden');
     }
 
+    // ============ فتح إذن تشغيل الصوت تلقائيًا (Autoplay unlock) ============
+    // المتصفحات (سفاري بالذات) بترفض تشغيل صوت برمجيًا (audio.play()) إلا لو
+    // حصل جوه نفس اللحظة المتزامنة لضغطة/لمسة مستخدم حقيقية، من غير أي انتظار
+    // شبكة في النص. عندنا صوت الذكاء الاصطناعي بيتشغل بعد ما نستنى رد السيرفر
+    // (await)، وده بيكسر السلسلة دي، فأول مرة ممكن الصوت "يتصامت" من غير أي
+    // رسالة خطأ واضحة للمستخدم (بيقع في catch ويحاول صوت المتصفح الاحتياطي).
+    //
+    // الحل: أول لمسة/ضغطة إيه كانت على الصفحة كلها، نشغّل ونوقف صوت فاضي فورًا
+    // (جوه نفس اللحظة المتزامنة بتاعة الحدث) - وده بيـ"يفتح" إذن تشغيل الصوت
+    // للصفحة كلها لحد ما المستخدم يقفل التاب، فبعدين speakText() تقدر تشغّل
+    // الصوت الحقيقي برمجيًا في أي وقت (حتى بعد await) من غير ما يترفض.
+    let audioPlaybackUnlocked = false;
+    const AUDIO_UNLOCK_EVENTS = ['pointerdown', 'touchstart', 'click', 'keydown'];
+    function unlockAudioPlayback() {
+        if (audioPlaybackUnlocked) return;
+        try {
+            // WAV صامت تمامًا بدون أي بيانات صوت فعلية (مجرد الهيدر) - أخف حاجة ممكنة.
+            const silent = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=");
+            silent.volume = 0;
+            const p = silent.play();
+            audioPlaybackUnlocked = true;
+            AUDIO_UNLOCK_EVENTS.forEach((evt) => document.removeEventListener(evt, unlockAudioPlayback, true));
+            if (p && typeof p.then === 'function') {
+                p.then(() => { silent.pause(); silent.currentTime = 0; }).catch(() => {});
+            }
+        } catch (e) { /* هنحاول تاني في أول لمسة تانية */ }
+    }
+    AUDIO_UNLOCK_EVENTS.forEach((evt) => {
+        document.addEventListener(evt, unlockAudioPlayback, { capture: true, passive: true });
+    });
+
     // كاش بسيط لصوت Edge TTS: بيسمحلنا نجهّز (نطلب من السيرفر) صوت نص معيّن في
     // الخلفية بدري (مثلاً فور ما نص "قدّم نفسك" يتولّد)، فلما المستخدم يدوس "تشغيل
     // الصوت" الصوت يطلع فورًا من غير ما يستنى رحلة السيرفر تاني - ده اللي بيخلي
