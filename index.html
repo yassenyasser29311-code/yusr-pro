@@ -97,6 +97,23 @@
 <body class="min-h-screen">
 <div id="toast-container" aria-live="polite"></div>
 
+<!-- ============== شات الدعم العائم (المستخدم ⇄ الأدمن) ============== -->
+<div id="support-chat-fab" class="hidden" onclick="toggleSupportChat()" title="تواصل مع الدعم">
+    <i class="fa-solid fa-comment-dots"></i>
+    <span id="support-chat-unread-badge" class="hidden">0</span>
+</div>
+<div id="support-chat-panel" class="hidden">
+    <div id="support-chat-panel-header">
+        <span><i class="fa-solid fa-headset"></i> الدعم والتواصل</span>
+        <button onclick="toggleSupportChat()" aria-label="إغلاق"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div id="support-chat-log"></div>
+    <div id="support-chat-input-row">
+        <input id="support-chat-input" type="text" placeholder="اكتب رسالتك هنا..." onkeydown="if(event.key==='Enter'){event.preventDefault();sendSupportChatMessage();}">
+        <button onclick="sendSupportChatMessage()" aria-label="إرسال"><i class="fa-solid fa-paper-plane"></i></button>
+    </div>
+</div>
+
 <!-- Modal: mandatory sign-in screen - shown by showAuthGate() to ANY visitor who isn't logged in with a real account (Google or email/password). No guest/anonymous access anymore.
      ملحوظة: مبيّن دلوقتي بشكل افتراضي (مش hidden) عشان محدش يشوف ولا ثانية من محتوى
      الموقع قبل ما فايربيز يتأكد إنه فعلاً مسجّل دخول - hideAuthGate() هي اللي هتقفله. -->
@@ -360,6 +377,17 @@
                 <textarea id="admin-user-modal-note" rows="2" class="w-full input-field rounded-xl px-3 py-2 text-xs" placeholder="مثلاً: تواصل بخصوص استرجاع فلوس..."></textarea>
             </div>
             <button class="admin-mini-btn w-full justify-center" onclick="adminModalSavePermissions()"><i class="fa-solid fa-floppy-disk"></i> حفظ الصلاحيات والملاحظة</button>
+        </div>
+
+        <!-- Direct chat with this user -->
+        <div class="panel-2 rounded-xl p-3 space-y-2.5">
+            <p class="section-eyebrow mb-0"><i class="fa-solid fa-comment-dots"></i> مراسلة المستخدم مباشرة</p>
+            <p class="text-[10px] text-slate-500 -mt-1.5">أي رسالة تبعتها هنا هتظهر فورًا في "الشات" العائم عند المستخدم ده في صفحته.</p>
+            <div id="admin-user-modal-chat-log" class="space-y-1.5 rounded-lg p-2 text-[11px]" style="max-height:180px; overflow-y:auto; background:var(--panel);"></div>
+            <div class="flex gap-1.5">
+                <input id="admin-user-modal-chat-input" type="text" placeholder="اكتب رسالتك للمستخدم..." class="admin-mini-input flex-1" style="width:100%" onkeydown="if(event.key==='Enter'){event.preventDefault();adminModalSendChat();}">
+                <button class="admin-mini-btn" onclick="adminModalSendChat()"><i class="fa-solid fa-paper-plane"></i></button>
+            </div>
         </div>
 
         <!-- Danger zone -->
@@ -2017,6 +2045,7 @@
                 applyAdminRoleUI();
                 document.getElementById("admin-gate-modal").classList.add("hidden");
                 document.getElementById("admin-dashboard").classList.remove("hidden");
+                if (typeof hideSupportChatFab === "function") hideSupportChatFab();
                 adminRefreshAll();
             }
         } catch (e) {
@@ -2032,6 +2061,7 @@
         sessionStorage.removeItem("yusr_admin_token");
         sessionStorage.removeItem("yusr_admin_role");
         document.getElementById("admin-dashboard").classList.add("hidden");
+        if (typeof showSupportChatFab === "function" && typeof fbAuth !== "undefined" && fbAuth.currentUser && !fbAuth.currentUser.isAnonymous) showSupportChatFab();
     };
 
     // ---- لو فيه جلسة أدمن سابقة صالحة في نفس التبويب، رجّعها تلقائي ----
@@ -2043,6 +2073,7 @@
             sessionStorage.setItem("yusr_admin_role", adminRole);
             applyAdminRoleUI();
             document.getElementById("admin-dashboard").classList.remove("hidden");
+            if (typeof hideSupportChatFab === "function") hideSupportChatFab();
             adminRefreshAll();
         } catch (e) {
             adminToken = null;
@@ -2359,11 +2390,59 @@
         noteEl.disabled = readOnly;
 
         document.getElementById("admin-user-modal").classList.remove("hidden");
+        adminModalLoadChat();
+        clearInterval(adminModalChatPollTimer);
+        adminModalChatPollTimer = setInterval(adminModalLoadChat, 15000);
     };
 
     window.adminCloseUserModal = function () {
         document.getElementById("admin-user-modal").classList.add("hidden");
         adminUserModalUid = null;
+        clearInterval(adminModalChatPollTimer);
+    };
+
+    // ---- شات مباشر مع المستخدم المفتوح في المودال دلوقتي ----
+    let adminModalChatPollTimer = null;
+    window.adminModalLoadChat = async function () {
+        if (!adminUserModalUid) return;
+        const uid = adminUserModalUid;
+        try {
+            const data = await adminFetch("/chatPoll", { method: "POST", body: JSON.stringify({ uid }) });
+            if (adminUserModalUid !== uid) return; // المستخدم اتقفل/اتغيّر لحد ما الرد رجع
+            const log = document.getElementById("admin-user-modal-chat-log");
+            const messages = data.messages || [];
+            if (!messages.length) {
+                log.innerHTML = '<p class="text-slate-500 text-center">لسه مفيش أي رسائل في المحادثة دي.</p>';
+                return;
+            }
+            log.innerHTML = messages.map(m => {
+                const isAdmin = m.from === "admin";
+                const time = m.createdAt ? new Date(m.createdAt).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" }) : "";
+                return `<div style="text-align:${isAdmin ? "left" : "right"};">
+                    <span class="inline-block rounded-lg px-2 py-1" style="max-width:85%; background:${isAdmin ? "var(--accent-strong)" : "var(--panel-2)"}; color:${isAdmin ? "#08131f" : "inherit"};">
+                        ${escapeHtml(m.text || "")}
+                    </span>
+                    <div class="text-[9px] text-slate-500 mt-0.5">${isAdmin ? "أنت (الدعم)" : "المستخدم"} · ${time}</div>
+                </div>`;
+            }).join("");
+            log.scrollTop = log.scrollHeight;
+        } catch (e) { /* فشل التحميل مش خطير - هيحاول تاني في البولينج الجاي */ }
+    };
+
+    window.adminModalSendChat = async function () {
+        if (!adminUserModalUid) return;
+        if (isViewerRole()) { adminToast("دور المشاهدة مش مسموح له بإرسال رسائل.", "error"); return; }
+        const input = document.getElementById("admin-user-modal-chat-input");
+        const text = input.value.trim();
+        if (!text) return;
+        input.value = "";
+        try {
+            await adminFetch("/chatSend", { method: "POST", body: JSON.stringify({ uid: adminUserModalUid, text }) });
+            adminModalLoadChat();
+        } catch (e) {
+            adminToast("تعذر إرسال الرسالة.", "error");
+            input.value = text;
+        }
     };
 
     window.adminModalUserAction = async function (action, value) {

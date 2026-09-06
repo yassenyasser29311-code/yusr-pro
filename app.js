@@ -1004,6 +1004,11 @@
         userDocRef(user.uid).update({
             name: p.name || '', title: p.title || '', photo: p.photo || '',
             points: p.points || 0, plan: p.plan || '', google: p.google || null,
+            // ⚠️ email + displayName لازم يتخزنوا هنا بالظبط بنفس الاسمين اللي
+            // لوحة الأدمن (worker.js) بتقراهم منهم - من غيرهم الأدمن كان بيشوف
+            // "بدون اسم" وإيميل فاضي حتى لو المستخدم فعلاً سجّل بياناته.
+            email: user.email || '',
+            displayName: p.name || user.displayName || '',
             updatedAt: firebase.database.ServerValue.TIMESTAMP
         }).catch(e => console.warn('تعذر حفظ البيانات على الخادم', e));
     }
@@ -1025,6 +1030,9 @@
                 if (cloud.google) p.google = cloud.google;
                 saveProfile(p);
                 if (Array.isArray(cloud.purchases)) savePurchases(cloud.purchases);
+                // حساب موجود من قبل بس ناقصه email/displayName (حسابات قديمة) -
+                // نكمّلهم بهدوء في الخلفية عشان يظهروا صح في لوحة الأدمن.
+                if (!cloud.email || !cloud.displayName) syncProfileToCloud(p);
             } else {
                 syncProfileToCloud(getProfile());
                 syncPurchasesToCloud(getPurchases());
@@ -1044,6 +1052,8 @@
             attachCloudUsageListener(user.uid);
             attachSuspensionListener(user.uid);
             startOnlinePing();
+            showSupportChatFab();
+            startSupportChatPolling();
             return;
         }
         // لو لقينا جلسة زائر قديمة متسجلة من قبل (قبل التحديث ده) نطلعه منها فورًا
@@ -1051,6 +1061,8 @@
             fbAuth.signOut().catch(() => {});
         }
         stopOnlinePing();
+        stopSupportChatPolling();
+        hideSupportChatFab();
         detachSuspensionListener();
         hideSuspendedGate();
         showAuthGate();
@@ -1094,6 +1106,100 @@
         if (document.visibilityState === 'visible') startOnlinePing();
         else stopOnlinePing();
     });
+
+    // ============ شات الدعم العائم (المستخدم بيتواصل فيه مع الأدمن) ============
+    let supportChatMessages = [];
+    let supportChatPollTimer = null;
+    let supportChatOpen = false;
+
+    function showSupportChatFab() {
+        const fab = document.getElementById('support-chat-fab');
+        if (fab) fab.classList.remove('hidden');
+    }
+    function hideSupportChatFab() {
+        const fab = document.getElementById('support-chat-fab');
+        if (fab) fab.classList.add('hidden');
+        const panel = document.getElementById('support-chat-panel');
+        if (panel) panel.classList.add('hidden');
+        supportChatOpen = false;
+    }
+    function startSupportChatPolling() {
+        stopSupportChatPolling();
+        pollSupportChatMessages();
+        supportChatPollTimer = setInterval(pollSupportChatMessages, 20000);
+    }
+    function stopSupportChatPolling() {
+        if (supportChatPollTimer) { clearInterval(supportChatPollTimer); supportChatPollTimer = null; }
+    }
+    async function pollSupportChatMessages() {
+        const user = fbAuth.currentUser;
+        if (!user || user.isAnonymous) return;
+        try {
+            const response = await fetch(`${CLOUD_FUNCTIONS_BASE}/chatPoll`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...(await getAuthHeader()) },
+                body: JSON.stringify({})
+            });
+            if (!response.ok) return;
+            const data = await response.json();
+            supportChatMessages = data.messages || [];
+            renderSupportChat();
+        } catch (e) { /* فشل شبكة عابر - هيحاول تاني في البولينج الجاي */ }
+    }
+    function renderSupportChat() {
+        const log = document.getElementById('support-chat-log');
+        const badge = document.getElementById('support-chat-unread-badge');
+        if (!log) return;
+        if (!supportChatMessages.length) {
+            log.innerHTML = '<p class="sc-empty">اكتب رسالتك هنا لو محتاج مساعدة أو عندك استفسار، وفريق الدعم هيردّ عليك.</p>';
+        } else {
+            log.innerHTML = supportChatMessages.map(m => {
+                const fromAdmin = m.from === 'admin';
+                const time = m.createdAt ? new Date(m.createdAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : '';
+                return `<div class="sc-msg ${fromAdmin ? 'sc-from-admin' : 'sc-from-user'}">${escapeHtml(m.text || '')}<span class="sc-time">${fromAdmin ? 'الدعم' : 'أنت'} · ${time}</span></div>`;
+            }).join('');
+            if (supportChatOpen) log.scrollTop = log.scrollHeight;
+        }
+        // بادج العداد بيبان بس لو الشات مقفول عشان يلفت النظر لرسالة جديدة من الدعم
+        const unreadFromAdmin = supportChatMessages.filter(m => m.from === 'admin' && !m.readByUser).length;
+        if (badge) {
+            if (!supportChatOpen && unreadFromAdmin > 0) {
+                badge.textContent = String(unreadFromAdmin);
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+    }
+    window.toggleSupportChat = function () {
+        const panel = document.getElementById('support-chat-panel');
+        if (!panel) return;
+        supportChatOpen = panel.classList.contains('hidden');
+        panel.classList.toggle('hidden', !supportChatOpen);
+        if (supportChatOpen) {
+            pollSupportChatMessages(); // بيعلّم رسائل الدعم كمقروءة فور الفتح ويشيل البادج
+        }
+    };
+    window.sendSupportChatMessage = async function () {
+        const input = document.getElementById('support-chat-input');
+        if (!input) return;
+        const text = input.value.trim();
+        if (!text) return;
+        const user = fbAuth.currentUser;
+        if (!user || user.isAnonymous) return;
+        input.value = '';
+        try {
+            await fetch(`${CLOUD_FUNCTIONS_BASE}/chatSend`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...(await getAuthHeader()) },
+                body: JSON.stringify({ text })
+            });
+            pollSupportChatMessages();
+        } catch (e) {
+            showToast('تعذر إرسال رسالتك، جرّب تاني.', 'error');
+            input.value = text;
+        }
+    };
 
     // ============ Points & Profile (device-wide, optional Google sign-in) ============
     function getProfile() {
@@ -1916,31 +2022,69 @@
     function prefetchTtsAudio(text) {
         if (!text) return;
         try {
+            const cleanText = sanitizeTextForSpeech(text);
+            if (!cleanText) return;
             const langVoices = EDGE_TTS_VOICES[currentAppLang] || EDGE_TTS_VOICES["ar-EG"];
             const voice = langVoices[voiceGenderPref] || langVoices.male;
-            const key = ttsCacheKey(text, voice);
+            const key = ttsCacheKey(cleanText, voice);
             if (ttsAudioCache.has(key)) return;
-            const pending = fetchEdgeTtsBlob(text, voice).catch((e) => { ttsAudioCache.delete(key); throw e; });
+            const pending = fetchEdgeTtsBlob(cleanText, voice).catch((e) => { ttsAudioCache.delete(key); throw e; });
             ttsAudioCache.set(key, pending);
         } catch (e) { /* التجهيز المسبق اختياري بحت، أي فشل هنا مش مهم */ }
     }
+    // بننضّف النص قبل ما نبعته لأي محرك نطق (متصفح أو Edge TTS) - علامات
+    // الماركداون (* _ # ` ~) والأقواس والرموز دي مش بتتقال، وأي محرك نطق
+    // بيحاول "يقرأها" بيبان وكأنه بينطق كلام غلط أو غريب النبرة.
+    function sanitizeTextForSpeech(text) {
+        return String(text || '')
+            .replace(/[*_#`~]/g, '')
+            .replace(/\[(.*?)\]\((.*?)\)/g, '$1') // روابط ماركداون [نص](رابط) -> النص بس
+            .replace(/[<>]/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
     async function speakText(text) {
         if (!isVoiceEnabled) return;
         stopSpeaking(); // نوقف أي صوت شغال قبل ما نبدأ الجديد، عشان محدش يتراكب فوق التاني
+        const cleanText = sanitizeTextForSpeech(text);
+        if (!cleanText) return;
         const indicator = document.getElementById('ai-speaking-indicator');
         document.getElementById('status-text').innerText = `${currentInterviewerName} (HR) يتحدث...`;
         indicator.classList.remove('hidden');
 
-        // بنستخدم صوت المتصفح المحلي (Web Speech API) بس لو فعلاً لاقينا صوت مثبّت على
-        // الجهاز/المتصفح بنفس لغة الواجهة الحالية (مثلاً عربي). لو مفيش صوت عربي حقيقي
-        // مثبّت (شائع جدًا على متصفحات موبايل كتير)، بنستخدم فورًا صوت Edge TTS الحقيقي
-        // من السيرفر بدل ما نسيب المتصفح "يبهدل" النص العربي بصوت إنجليزي غلط أو يسكت
-        // تمامًا من غير أي رسالة خطأ واضحة - وده كان سبب "الصوت العربي مش شغال".
+        // ✅ بنستخدم Edge TTS (صوت Microsoft Neural حقيقي) كخيار أساسي دايمًا،
+        // مش صوت المتصفح المحلي - لأن صوت المتصفح (خصوصًا محركات النطق
+        // المدمجة في أندرويد) بينطق العربي غلط جدًا في كتير من الأجهزة. Edge
+        // TTS أدق بكتير، وبنعوّض بطئه النسبي بتجهيز الصوت مبكرًا (prefetch)
+        // فور ما نص الرد يوصل - قبل حتى ما نضيفه لصندوق المحادثة - عشان يبقى
+        // جاهز أو شبه جاهز لحظة ما نيجي نشغّله هنا (ده اللي بيخلي الصوت "يطلع
+        // فورًا" بدل ما ياخد وقت واضح بعد ظهور الكلام على الشاشة).
+        try {
+            const langVoices = EDGE_TTS_VOICES[currentAppLang] || EDGE_TTS_VOICES["ar-EG"];
+            const voice = langVoices[voiceGenderPref] || langVoices.male;
+            const key = ttsCacheKey(cleanText, voice);
+            // لو الصوت ده كان اتجهّز مسبقًا (prefetchTtsAudio) هياخده جاهز من الكاش
+            // فورًا من غير ما يستنى رحلة سيرفر جديدة تاني.
+            const blob = await (ttsAudioCache.get(key) || fetchEdgeTtsBlob(cleanText, voice));
+            ttsAudioCache.delete(key);
+            const audio = new Audio(URL.createObjectURL(blob));
+            currentSpeakingAudio = audio;
+            audio.onended = () => { indicator.classList.add('hidden'); if (currentSpeakingAudio === audio) currentSpeakingAudio = null; };
+            audio.onpause = () => { indicator.classList.add('hidden'); };
+            await audio.play();
+            return;
+        } catch (e) {
+            console.error("Edge TTS Voice Error:", e);
+        }
+
+        // Edge TTS فشل (مثلاً مفيش نت) -> نجرب صوت المتصفح المحلي كحل احتياطي
+        // بس، أحسن من السكوت التام، حتى لو نطقه أقل دقة.
         if ('speechSynthesis' in window) {
             const bestVoice = getBestBrowserVoice(voiceGenderPref);
             if (bestVoice) {
                 window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(text.replace(/[*_#`~]/g, ''));
+                const utterance = new SpeechSynthesisUtterance(cleanText);
                 utterance.voice = bestVoice; utterance.lang = bestVoice.lang;
                 utterance.pitch = voiceGenderPref === 'female' ? 1.15 : 0.9;
                 utterance.rate = 0.95;
@@ -1950,24 +2094,6 @@
                 return;
             }
         }
-
-        // مفيش صوت متصفح مناسب (أو المتصفح مش بيدعم Web Speech API خالص) -> نستخدم
-        // Edge TTS عن طريق السيرفر، وده بيضمن صوت عربي حقيقي دايمًا مهما كان المتصفح.
-        try {
-            const langVoices = EDGE_TTS_VOICES[currentAppLang] || EDGE_TTS_VOICES["ar-EG"];
-            const voice = langVoices[voiceGenderPref] || langVoices.male;
-            const key = ttsCacheKey(text, voice);
-            // لو الصوت ده كان اتجهّز مسبقًا (prefetchTtsAudio) هياخده جاهز من الكاش
-            // فورًا من غير ما يستنى رحلة سيرفر جديدة تاني.
-            const blob = await (ttsAudioCache.get(key) || fetchEdgeTtsBlob(text, voice));
-            ttsAudioCache.delete(key);
-            const audio = new Audio(URL.createObjectURL(blob));
-            currentSpeakingAudio = audio;
-            audio.onended = () => { indicator.classList.add('hidden'); if (currentSpeakingAudio === audio) currentSpeakingAudio = null; };
-            audio.onpause = () => { indicator.classList.add('hidden'); };
-            await audio.play();
-            return;
-        } catch (e) { console.error("Edge TTS Voice Error:", e); }
         indicator.classList.add('hidden');
     }
 
@@ -2053,6 +2179,7 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
             const aiResponse = await callGroqConversation(chatHistory);
             document.getElementById('chat-history').lastChild.remove();
             chatHistory.push({ role: "assistant", content: aiResponse });
+            prefetchTtsAudio(aiResponse); // نبدأ نجهّز الصوت فورًا قبل حتى ما نكتب الرسالة في الشاشة
             appendChatMessage("ai", aiResponse);
             speakText(aiResponse);
             saveInterviewState();
@@ -2086,6 +2213,7 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
             incrementDeviceUsage();
             indicator.classList.add('hidden');
             chatHistory.push({ role: "assistant", content: aiResponse });
+            prefetchTtsAudio(aiResponse); // نبدأ نجهّز الصوت فورًا قبل حتى ما نكتب الرسالة في الشاشة
             appendChatMessage("ai", aiResponse);
             speakText(aiResponse);
             saveInterviewState();
