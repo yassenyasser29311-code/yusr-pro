@@ -183,6 +183,22 @@ export default {
     if (url.pathname === "/adminBackupNow") {
       return handleAdminBackupNow(request, env, corsHeaders, ctx);
     }
+    if (url.pathname === "/adminListSubscriptionRequests") {
+      return handleAdminListSubscriptionRequests(request, env, corsHeaders);
+    }
+    if (url.pathname === "/adminReviewSubscriptionRequest") {
+      return handleAdminReviewSubscriptionRequest(request, env, corsHeaders, ctx);
+    }
+
+    // ---- شات مباشر بين الأدمن ومستخدم بعينه: الأدمن بيبعت من لوحة التحكم
+    //      (بتوكن X-Admin-Token)، والمستخدم بيبعت/يستقبل من "الشات العائم"
+    //      في صفحته العادية (بتوكن Firebase Bearer العادي) ----
+    if (url.pathname === "/chatSend") {
+      return handleChatSend(request, env, corsHeaders, ctx);
+    }
+    if (url.pathname === "/chatPoll") {
+      return handleChatPoll(request, env, corsHeaders);
+    }
 
     // ---- مسار عام (مش أدمن): "نسيت الباسورد" لأي مستخدم عادي ----
     if (url.pathname === "/forgotPassword") {
@@ -1017,7 +1033,9 @@ async function handleAdminListUsers(request, env, corsHeaders) {
       return {
         uid,
         email: u.email || null,
-        displayName: u.displayName || null,
+        // بعض الحسابات القديمة اتسجّل اسمها تحت "name" مش "displayName" -
+        // بنقبل الاتنين عشان الاسم يظهر دايمًا في لوحة الأدمن.
+        displayName: u.displayName || u.name || null,
         plan: planName,
         customLimit: typeof u.customLimit === "number" ? u.customLimit : null,
         suspended: u.suspended === true,
@@ -1032,6 +1050,218 @@ async function handleAdminListUsers(request, env, corsHeaders) {
     return json({ ok: true, users }, 200, corsHeaders);
   } catch (e) {
     console.error("handleAdminListUsers فشل:", e);
+    return json({ error: "internal_error" }, 500, corsHeaders);
+  }
+}
+
+// ---- طلبات الاشتراك (تحويل يدوي Vodafone Cash / InstaPay) اللي لسه معلّقة أو
+//      اتراجعت بالفعل - العميل بيبعتها في "pending_requests" لما يضغط "تم التحويل،
+//      ابعت الطلب" في صفحة الاشتراكات، وهنا الأدمن بس هو اللي يشوفها ----
+async function handleAdminListSubscriptionRequests(request, env, corsHeaders) {
+  const admin = await requireAdminSession(request, env);
+  if (!admin.ok) return json({ error: admin.error }, 401, corsHeaders);
+  if (!env.FIREBASE_ADMIN_SECRET) {
+    return json({ error: "admin_db_secret_not_configured" }, 500, corsHeaders);
+  }
+
+  try {
+    const raw = (await fbAdminGet("pending_requests", env)) || {};
+    // لو الطلب متسجّل من غير اسم أو إيميل (مثلاً طلبات قديمة، أو حصل خطأ في
+    // الفورم وقت الإرسال)، بنكمّلهم من بيانات صاحب الحساب الفعلية على
+    // users/{uid} - عشان الأدمن ميشوفش "بدون اسم" أبداً طالما فيه uid صحيح.
+    let usersRaw = null;
+    const requests = await Promise.all(
+      Object.entries(raw).map(async ([id, r]) => {
+        r = r || {};
+        const entry = { id, ...r };
+        if ((!entry.name || !entry.email) && entry.uid) {
+          if (usersRaw === null) usersRaw = (await fbAdminGet("users", env)) || {};
+          const u = usersRaw[entry.uid] || {};
+          if (!entry.name) entry.name = u.displayName || u.name || "";
+          if (!entry.email) entry.email = u.email || "";
+        }
+        return entry;
+      })
+    );
+    requests.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    return json({ ok: true, requests }, 200, corsHeaders);
+  } catch (e) {
+    console.error("handleAdminListSubscriptionRequests فشل:", e);
+    return json({ error: "internal_error" }, 500, corsHeaders);
+  }
+}
+
+// ---- موافقة/رفض طلب اشتراك واحد. عند الموافقة الباقة بتتفعّل فورًا وأوتوماتيك
+//      على حساب المستخدم (users/{uid}/plan) - مفيش خطوة يدوية تانية بعد الموافقة ----
+async function handleAdminReviewSubscriptionRequest(request, env, corsHeaders, ctx) {
+  const admin = await requireSuperAdmin(request, env);
+  if (!admin.ok) return json({ error: admin.error }, admin.error === "forbidden_role" ? 403 : 401, corsHeaders);
+  if (!env.FIREBASE_ADMIN_SECRET) {
+    return json({ error: "admin_db_secret_not_configured" }, 500, corsHeaders);
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch (e) {
+    return json({ error: "invalid_json" }, 400, corsHeaders);
+  }
+
+  const requestId = typeof body?.requestId === "string" ? body.requestId.trim() : "";
+  const action = typeof body?.action === "string" ? body.action : "";
+  if (!requestId || (action !== "approve" && action !== "reject")) {
+    return json({ error: "invalid_request" }, 400, corsHeaders);
+  }
+
+  try {
+    const reqRaw = await fbAdminGet(`pending_requests/${requestId}`, env);
+    if (!reqRaw) return json({ error: "request_not_found" }, 404, corsHeaders);
+
+    if (action === "approve") {
+      // الباقة المطلوبة لازم تكون واحدة من الباقات المعروفة عشان تتفعّل تلقائيًا.
+      // لو باقة مخصّصة (زي فرق/جامعات) مش من ضمن PLAN_LIMITS، الأدمن يبعت
+      // planOverride صريح وقت الموافقة يحدد بيه الباقة الفعلية اللي هتتفعّل.
+      const planToSet = PLAN_LIMITS.hasOwnProperty(body.planOverride)
+        ? body.planOverride
+        : (PLAN_LIMITS.hasOwnProperty(reqRaw.plan) ? reqRaw.plan : null);
+      if (!planToSet) {
+        return json({ error: "unknown_plan_needs_override" }, 400, corsHeaders);
+      }
+      if (!reqRaw.uid) {
+        return json({ error: "request_missing_uid" }, 400, corsHeaders);
+      }
+      await fbAdminPut(`users/${reqRaw.uid}/plan`, planToSet, env);
+      await fbAdminPut(`pending_requests/${requestId}/status`, "approved", env);
+      await fbAdminPut(`pending_requests/${requestId}/reviewedAt`, Date.now(), env);
+      await fbAdminPut(`pending_requests/${requestId}/reviewedBy`, admin.role, env);
+      if (ctx) ctx.waitUntil(logAdminActivity(env, "subscription_approved", { requestId, uid: reqRaw.uid, plan: planToSet }));
+    } else {
+      const reason = typeof body.reason === "string" ? body.reason.slice(0, 500) : "";
+      await fbAdminPut(`pending_requests/${requestId}/status`, "rejected", env);
+      await fbAdminPut(`pending_requests/${requestId}/reviewedAt`, Date.now(), env);
+      await fbAdminPut(`pending_requests/${requestId}/reviewedBy`, admin.role, env);
+      if (reason) await fbAdminPut(`pending_requests/${requestId}/rejectReason`, reason, env);
+      if (ctx) ctx.waitUntil(logAdminActivity(env, "subscription_rejected", { requestId, uid: reqRaw.uid || null, reason }));
+    }
+
+    return json({ ok: true }, 200, corsHeaders);
+  } catch (e) {
+    console.error("handleAdminReviewSubscriptionRequest فشل:", e);
+    return json({ error: "internal_error" }, 500, corsHeaders);
+  }
+}
+
+// ================================================================
+// ============== شات مباشر (أدمن ⇄ مستخدم) ==============
+// ================================================================
+// بيتخزن في Firebase تحت chat_messages/{uid}/{messageId}. كل رسالة:
+// { from: "admin" | "user", text, createdAt, readByAdmin, readByUser }.
+// "uid" هنا هو uid المستخدم صاحب المحادثة (مفيش تعدد محادثات لكل مستخدم -
+// محادثة واحدة بينه وبين الدعم/الأدمن).
+
+function makeChatMessageId() {
+  return `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+// بيحدد هل الطلب جاي من الأدمن (X-Admin-Token) ولا من مستخدم عادي (Firebase
+// Bearer token)، ويرجّع uid المحادثة المطلوبة + دور المرسل. لو الطلب أدمن
+// لازم يبعت "uid" صريح في الـ body يحدد مع مين المحادثة.
+async function resolveChatIdentity(request, env, body) {
+  const adminTokenHeader = request.headers.get("X-Admin-Token");
+  if (adminTokenHeader) {
+    const admin = await requireAdminSession(request, env);
+    if (!admin.ok) return { ok: false, error: admin.error, status: 401 };
+    const targetUid = typeof body?.uid === "string" ? body.uid.trim() : "";
+    if (!targetUid) return { ok: false, error: "uid_required", status: 400 };
+    return { ok: true, role: "admin", adminRole: admin.role, uid: targetUid };
+  }
+  const auth = await verifyFirebaseToken(request, env);
+  if (!auth.ok) return { ok: false, error: auth.error, status: 401 };
+  return { ok: true, role: "user", uid: auth.uid };
+}
+
+// ---- إرسال رسالة (من الأدمن لمستخدم، أو من المستخدم لصفحة الدعم) ----
+async function handleChatSend(request, env, corsHeaders, ctx) {
+  if (!env.FIREBASE_ADMIN_SECRET) {
+    return json({ error: "admin_db_secret_not_configured" }, 500, corsHeaders);
+  }
+  let body;
+  try {
+    body = await request.json();
+  } catch (e) {
+    return json({ error: "invalid_json" }, 400, corsHeaders);
+  }
+
+  const identity = await resolveChatIdentity(request, env, body);
+  if (!identity.ok) return json({ error: identity.error }, identity.status, corsHeaders);
+  if (identity.role === "admin" && identity.adminRole !== "superadmin") {
+    return json({ error: "forbidden_role" }, 403, corsHeaders);
+  }
+
+  const text = typeof body?.text === "string" ? body.text.trim() : "";
+  if (!text) return json({ error: "text_required" }, 400, corsHeaders);
+  if (text.length > 2000) return json({ error: "text_too_long" }, 400, corsHeaders);
+
+  const message = {
+    from: identity.role, // "admin" أو "user"
+    text,
+    createdAt: Date.now(),
+    readByAdmin: identity.role === "admin",
+    readByUser: identity.role === "user"
+  };
+
+  try {
+    const messageId = makeChatMessageId();
+    await fbAdminPut(`chat_messages/${identity.uid}/${messageId}`, message, env);
+    if (identity.role === "admin" && ctx) {
+      ctx.waitUntil(logAdminActivity(env, "chat_message_sent", { uid: identity.uid }));
+    }
+    return json({ ok: true, id: messageId }, 200, corsHeaders);
+  } catch (e) {
+    console.error("handleChatSend فشل:", e);
+    return json({ error: "internal_error" }, 500, corsHeaders);
+  }
+}
+
+// ---- جلب محادثة كاملة (الأدمن بيحدد uid في الـ body، المستخدم بيجيب محادثته هو بس) ----
+//      وبيعلّم تلقائياً كل رسائل الطرف التاني كـ"مقروءة" أول ما تتجاب هنا.
+async function handleChatPoll(request, env, corsHeaders) {
+  if (!env.FIREBASE_ADMIN_SECRET) {
+    return json({ error: "admin_db_secret_not_configured" }, 500, corsHeaders);
+  }
+  let body;
+  try {
+    body = await request.json();
+  } catch (e) {
+    body = {};
+  }
+
+  const identity = await resolveChatIdentity(request, env, body);
+  if (!identity.ok) return json({ error: identity.error }, identity.status, corsHeaders);
+
+  try {
+    const raw = (await fbAdminGet(`chat_messages/${identity.uid}`, env)) || {};
+    const messages = Object.entries(raw)
+      .map(([id, m]) => ({ id, ...(m || {}) }))
+      .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+
+    // نعلّم رسائل الطرف التاني كمقروءة (الأدمن بيقرا رسائل المستخدم، والمستخدم بيقرا رسائل الأدمن)
+    const readField = identity.role === "admin" ? "readByAdmin" : "readByUser";
+    const otherFrom = identity.role === "admin" ? "user" : "admin";
+    const unreadIds = messages.filter(m => m.from === otherFrom && !m[readField]).map(m => m.id);
+    if (unreadIds.length) {
+      await Promise.all(
+        unreadIds.map(id => fbAdminPut(`chat_messages/${identity.uid}/${id}/${readField}`, true, env).catch(() => {}))
+      );
+      unreadIds.forEach(id => {
+        const m = messages.find(x => x.id === id);
+        if (m) m[readField] = true;
+      });
+    }
+
+    return json({ ok: true, messages }, 200, corsHeaders);
+  } catch (e) {
+    console.error("handleChatPoll فشل:", e);
     return json({ error: "internal_error" }, 500, corsHeaders);
   }
 }
@@ -1064,7 +1294,7 @@ async function handleAdminStats(request, env, corsHeaders) {
 
       if (typeof u.lastSeen === "number" && now - u.lastSeen < ONLINE_THRESHOLD_MS) {
         onlineCount++;
-        onlineUsers.push({ uid, email: u.email || null, displayName: u.displayName || null });
+        onlineUsers.push({ uid, email: u.email || null, displayName: u.displayName || u.name || null });
       }
     }
 
