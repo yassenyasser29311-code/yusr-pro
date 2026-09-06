@@ -43,6 +43,10 @@
     };
     let voiceGenderPref = localStorage.getItem('yusr_voice_gender') || 'male';
     let currentSpeakingAudio = null; // بنتتبع الصوت الشغال دلوقتي عشان زرار الإيقاف يقدر يوقفه فوراً
+    // بيتزوّد كل مرة نبدأ فيها تشغيل صوت جديد (speakTextChunked) - أي حلقة
+    // تشغيل جمل قديمة بتشيك عليه، ولو اتغيّر (يعني بدأ رد جديد أو المستخدم
+    // وقف الصوت) بتوقف نفسها فورًا بدل ما تكمل تشغّل جمل من رد قديم فوق الجديد.
+    let speakQueueToken = 0;
     let cachedBrowserVoices = [];
     if ('speechSynthesis' in window) {
         const refreshVoices = () => { cachedBrowserVoices = window.speechSynthesis.getVoices() || []; };
@@ -2002,6 +2006,7 @@
     }
 
     function stopSpeaking() {
+        speakQueueToken++; // يوقف أي حلقة تشغيل جمل (speakTextChunked) شغالة دلوقتي
         if ('speechSynthesis' in window) window.speechSynthesis.cancel();
         if (currentSpeakingAudio) {
             try { currentSpeakingAudio.pause(); currentSpeakingAudio.currentTime = 0; } catch (e) {}
@@ -2057,21 +2062,6 @@
         if (!response.ok) throw new Error(`Edge TTS error: ${response.status}`);
         return await response.blob();
     }
-    // بيتنادى بدري (من غير انتظار/await) عشان يجهّز الصوت في الكاش قبل ما المستخدم
-    // يدوس زرار التشغيل أصلاً. أي خطأ هنا بنتجاهله بهدوء - speakText هيحاول تاني عادي.
-    function prefetchTtsAudio(text) {
-        if (!text) return;
-        try {
-            const cleanText = sanitizeTextForSpeech(text);
-            if (!cleanText) return;
-            const langVoices = EDGE_TTS_VOICES[currentAppLang] || EDGE_TTS_VOICES["ar-EG"];
-            const voice = langVoices[voiceGenderPref] || langVoices.male;
-            const key = ttsCacheKey(cleanText, voice);
-            if (ttsAudioCache.has(key)) return;
-            const pending = fetchEdgeTtsBlob(cleanText, voice).catch((e) => { ttsAudioCache.delete(key); throw e; });
-            ttsAudioCache.set(key, pending);
-        } catch (e) { /* التجهيز المسبق اختياري بحت، أي فشل هنا مش مهم */ }
-    }
     // بننضّف النص قبل ما نبعته لأي محرك نطق (متصفح أو Edge TTS) - علامات
     // الماركداون (* _ # ` ~) والأقواس والرموز دي مش بتتقال، وأي محرك نطق
     // بيحاول "يقرأها" بيبان وكأنه بينطق كلام غلط أو غريب النبرة.
@@ -2084,58 +2074,118 @@
             .trim();
     }
 
-    async function speakText(text) {
+    // ============ تقسيم رد الـ AI لجمل قصيرة عشان الصوت يبدأ بسرعة ============
+    // بدل ما نبعت رد الـ AI كامل (ممكن يكون 3-4 أسطر) كطلب واحد لـ edge-tts
+    // ونستنى السيرفر يجهّز الصوت بتاع النص كله قبل ما نقدر نشغّل ولا نص ثانية،
+    // بنقسّمه هنا لجمل على حدة (على أساس . ! ? ؟) ونطلب صوت كل جملة لوحدها.
+    // الجملة الأولى قصيرة، فالسيرفر بيرجّعها بسرعة كبيرة، وده اللي بيخلي
+    // الصوت "يبدأ" تقريبًا في نفس لحظة ظهور النص، بدل ما ياخد وقت واضح وهو
+    // بيجهّز كل الرد مرة واحدة. باقي الجمل بتتجهّز بالتوازي في الخلفية
+    // وبتتشغّل واحدة ورا التانية بالترتيب الصحيح.
+    function splitIntoSentences(text) {
+        const clean = sanitizeTextForSpeech(text);
+        if (!clean) return [];
+        // بيقسّم عند أي علامة نهاية جملة (. ! ? ؟) مع الاحتفاظ بيها، وبياخد
+        // آخر جزء من غير علامة نهاية لو النص مش منتهي بواحدة منها.
+        const parts = clean.match(/[^.!?؟]+[.!?؟]+|[^.!?؟]+$/g) || [clean];
+        return parts.map(p => p.trim()).filter(Boolean);
+    }
+    // بيتنادى بدري (من غير انتظار/await) عشان يجهّز صوت كل جملة في الكاش
+    // بالتوازي قبل حتى ما نضيف الرسالة لصندوق المحادثة. أي خطأ هنا بنتجاهله
+    // بهدوء - speakTextChunked هيحاول يجيب أي جملة ناقصة تاني بنفسه.
+    function prefetchTtsAudio(text) {
+        if (!text) return;
+        try {
+            const sentences = splitIntoSentences(text);
+            if (!sentences.length) return;
+            const langVoices = EDGE_TTS_VOICES[currentAppLang] || EDGE_TTS_VOICES["ar-EG"];
+            const voice = langVoices[voiceGenderPref] || langVoices.male;
+            sentences.forEach((sentence) => {
+                const key = ttsCacheKey(sentence, voice);
+                if (ttsAudioCache.has(key)) return;
+                const pending = fetchEdgeTtsBlob(sentence, voice).catch((e) => { ttsAudioCache.delete(key); throw e; });
+                ttsAudioCache.set(key, pending);
+            });
+        } catch (e) { /* التجهيز المسبق اختياري بحت، أي فشل هنا مش مهم */ }
+    }
+
+    // بيشغّل جملة واحدة بصوت المتصفح المحلي (fallback لو Edge TTS فشل في
+    // الجملة دي بالذات)، ويرجّع Promise بيتحل لما الجملة تخلص كلامها.
+    function speakSentenceWithBrowserVoice(sentence) {
+        return new Promise((resolve) => {
+            if (!('speechSynthesis' in window)) return resolve();
+            const bestVoice = getBestBrowserVoice(voiceGenderPref);
+            if (!bestVoice) return resolve();
+            const utterance = new SpeechSynthesisUtterance(sentence);
+            utterance.voice = bestVoice; utterance.lang = bestVoice.lang;
+            utterance.pitch = voiceGenderPref === 'female' ? 1.15 : 0.9;
+            utterance.rate = 0.95;
+            utterance.onend = () => resolve();
+            utterance.onerror = () => resolve();
+            window.speechSynthesis.speak(utterance);
+        });
+    }
+
+    // ✅ بنستخدم Edge TTS (صوت Microsoft Neural حقيقي) كخيار أساسي دايمًا،
+    // مش صوت المتصفح المحلي - لأن صوت المتصفح (خصوصًا محركات النطق المدمجة
+    // في أندرويد) بينطق العربي غلط جدًا في كتير من الأجهزة.
+    //
+    // بدل ما نبعت رد الـ AI كامل كطلب صوت واحد (وده بيخلي أول صوت يطلع بعد
+    // تأخير واضح لأن السيرفر لازم يجهّز الرد الطويل كله الأول)، بنقسّمه هنا
+    // لجمل (splitIntoSentences) ونشغّلهم واحدة ورا التانية: أول ما صوت أول
+    // جملة يجهز (وهو أسرع بكتير لأنه قصير) بيشتغل فورًا، وباقي الجمل بتفضل
+    // تتجهّز في الخلفية وتتشغّل بالترتيب لحد ما الرد يخلص.
+    async function speakTextChunked(text) {
         if (!isVoiceEnabled) return;
-        stopSpeaking(); // نوقف أي صوت شغال قبل ما نبدأ الجديد، عشان محدش يتراكب فوق التاني
-        const cleanText = sanitizeTextForSpeech(text);
-        if (!cleanText) return;
+        stopSpeaking(); // نوقف أي صوت شغال قبل ما نبدأ الجديد، عشان محدش يتراكب فوق التاني ويلغي حلقة التشغيل القديمة
+        const myToken = speakQueueToken; // اتزوّد جوه stopSpeaking() فوق - ده رقم "الجلسة" بتاعتنا
+        const sentences = splitIntoSentences(text);
+        if (!sentences.length) return;
+
         const indicator = document.getElementById('ai-speaking-indicator');
         document.getElementById('status-text').innerText = `${currentInterviewerName} (HR) يتحدث...`;
         indicator.classList.remove('hidden');
 
-        // ✅ بنستخدم Edge TTS (صوت Microsoft Neural حقيقي) كخيار أساسي دايمًا،
-        // مش صوت المتصفح المحلي - لأن صوت المتصفح (خصوصًا محركات النطق
-        // المدمجة في أندرويد) بينطق العربي غلط جدًا في كتير من الأجهزة. Edge
-        // TTS أدق بكتير، وبنعوّض بطئه النسبي بتجهيز الصوت مبكرًا (prefetch)
-        // فور ما نص الرد يوصل - قبل حتى ما نضيفه لصندوق المحادثة - عشان يبقى
-        // جاهز أو شبه جاهز لحظة ما نيجي نشغّله هنا (ده اللي بيخلي الصوت "يطلع
-        // فورًا" بدل ما ياخد وقت واضح بعد ظهور الكلام على الشاشة).
-        try {
-            const langVoices = EDGE_TTS_VOICES[currentAppLang] || EDGE_TTS_VOICES["ar-EG"];
-            const voice = langVoices[voiceGenderPref] || langVoices.male;
-            const key = ttsCacheKey(cleanText, voice);
-            // لو الصوت ده كان اتجهّز مسبقًا (prefetchTtsAudio) هياخده جاهز من الكاش
-            // فورًا من غير ما يستنى رحلة سيرفر جديدة تاني.
-            const blob = await (ttsAudioCache.get(key) || fetchEdgeTtsBlob(cleanText, voice));
-            ttsAudioCache.delete(key);
-            const audio = new Audio(URL.createObjectURL(blob));
-            currentSpeakingAudio = audio;
-            audio.onended = () => { indicator.classList.add('hidden'); if (currentSpeakingAudio === audio) currentSpeakingAudio = null; };
-            audio.onpause = () => { indicator.classList.add('hidden'); };
-            await audio.play();
-            return;
-        } catch (e) {
-            console.error("Edge TTS Voice Error:", e);
-        }
+        const langVoices = EDGE_TTS_VOICES[currentAppLang] || EDGE_TTS_VOICES["ar-EG"];
+        const voice = langVoices[voiceGenderPref] || langVoices.male;
 
-        // Edge TTS فشل (مثلاً مفيش نت) -> نجرب صوت المتصفح المحلي كحل احتياطي
-        // بس، أحسن من السكوت التام، حتى لو نطقه أقل دقة.
-        if ('speechSynthesis' in window) {
-            const bestVoice = getBestBrowserVoice(voiceGenderPref);
-            if (bestVoice) {
-                window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(cleanText);
-                utterance.voice = bestVoice; utterance.lang = bestVoice.lang;
-                utterance.pitch = voiceGenderPref === 'female' ? 1.15 : 0.9;
-                utterance.rate = 0.95;
-                utterance.onend = () => indicator.classList.add('hidden');
-                utterance.onerror = () => indicator.classList.add('hidden');
-                window.speechSynthesis.speak(utterance);
-                return;
+        // نتأكد إن كل الجمل بدأت تتطلب من السيرفر بالتوازي من دلوقتي (لو
+        // prefetchTtsAudio كان اتنادى قبل كده على نفس النص هياخد نفس الطلبات
+        // الشغالة من الكاش بدل ما يبعت تاني من الأول).
+        const pendingBlobs = sentences.map((sentence) => {
+            const key = ttsCacheKey(sentence, voice);
+            if (ttsAudioCache.has(key)) return ttsAudioCache.get(key);
+            const pending = fetchEdgeTtsBlob(sentence, voice).catch((e) => { ttsAudioCache.delete(key); throw e; });
+            ttsAudioCache.set(key, pending);
+            return pending;
+        });
+
+        for (let i = 0; i < sentences.length; i++) {
+            if (myToken !== speakQueueToken) return; // بدأ رد جديد أو المستخدم وقف الصوت - نوقف هنا فورًا
+            const key = ttsCacheKey(sentences[i], voice);
+            try {
+                const blob = await pendingBlobs[i];
+                ttsAudioCache.delete(key);
+                if (myToken !== speakQueueToken) return;
+                await new Promise((resolve) => {
+                    const audio = new Audio(URL.createObjectURL(blob));
+                    currentSpeakingAudio = audio;
+                    audio.onended = () => { if (currentSpeakingAudio === audio) currentSpeakingAudio = null; resolve(); };
+                    audio.onerror = () => resolve();
+                    audio.play().then(() => {}, () => resolve());
+                });
+            } catch (e) {
+                console.error("Edge TTS Voice Error (جملة رقم " + (i + 1) + "):", e);
+                if (myToken !== speakQueueToken) return;
+                // فشلت جملة واحدة بس (مثلاً مفيش نت لحظة الطلب دي) - نجرب صوت
+                // المتصفح المحلي للجملة دي بس، ونكمل باقي الجمل عادي بدل ما نوقف كل حاجة.
+                await speakSentenceWithBrowserVoice(sentences[i]);
             }
         }
-        indicator.classList.add('hidden');
+        if (myToken === speakQueueToken) indicator.classList.add('hidden');
     }
+    // اسم قديم متسيب لأي مكان تاني في الكود ممكن لسه بينادي عليه بنفس التوقيع.
+    function speakText(text) { return speakTextChunked(text); }
 
     // ============ Interview session persistence (يخلي المحاور "يفتكر" حتى لو قفلت الصفحة أو رجعت بعد شوية) ============
     function saveInterviewState() {
