@@ -1112,7 +1112,16 @@
     let supportChatPollTimer = null;
     let supportChatOpen = false;
 
+    // ملحوظة مهمة: fbAuth.onAuthStateChanged بيتنادى مش بس أول ما الصفحة
+    // تفتح، لكن كمان أي وقت تاني (تجديد التوكن التلقائي، رجوع النت، إلخ) -
+    // فلو نادى showSupportChatFab() من غير أي شرط، ممكن يرجّع زرار الشات
+    // العائم يظهر فوق لوحة الأدمن حتى لو اتقفل قبل كده (لأن لوحة الأدمن
+    // نظام منفصل تمامًا عن تسجيل دخول Firebase، ومبيعرفش إن الأدمن فاتح
+    // دلوقتي). العلم ده (window.__adminDashboardOpen) بيتظبط من كود لوحة
+    // الأدمن نفسه (جوه index.html) وبيمنع الزرار ده من الرجوع تاني لحد ما
+    // الأدمن يعمل تسجيل خروج.
     function showSupportChatFab() {
+        if (window.__adminDashboardOpen) return;
         const fab = document.getElementById('support-chat-fab');
         if (fab) fab.classList.remove('hidden');
     }

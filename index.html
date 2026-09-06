@@ -2045,6 +2045,7 @@
                 applyAdminRoleUI();
                 document.getElementById("admin-gate-modal").classList.add("hidden");
                 document.getElementById("admin-dashboard").classList.remove("hidden");
+                window.__adminDashboardOpen = true;
                 if (typeof hideSupportChatFab === "function") hideSupportChatFab();
                 adminRefreshAll();
             }
@@ -2061,6 +2062,7 @@
         sessionStorage.removeItem("yusr_admin_token");
         sessionStorage.removeItem("yusr_admin_role");
         document.getElementById("admin-dashboard").classList.add("hidden");
+        window.__adminDashboardOpen = false;
         if (typeof showSupportChatFab === "function" && typeof fbAuth !== "undefined" && fbAuth.currentUser && !fbAuth.currentUser.isAnonymous) showSupportChatFab();
     };
 
@@ -2073,6 +2075,7 @@
             sessionStorage.setItem("yusr_admin_role", adminRole);
             applyAdminRoleUI();
             document.getElementById("admin-dashboard").classList.remove("hidden");
+            window.__adminDashboardOpen = true;
             if (typeof hideSupportChatFab === "function") hideSupportChatFab();
             adminRefreshAll();
         } catch (e) {
