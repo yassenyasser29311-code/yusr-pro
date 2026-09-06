@@ -927,11 +927,12 @@ async function requireAdminSession(request, env) {
 async function logAdminActivity(env, action, details) {
   // ملحوظة أمان: كان الطلب ده بيتبعت من غير أي auth، وده معناه إن أي حد يعرف
   // رابط قاعدة البيانات بتاعتك كان يقدر يكتب في /adminLogs من غير أي صلاحية
-  // (حتى لو مش أدمن). بقى لازم FIREBASE_ADMIN_SECRET زي باقي كتابة الأدمن.
-  if (!env.FIREBASE_ADMIN_SECRET) return;
+  // (حتى لو مش أدمن). بقى لازم FIREBASE_SERVICE_ACCOUNT_JSON زي باقي كتابة الأدمن.
+  if (!env.FIREBASE_SERVICE_ACCOUNT_JSON) return;
   try {
+    const token = await getFirebaseAccessToken(env);
     await fetch(
-      `${FIREBASE_DB_URL}/adminLogs.json?auth=${encodeURIComponent(env.FIREBASE_ADMIN_SECRET)}`,
+      `${FIREBASE_DB_URL}/adminLogs.json?access_token=${encodeURIComponent(token)}`,
       {
         method: "POST",
         body: JSON.stringify({
@@ -982,28 +983,126 @@ async function requireSuperAdmin(request, env) {
 // كل المسارات هنا بتتحقق من requireAdminSession الأول (يعني لازم تسجيل
 // دخول أدمن ناجح قبلها بالخطوتين اللي فوق). وكل قراءة/كتابة لكل مستخدمين
 // قاعدة البيانات (مش مستخدم واحد بعينه) بتحتاج صلاحية أعلى من توكن أي
-// مستخدم عادي — عشان كده لازم تضبط secret اسمه FIREBASE_ADMIN_SECRET:
-//   wrangler secret put FIREBASE_ADMIN_SECRET
-// القيمة: من إعدادات مشروع Firebase بتاعك -> Project settings ->
-// Service accounts -> Database secrets (Legacy) -> Add secret. لو
-// المسار ده معندكش أصلاً في الكونسول، ابعتلي وأقولك طريقة بديلة عن طريق
-// Firebase Admin SDK بمفتاح Service Account كامل.
+// مستخدم عادي — عشان كده لازم تضبط secret اسمه FIREBASE_SERVICE_ACCOUNT_JSON:
+//   wrangler secret put FIREBASE_SERVICE_ACCOUNT_JSON
+// القيمة: محتوى ملف الـ JSON اللي بتنزّله من Firebase Console -> Project
+// settings -> Service accounts -> Generate new private key (الصق الملف
+// كله كـ نص واحد، مش مسار للملف). ده البديل الرسمي الحديث لـ "database
+// secret" القديم (اللي Firebase بقى يعتبره Legacy ومش متاح أصلاً في كتير
+// من المشاريع الحديثة).
 //
 // كمان محتاجين FIREBASE_WEB_API_KEY (مش سر — نفس apiKey الموجود في كود
 // تسجيل الدخول عندك في الواجهة) عشان نبعت إيميلات "استعادة الباسورد":
 //   wrangler secret put FIREBASE_WEB_API_KEY
 
+// ================================================================
+// ====== Service Account JSON -> Google OAuth2 access token ======
+// ================================================================
+// بنوقّع JWT بالمفتاح الخاص (private_key) الموجود في ملف الـ service
+// account باستخدام Web Crypto API (متاحة جوه Cloudflare Workers بشكل
+// أساسي، مش محتاجين أي مكتبة خارجية)، وبنبادلها مع Google للحصول على
+// access token صالح لمدة ساعة. بنكاشيه في الذاكرة (متغيّر عام بسيط) ونعيد
+// استخدامه لحد ما يقرب ينتهي، عشان معظم الطلبات ماتحتاجش تولّد توكن جديد
+// من الصفر في كل مرة (تولّد التوكن فيه توقيع RSA وطلب شبكة زيادة).
+let _cachedFirebaseAccessToken = null; // { token, expiresAt(seconds) }
+const GOOGLE_OAUTH_TOKEN_URL = "https://oauth2.googleapis.com/token";
+const FIREBASE_DB_OAUTH_SCOPE = "https://www.googleapis.com/auth/firebase.database https://www.googleapis.com/auth/userinfo.email";
+
+function base64UrlEncodeBytes(bytes) {
+  let binary = "";
+  const arr = new Uint8Array(bytes);
+  for (let i = 0; i < arr.length; i++) binary += String.fromCharCode(arr[i]);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function base64UrlEncodeString(str) {
+  return base64UrlEncodeBytes(new TextEncoder().encode(str));
+}
+function pemPrivateKeyToArrayBuffer(pem) {
+  const b64 = pem
+    .replace(/-----BEGIN PRIVATE KEY-----/, "")
+    .replace(/-----END PRIVATE KEY-----/, "")
+    .replace(/\s+/g, "");
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes.buffer;
+}
+async function importServiceAccountPrivateKey(pem) {
+  const keyData = pemPrivateKeyToArrayBuffer(pem);
+  return crypto.subtle.importKey(
+    "pkcs8",
+    keyData,
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+}
+// بيرجّع access token صالح - إما من الكاش (لو لسه صالح لأكتر من دقيقة)
+// أو بيولّد واحد جديد ويكاشيه. بيرمي استثناء واضح لو FIREBASE_SERVICE_ACCOUNT_JSON
+// مش متظبط أو شكله غلط، عشان الدوال اللي بتستخدمه تقدر تفرّق بين "مش متظبط"
+// و"فشل فعلي وقت الاتصال بـ Google".
+async function getFirebaseAccessToken(env) {
+  const nowSec = Math.floor(Date.now() / 1000);
+  if (_cachedFirebaseAccessToken && _cachedFirebaseAccessToken.expiresAt - 60 > nowSec) {
+    return _cachedFirebaseAccessToken.token;
+  }
+  if (!env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    throw new Error("firebase_service_account_not_configured");
+  }
+  let sa;
+  try {
+    sa = JSON.parse(env.FIREBASE_SERVICE_ACCOUNT_JSON);
+  } catch (e) {
+    throw new Error("firebase_service_account_invalid_json");
+  }
+  if (!sa.client_email || !sa.private_key) {
+    throw new Error("firebase_service_account_invalid_json");
+  }
+
+  const header = { alg: "RS256", typ: "JWT" };
+  const claim = {
+    iss: sa.client_email,
+    scope: FIREBASE_DB_OAUTH_SCOPE,
+    aud: GOOGLE_OAUTH_TOKEN_URL,
+    iat: nowSec,
+    exp: nowSec + 3600
+  };
+  const signingInput = `${base64UrlEncodeString(JSON.stringify(header))}.${base64UrlEncodeString(JSON.stringify(claim))}`;
+  const key = await importServiceAccountPrivateKey(sa.private_key);
+  const signature = await crypto.subtle.sign(
+    { name: "RSASSA-PKCS1-v1_5" },
+    key,
+    new TextEncoder().encode(signingInput)
+  );
+  const jwt = `${signingInput}.${base64UrlEncodeBytes(signature)}`;
+
+  const res = await fetch(GOOGLE_OAUTH_TOKEN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: `grant_type=${encodeURIComponent("urn:ietf:params:oauth:grant-type:jwt-bearer")}&assertion=${encodeURIComponent(jwt)}`
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error("firebase_token_exchange_failed:" + res.status + ":" + detail.slice(0, 300));
+  }
+  const data = await res.json();
+  _cachedFirebaseAccessToken = { token: data.access_token, expiresAt: nowSec + (data.expires_in || 3600) };
+  return _cachedFirebaseAccessToken.token;
+}
+
 async function fbAdminGet(pathNoExt, env) {
+  const token = await getFirebaseAccessToken(env);
   const res = await fetch(
-    `${FIREBASE_DB_URL}/${pathNoExt}.json?auth=${encodeURIComponent(env.FIREBASE_ADMIN_SECRET)}`
+    `${FIREBASE_DB_URL}/${pathNoExt}.json?access_token=${encodeURIComponent(token)}`
   );
   if (!res.ok) throw new Error("firebase_get_failed:" + res.status);
   return await res.json();
 }
 
 async function fbAdminPut(pathNoExt, value, env) {
+  const token = await getFirebaseAccessToken(env);
   const res = await fetch(
-    `${FIREBASE_DB_URL}/${pathNoExt}.json?auth=${encodeURIComponent(env.FIREBASE_ADMIN_SECRET)}`,
+    `${FIREBASE_DB_URL}/${pathNoExt}.json?access_token=${encodeURIComponent(token)}`,
     { method: "PUT", body: JSON.stringify(value) }
   );
   if (!res.ok) throw new Error("firebase_put_failed:" + res.status);
@@ -1016,8 +1115,8 @@ const ONLINE_THRESHOLD_MS = 2 * 60 * 1000;
 async function handleAdminListUsers(request, env, corsHeaders) {
   const admin = await requireAdminSession(request, env);
   if (!admin.ok) return json({ error: admin.error }, 401, corsHeaders);
-  if (!env.FIREBASE_ADMIN_SECRET) {
-    return json({ error: "admin_db_secret_not_configured" }, 500, corsHeaders);
+  if (!env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    return json({ error: "firebase_service_account_not_configured" }, 500, corsHeaders);
   }
 
   try {
@@ -1060,8 +1159,8 @@ async function handleAdminListUsers(request, env, corsHeaders) {
 async function handleAdminListSubscriptionRequests(request, env, corsHeaders) {
   const admin = await requireAdminSession(request, env);
   if (!admin.ok) return json({ error: admin.error }, 401, corsHeaders);
-  if (!env.FIREBASE_ADMIN_SECRET) {
-    return json({ error: "admin_db_secret_not_configured" }, 500, corsHeaders);
+  if (!env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    return json({ error: "firebase_service_account_not_configured" }, 500, corsHeaders);
   }
 
   try {
@@ -1096,8 +1195,8 @@ async function handleAdminListSubscriptionRequests(request, env, corsHeaders) {
 async function handleAdminReviewSubscriptionRequest(request, env, corsHeaders, ctx) {
   const admin = await requireSuperAdmin(request, env);
   if (!admin.ok) return json({ error: admin.error }, admin.error === "forbidden_role" ? 403 : 401, corsHeaders);
-  if (!env.FIREBASE_ADMIN_SECRET) {
-    return json({ error: "admin_db_secret_not_configured" }, 500, corsHeaders);
+  if (!env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    return json({ error: "firebase_service_account_not_configured" }, 500, corsHeaders);
   }
 
   let body;
@@ -1182,8 +1281,8 @@ async function resolveChatIdentity(request, env, body) {
 
 // ---- إرسال رسالة (من الأدمن لمستخدم، أو من المستخدم لصفحة الدعم) ----
 async function handleChatSend(request, env, corsHeaders, ctx) {
-  if (!env.FIREBASE_ADMIN_SECRET) {
-    return json({ error: "admin_db_secret_not_configured" }, 500, corsHeaders);
+  if (!env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    return json({ error: "firebase_service_account_not_configured" }, 500, corsHeaders);
   }
   let body;
   try {
@@ -1226,8 +1325,8 @@ async function handleChatSend(request, env, corsHeaders, ctx) {
 // ---- جلب محادثة كاملة (الأدمن بيحدد uid في الـ body، المستخدم بيجيب محادثته هو بس) ----
 //      وبيعلّم تلقائياً كل رسائل الطرف التاني كـ"مقروءة" أول ما تتجاب هنا.
 async function handleChatPoll(request, env, corsHeaders) {
-  if (!env.FIREBASE_ADMIN_SECRET) {
-    return json({ error: "admin_db_secret_not_configured" }, 500, corsHeaders);
+  if (!env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    return json({ error: "firebase_service_account_not_configured" }, 500, corsHeaders);
   }
   let body;
   try {
@@ -1270,8 +1369,8 @@ async function handleChatPoll(request, env, corsHeaders) {
 async function handleAdminStats(request, env, corsHeaders) {
   const admin = await requireAdminSession(request, env);
   if (!admin.ok) return json({ error: admin.error }, 401, corsHeaders);
-  if (!env.FIREBASE_ADMIN_SECRET) {
-    return json({ error: "admin_db_secret_not_configured" }, 500, corsHeaders);
+  if (!env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    return json({ error: "firebase_service_account_not_configured" }, 500, corsHeaders);
   }
 
   try {
@@ -1331,8 +1430,8 @@ const ADMIN_VALID_ACTIONS = new Set([
 async function handleAdminUserAction(request, env, corsHeaders, ctx) {
   const admin = await requireSuperAdmin(request, env);
   if (!admin.ok) return json({ error: admin.error }, admin.error === "forbidden_role" ? 403 : 401, corsHeaders);
-  if (!env.FIREBASE_ADMIN_SECRET) {
-    return json({ error: "admin_db_secret_not_configured" }, 500, corsHeaders);
+  if (!env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    return json({ error: "firebase_service_account_not_configured" }, 500, corsHeaders);
   }
 
   let body;
@@ -1446,8 +1545,8 @@ async function handleAdminSendPasswordReset(request, env, corsHeaders, ctx) {
 async function handleAdminActivityLog(request, env, corsHeaders) {
   const admin = await requireAdminSession(request, env);
   if (!admin.ok) return json({ error: admin.error }, 401, corsHeaders);
-  if (!env.FIREBASE_ADMIN_SECRET) {
-    return json({ error: "admin_db_secret_not_configured" }, 500, corsHeaders);
+  if (!env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    return json({ error: "firebase_service_account_not_configured" }, 500, corsHeaders);
   }
 
   try {
@@ -1469,13 +1568,14 @@ async function handleAdminActivityLog(request, env, corsHeaders) {
 async function handleAdminBackupNow(request, env, corsHeaders, ctx) {
   const admin = await requireSuperAdmin(request, env);
   if (!admin.ok) return json({ error: admin.error }, admin.error === "forbidden_role" ? 403 : 401, corsHeaders);
-  if (!env.FIREBASE_ADMIN_SECRET) {
-    return json({ error: "admin_db_secret_not_configured" }, 500, corsHeaders);
+  if (!env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    return json({ error: "firebase_service_account_not_configured" }, 500, corsHeaders);
   }
 
   try {
+    const token = await getFirebaseAccessToken(env);
     const res = await fetch(
-      `${FIREBASE_DB_URL}/.json?auth=${encodeURIComponent(env.FIREBASE_ADMIN_SECRET)}`
+      `${FIREBASE_DB_URL}/.json?access_token=${encodeURIComponent(token)}`
     );
     if (!res.ok) throw new Error("firebase_get_failed:" + res.status);
     const fullData = await res.json();
@@ -1497,13 +1597,14 @@ async function handleAdminBackupNow(request, env, corsHeaders, ctx) {
 // لو معندكش Cron Trigger مضبوط في wrangler.toml، الدالة دي ببساطة مش هتتنادى
 // أبدًا ومفيش أي تأثير على أي حاجة تانية.
 async function runScheduledBackup(env) {
-  if (!env.FIREBASE_ADMIN_SECRET) {
-    console.warn("runScheduledBackup: FIREBASE_ADMIN_SECRET مش متظبط، اتلغى.");
+  if (!env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    console.warn("runScheduledBackup: FIREBASE_SERVICE_ACCOUNT_JSON مش متظبط، اتلغى.");
     return;
   }
   try {
+    const token = await getFirebaseAccessToken(env);
     const res = await fetch(
-      `${FIREBASE_DB_URL}/.json?auth=${encodeURIComponent(env.FIREBASE_ADMIN_SECRET)}`
+      `${FIREBASE_DB_URL}/.json?access_token=${encodeURIComponent(token)}`
     );
     if (!res.ok) throw new Error("firebase_get_failed:" + res.status);
     const fullData = await res.json();
