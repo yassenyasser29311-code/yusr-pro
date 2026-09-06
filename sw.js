@@ -18,7 +18,7 @@
 // مرة تنشر فيها تحديث حقيقي على الكود.
 // ================================================================
 
-const CACHE_VERSION = "v4";
+const CACHE_VERSION = "v5";
 const CACHE_NAME = `yusr-pro-shell-${CACHE_VERSION}`;
 
 // ملفات "هيكل" الموقع بتاعتك (نفس الدومين) — لو غيّرت اسم أو رقم نسخة
@@ -27,8 +27,8 @@ const CACHE_NAME = `yusr-pro-shell-${CACHE_VERSION}`;
 const SAME_ORIGIN_FILES = [
   "/",
   "/index.html",
-  "/app.js?v=2",
-  "/styles.css?v=1",
+  "/app.js?v=5",
+  "/styles.css?v=4",
 ];
 
 // مكتبات خارجية (CDN) لازمة عشان الموقع يبان صح أوفلاين. دي روابط
