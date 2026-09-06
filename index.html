@@ -1865,6 +1865,15 @@
                 console.warn('تعذر تسجيل Service Worker (الموقع هيفضل شغال أونلاين عادي):', err);
             });
         });
+        // لو نسخة SW جديدة اتفعّلت وإحنا فاتحين الصفحة دلوقتي، اعمل ريفريش
+        // تلقائي مرة واحدة عشان نشوف آخر تحديث فورًا من غير ما نحتاج نقفل
+        // التاب ونفتحه تاني.
+        navigator.serviceWorker.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'YUSR_SW_UPDATED' && !sessionStorage.getItem('yusr_sw_reloaded')) {
+                sessionStorage.setItem('yusr_sw_reloaded', '1');
+                window.location.reload();
+            }
+        });
     }
 
     // ============ تنبيه بسيط لما النت يقطع/يرجع ============

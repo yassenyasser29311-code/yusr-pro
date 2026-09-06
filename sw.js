@@ -13,9 +13,11 @@
 // يشتغل من غير نت أيًا كان الكود. لو حاولت تستخدمهم أوفلاين هتاخد رسالة
 // واضحة "مفيش اتصال بالإنترنت" بدل ما الأداة تعلّق أو تفشل بصمت.
 //
-// عشان أي تحديث جديد في app.js/styles.css يوصل فعلاً للمستخدمين
-// (ومتفضلش نسخة قديمة متخزنة للأبد)، غيّر رقم CACHE_VERSION في كل
-// مرة تنشر فيها تحديث حقيقي على الكود.
+// ملاحظة: ملفات الموقع نفسها (index.html/app.js/styles.css) بقت
+// "Network-first" تحت في الـ fetch handler - يعني بتتجاب من النت
+// كل مرة فورًا، فأي تحديث بترفعه يظهر للمستخدمين على طول من غير ما
+// تحتاج تزوّد رقم CACHE_VERSION يدويًا في كل نشر. غيّره فقط لو عايز
+// تجبر تنظيف الكاش القديم بالكامل (نادر).
 // ================================================================
 
 const CACHE_VERSION = "v5";
@@ -74,6 +76,13 @@ self.addEventListener("activate", (event) => {
           .map((key) => caches.delete(key))
       )
     ).then(() => self.clients.claim())
+     .then(() =>
+        // نبلّغ أي تاب فاتح فعلًا إن نسخة جديدة اتفعّلت، عشان يعمل ريفريش
+        // لوحده ويشوف التحديث على طول من غير ما يحتاج يقفل ويفتح تاني.
+        self.clients.matchAll({ type: "window" }).then((clients) =>
+          clients.forEach((client) => client.postMessage({ type: "YUSR_SW_UPDATED" }))
+        )
+     )
   );
 });
 
@@ -93,25 +102,51 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Cache-first مع تحديث في الخلفية (stale-while-revalidate): يفتح فورًا من
-  // الكاش لو موجود، وفي نفس الوقت يجيب نسخة جديدة من النت ويحدّث الكاش بيها
-  // للمرة الجاية — كده الموقع سريع دايمًا لكن برضه بيتحدّث لوحده.
+  const isOwnFile = SAME_ORIGIN_FILES.some(
+    (f) => url.pathname === f.split("?")[0] || (f === "/" && url.pathname === "/")
+  );
+
+  if (isOwnFile) {
+    // Network-first لملفات الموقع بتاعتنا (index.html / app.js / styles.css):
+    // بنجيب من النت الحقيقي كل مرة أول حاجة، عشان أي تحديث بترفعه يوصل
+    // فورًا لأي حد بيفتح الموقع. الكاش هنا مجرد خطة بديلة لو النت واقع بس.
+    event.respondWith(
+      fetch(req, { cache: "no-store" })
+        .then((networkRes) => {
+          if (networkRes && networkRes.ok) {
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, networkRes.clone()));
+          }
+          return networkRes;
+        })
+        .catch(() =>
+          caches.open(CACHE_NAME).then((cache) =>
+            cache.match(req).then(
+              (cached) =>
+                cached ||
+                new Response(
+                  "الموقع محتاج اتصال بالإنترنت أول مرة تفتحه فيها.",
+                  { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } }
+                )
+            )
+          )
+        )
+    );
+    return;
+  }
+
+  // Cache-first مع تحديث في الخلفية (stale-while-revalidate) - للمكتبات
+  // الخارجية بس (CDN) اللي بتتغيّر نادرًا، فمفيش داعي نستنى النت كل مرة.
   event.respondWith(
     caches.open(CACHE_NAME).then((cache) =>
       cache.match(req).then((cached) => {
         const networkFetch = fetch(req, req.mode === "no-cors" ? req : undefined)
           .then((networkRes) => {
-            // networkRes.ok مبيبقاش true للردود الـ "opaque" (مكتبات CDN من
-            // غير CORS)، فبنخزنها برضه لو النوع opaque لأننا منقدرش نتأكد
-            // من الـ status بتاعها أصلاً.
             if (networkRes && (networkRes.ok || networkRes.type === "opaque")) {
               cache.put(req, networkRes.clone());
             }
             return networkRes;
           })
           .catch(() => null);
-        // لو عندنا نسخة مخزنة، ارجعها فورًا (وسيب التحديث يحصل في الخلفية).
-        // لو مفيش نسخة مخزنة (أول زيارة)، استنى النت.
         return cached || networkFetch || new Response(
           "الموقع محتاج اتصال بالإنترنت أول مرة تفتحه فيها.",
           { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } }
