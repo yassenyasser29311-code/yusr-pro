@@ -316,12 +316,15 @@
     }
 
 /* ============ Password eye/show-hide toggle (login, signup confirm, admin gate) ============ */
-.pw-field-wrap { position: relative; }
-.pw-field-wrap input { padding-inline-end: 2.35rem !important; }
+/* بنستخدم خصائص فيزيائية صريحة (right / padding-right) بدل المنطقية
+   (inset-inline-end) عشان الأيقونة تفضل ثابتة في أقصى اليمين دايماً، بغض
+   النظر عن اتجاه الصفحة (RTL) أو اتجاه النص المكتوب جوه الحقل نفسه. */
+.pw-field-wrap { position: relative; direction: ltr; }
+.pw-field-wrap input { padding-right: 2.35rem !important; box-sizing: border-box; }
 .pw-eye-toggle {
-    position: absolute; top: 50%; inset-inline-end: 4px; transform: translateY(-50%);
+    position: absolute; top: 50%; right: 4px; left: auto; transform: translateY(-50%);
     width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
     background: transparent; border: none; color: var(--muted); font-size: 13px; cursor: pointer;
-    border-radius: 8px; transition: color .15s ease, background .15s ease;
+    border-radius: 8px; transition: color .15s ease, background .15s ease; z-index: 2;
 }
 .pw-eye-toggle:hover, .pw-eye-toggle:active { color: var(--text); background: rgba(255,255,255,.06); }

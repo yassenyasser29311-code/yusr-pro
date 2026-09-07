@@ -2065,7 +2065,12 @@
                 document.getElementById("admin-gate-code").focus();
             }
         } catch (e) {
-            adminGateSetStatus("بيانات غير صحيحة.", true);
+            const code = (e && e.data && e.data.error) || (e && e.message) || "";
+            if (code === "too_many_attempts") {
+                adminGateSetStatus("محاولات كتير غلط. الدخول مقفول مؤقتاً لمدة 15 دقيقة، جرب تاني بعدين.", true);
+            } else {
+                adminGateSetStatus("بيانات غير صحيحة.", true);
+            }
         } finally {
             btn.disabled = false;
         }
