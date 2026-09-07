@@ -62,9 +62,10 @@ const JWKS_URL = "https://www.googleapis.com/service_accounts/v1/jwk/securetoken
 // نفس أسماء وحدود الباقات الموجودة في index.html بالظبط
 const PLAN_LIMITS = {
   "مجاني": 5,
-  "الأساسية": 30,
-  "الاحترافية": Infinity,
-  "السنوية": Infinity
+  "الأساسية": 25,
+  "الاحترافية": 150,
+  "النخبة": Infinity,
+  "السنوية": 150
 };
 
 // حد أقصى لعدد الطلبات في الدقيقة لكل مستخدم لكل أداة
@@ -591,7 +592,7 @@ async function tryChatProvider(baseUrl, apiKey, model, cleanMessages) {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ model, messages: cleanMessages, temperature: 0.7 })
+      body: JSON.stringify({ model, messages: cleanMessages, temperature: 0.4 })
     });
   } catch (e) {
     return { ok: false, reason: "network_error: " + (e && e.message) };
@@ -1344,10 +1345,17 @@ async function handleChatPoll(request, env, corsHeaders) {
       .map(([id, m]) => ({ id, ...(m || {}) }))
       .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
 
-    // نعلّم رسائل الطرف التاني كمقروءة (الأدمن بيقرا رسائل المستخدم، والمستخدم بيقرا رسائل الأدمن)
+    // نعلّم رسائل الطرف التاني كمقروءة بس لو الطرف اللي بيسأل قايل صراحة إن
+    // الشات فاتح عنده دلوقتي (markRead: true). ده مهم جدًا لأن البولينج الخلفي
+    // (كل 20 ثانية والشات مقفول) كان بيندي الـ request ده برضه، فكان بيعلّم كل
+    // حاجة "مقروءة" فورًا حتى لو المستخدم/الأدمن مفتحش الشات أصلاً — وده اللي
+    // كان بيخلي عداد الرسايل الغير مقروءة يفضل صفر دايمًا.
+    const shouldMarkRead = body?.markRead === true;
     const readField = identity.role === "admin" ? "readByAdmin" : "readByUser";
     const otherFrom = identity.role === "admin" ? "user" : "admin";
-    const unreadIds = messages.filter(m => m.from === otherFrom && !m[readField]).map(m => m.id);
+    const unreadIds = shouldMarkRead
+      ? messages.filter(m => m.from === otherFrom && !m[readField]).map(m => m.id)
+      : [];
     if (unreadIds.length) {
       await Promise.all(
         unreadIds.map(id => fbAdminPut(`chat_messages/${identity.uid}/${id}/${readField}`, true, env).catch(() => {}))

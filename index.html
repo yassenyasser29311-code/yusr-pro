@@ -146,12 +146,18 @@
                 <input id="auth-gate-name" type="text" placeholder="اسمك الكامل" data-i18n-ph="authgate.namePh" class="w-full input-field rounded-xl px-3 py-2.5 text-xs">
             </div>
             <input id="auth-gate-email" type="email" placeholder="الإيميل" data-i18n-ph="authgate.emailPh" class="w-full input-field rounded-xl px-3 py-2.5 text-xs" dir="ltr" autocomplete="email">
-            <input id="auth-gate-password" type="password" placeholder="كلمة المرور" data-i18n-ph="authgate.passwordPh" class="w-full input-field rounded-xl px-3 py-2.5 text-xs" dir="ltr" autocomplete="current-password">
+            <div class="pw-field-wrap">
+                <input id="auth-gate-password" type="password" placeholder="كلمة المرور" data-i18n-ph="authgate.passwordPh" class="w-full input-field rounded-xl px-3 py-2.5 text-xs" dir="ltr" autocomplete="current-password">
+                <button type="button" class="pw-eye-toggle" tabindex="-1" aria-label="إظهار كلمة المرور" onclick="togglePasswordVisibility('auth-gate-password', this)"><i class="fa-solid fa-eye"></i></button>
+            </div>
             <div id="auth-gate-forgot-wrap" class="text-left -mt-1">
                 <button type="button" onclick="openForgotPasswordModal()" class="text-[11px] text-slate-500 hover:text-slate-300 underline underline-offset-2 transition-colors">نسيت كلمة السر؟</button>
             </div>
             <div id="auth-gate-confirm-wrap" class="hidden">
-                <input id="auth-gate-confirm" type="password" placeholder="تأكيد كلمة المرور" data-i18n-ph="authgate.confirmPh" class="w-full input-field rounded-xl px-3 py-2.5 text-xs" dir="ltr" autocomplete="new-password">
+                <div class="pw-field-wrap">
+                    <input id="auth-gate-confirm" type="password" placeholder="تأكيد كلمة المرور" data-i18n-ph="authgate.confirmPh" class="w-full input-field rounded-xl px-3 py-2.5 text-xs" dir="ltr" autocomplete="new-password">
+                    <button type="button" class="pw-eye-toggle" tabindex="-1" aria-label="إظهار كلمة المرور" onclick="togglePasswordVisibility('auth-gate-confirm', this)"><i class="fa-solid fa-eye"></i></button>
+                </div>
             </div>
         </div>
 
@@ -206,7 +212,10 @@
                 <h3 class="text-sm font-bold text-slate-100">دخول</h3>
             </div>
             <input id="admin-gate-username" type="text" placeholder="الاسم" class="w-full input-field rounded-xl px-3 py-2.5 text-xs" autocomplete="off">
-            <input id="admin-gate-password" type="password" placeholder="كلمة المرور" class="w-full input-field rounded-xl px-3 py-2.5 text-xs" dir="ltr" autocomplete="off">
+            <div class="pw-field-wrap">
+                <input id="admin-gate-password" type="password" placeholder="كلمة المرور" class="w-full input-field rounded-xl px-3 py-2.5 text-xs" dir="ltr" autocomplete="off">
+                <button type="button" class="pw-eye-toggle" tabindex="-1" aria-label="إظهار كلمة المرور" onclick="togglePasswordVisibility('admin-gate-password', this)"><i class="fa-solid fa-eye"></i></button>
+            </div>
             <button onclick="adminGateSubmitLogin()" id="admin-gate-login-btn" class="w-full py-2.5 btn-primary font-bold text-xs rounded-xl">دخول</button>
         </div>
         <!-- Step 2: confirmation code -->
@@ -742,7 +751,7 @@
                     <!-- Camera practice -->
                     <div class="panel-2 rounded-xl p-3.5 space-y-2.5">
                         <p class="text-xs font-bold text-slate-300 flex items-center gap-2"><i class="fa-solid fa-camera"></i> تدرّب قدام الكاميرا</p>
-                        <video id="video-mock-preview" class="hidden w-full rounded-xl max-h-72 bg-black video-mirrored" autoplay muted playsinline></video>
+                        <video id="video-mock-preview" class="hidden w-full rounded-xl max-h-72 bg-black" autoplay muted playsinline></video>
                         <div class="flex flex-wrap gap-2">
                             <button id="video-mock-start-btn" onclick="startVideoMockCamera()" class="btn-accent acc-video font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2">
                                 <i class="fa-solid fa-video"></i> شغّل الكاميرا
@@ -1418,13 +1427,13 @@
                         <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2"><i class="fa-solid fa-user"></i> <span data-i18n="subs.individualTitle">باقات الأفراد</span></h3>
                         <p class="text-xs text-slate-400" data-i18n="subs.individualDesc">لكل حد بيحضّر لمقابلة أو بيبني مسيرته المهنية بنفسه.</p>
                     </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                         <div class="panel-2 rounded-xl p-4 space-y-2 lift-hover">
                             <h4 class="text-xs font-bold text-slate-200" data-i18n="subs.basicName">الأساسية</h4>
-                            <p class="text-lg font-bold text-white">99 <span class="text-xs">ج.م</span> <span class="text-[10px] text-slate-500" data-i18n="subs.perMonth">/ شهرياً</span></p>
+                            <p class="text-lg font-bold text-white">79 <span class="text-xs">ج.م</span> <span class="text-[10px] text-slate-500" data-i18n="subs.perMonth">/ شهرياً</span></p>
                             <ul class="text-[10.5px] text-slate-400 space-y-1.5">
-                                <li><i class="fa-solid fa-check text-slate-400"></i> 30 مقابلة تدريبية شهرياً</li>
-                                <li><i class="fa-solid fa-check text-slate-400"></i> بناء سيرة ذاتية غير محدود</li>
+                                <li><i class="fa-solid fa-check text-slate-400"></i> 25 طلب ذكاء اصطناعي شهرياً</li>
+                                <li><i class="fa-solid fa-check text-slate-400"></i> بناء سيرة ذاتية وتلخيص مستندات</li>
                                 <li><i class="fa-solid fa-check text-slate-400"></i> أسئلة شائعة لكل وظيفة</li>
                             </ul>
                             <button onclick="openPricingModal()" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl" data-i18n="subs.subscribe">اشترك الآن</button>
@@ -1432,18 +1441,29 @@
                         <div class="rounded-xl p-4 space-y-2 border-2 border-violet-400 relative bg-[#20252c] lift-hover">
                             <span class="absolute top-0 left-0 bg-violet-400 text-slate-950 text-[9px] font-bold px-2 py-0.5 rounded-br-lg rounded-tl-xl" data-i18n="subs.popular">الأكثر طلباً</span>
                             <h4 class="text-xs font-bold text-slate-100" data-i18n="subs.proName">الاحترافية</h4>
-                            <p class="text-lg font-bold text-white">199 <span class="text-xs">ج.م</span> <span class="text-[10px] text-slate-500" data-i18n="subs.perMonth">/ شهرياً</span></p>
+                            <p class="text-lg font-bold text-white">179 <span class="text-xs">ج.م</span> <span class="text-[10px] text-slate-500" data-i18n="subs.perMonth">/ شهرياً</span></p>
                             <ul class="text-[10.5px] text-slate-300 space-y-1.5">
-                                <li><i class="fa-solid fa-check text-slate-300"></i> كل أدوات المنصة بلا حدود</li>
+                                <li><i class="fa-solid fa-check text-slate-300"></i> 150 طلب ذكاء اصطناعي شهرياً</li>
                                 <li><i class="fa-solid fa-check text-slate-300"></i> تقارير أداء تفصيلية</li>
-                                <li><i class="fa-solid fa-check text-slate-300"></i> مونتاج + تفريغ صوتي غير محدود</li>
+                                <li><i class="fa-solid fa-check text-slate-300"></i> مونتاج + تفريغ صوتي بكل اللغات</li>
                                 <li><i class="fa-solid fa-check text-slate-300"></i> أولوية دعم فني</li>
+                            </ul>
+                            <button onclick="openPricingModal()" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl" data-i18n="subs.subscribe">اشترك الآن</button>
+                        </div>
+                        <div class="rounded-xl p-4 space-y-2 border-2 border-amber-400/70 relative bg-[#221d12] lift-hover">
+                            <span class="absolute top-0 left-0 bg-amber-400 text-slate-950 text-[9px] font-bold px-2 py-0.5 rounded-br-lg rounded-tl-xl" data-i18n="subs.bestValue">أعلى فئة</span>
+                            <h4 class="text-xs font-bold text-amber-200" data-i18n="subs.eliteName">النخبة</h4>
+                            <p class="text-lg font-bold text-white">349 <span class="text-xs">ج.م</span> <span class="text-[10px] text-slate-500" data-i18n="subs.perMonth">/ شهرياً</span></p>
+                            <ul class="text-[10.5px] text-slate-300 space-y-1.5">
+                                <li><i class="fa-solid fa-check text-amber-300"></i> طلبات ذكاء اصطناعي غير محدودة تماماً</li>
+                                <li><i class="fa-solid fa-check text-amber-300"></i> كل أدوات المنصة بلا استثناء</li>
+                                <li><i class="fa-solid fa-check text-amber-300"></i> أعلى أولوية في الرد من الدعم</li>
                             </ul>
                             <button onclick="openPricingModal()" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl" data-i18n="subs.subscribe">اشترك الآن</button>
                         </div>
                         <div class="panel-2 rounded-xl p-4 space-y-2 lift-hover">
                             <h4 class="text-xs font-bold text-slate-200" data-i18n="subs.yearlyName">السنوية</h4>
-                            <p class="text-lg font-bold text-white">1499 <span class="text-xs">ج.م</span> <span class="text-[10px] text-slate-500" data-i18n="subs.perYear">/ سنوياً</span></p>
+                            <p class="text-lg font-bold text-white">1790 <span class="text-xs">ج.م</span> <span class="text-[10px] text-slate-500" data-i18n="subs.perYear">/ سنوياً</span></p>
                             <ul class="text-[10.5px] text-slate-400 space-y-1.5">
                                 <li><i class="fa-solid fa-check text-slate-400"></i> كل مزايا الاحترافية</li>
                                 <li><i class="fa-solid fa-check text-slate-400"></i> شهرين مجاناً</li>
@@ -1752,38 +1772,49 @@
         <div class="space-y-3 text-right">
             <div class="panel-2 rounded-xl p-3.5 space-y-2">
                 <h4 class="text-xs font-bold text-slate-200">الأساسية</h4>
-                <p class="text-lg font-bold text-white">99 ج.م <span class="text-[10px] text-slate-500">/ شهرياً</span></p>
+                <p class="text-lg font-bold text-white">79 ج.م <span class="text-[10px] text-slate-500">/ شهرياً</span></p>
                 <ul class="text-[10.5px] text-slate-400 space-y-1.5">
-                    <li><i class="fa-solid fa-check text-slate-400"></i> 30 مقابلة تدريبية شهرياً</li>
-                    <li><i class="fa-solid fa-check text-slate-400"></i> بناء سيرة ذاتية غير محدود</li>
+                    <li><i class="fa-solid fa-check text-slate-400"></i> 25 طلب ذكاء اصطناعي شهرياً (مقابلات، سيرة ذاتية، كل الأدوات)</li>
+                    <li><i class="fa-solid fa-check text-slate-400"></i> بناء سيرة ذاتية وتلخيص مستندات</li>
                     <li><i class="fa-solid fa-check text-slate-400"></i> أسئلة شائعة لكل وظيفة</li>
-                    <li><i class="fa-solid fa-check text-slate-400"></i> تلخيص مستندات غير محدود</li>
+                    <li><i class="fa-solid fa-check text-slate-400"></i> دعم عبر شات الموقع</li>
                 </ul>
-                <button onclick="openPaymentRequest('الأساسية', 99, 'شهرياً')" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl mt-1">اشترك في الأساسية</button>
+                <button onclick="openPaymentRequest('الأساسية', 79, 'شهرياً')" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl mt-1">اشترك في الأساسية</button>
             </div>
             <div class="rounded-xl p-3.5 space-y-2 border-2 border-slate-400 relative bg-[#20252c]">
                 <span class="absolute top-0 left-0 bg-slate-300 text-slate-950 text-[9px] font-bold px-2 py-0.5 rounded-br-lg rounded-tl-xl">الأكثر طلباً</span>
                 <h4 class="text-xs font-bold text-slate-100">الاحترافية</h4>
-                <p class="text-lg font-bold text-white">199 ج.م <span class="text-[10px] text-slate-500">/ شهرياً</span></p>
+                <p class="text-lg font-bold text-white">179 ج.م <span class="text-[10px] text-slate-500">/ شهرياً</span></p>
                 <ul class="text-[10.5px] text-slate-300 space-y-1.5">
-                    <li><i class="fa-solid fa-check text-slate-300"></i> مقابلات صوتية غير محدودة</li>
+                    <li><i class="fa-solid fa-check text-slate-300"></i> 150 طلب ذكاء اصطناعي شهرياً (يكفي تدريب شبه يومي)</li>
                     <li><i class="fa-solid fa-check text-slate-300"></i> تقارير أداء تفصيلية بعد كل مقابلة</li>
                     <li><i class="fa-solid fa-check text-slate-300"></i> خطط تطور مهني مخصصة</li>
                     <li><i class="fa-solid fa-check text-slate-300"></i> بورتفوليو + تدقيق أكاديمي</li>
                     <li><i class="fa-solid fa-check text-slate-300"></i> تفريغ صوتي بكل اللغات المتاحة</li>
                     <li><i class="fa-solid fa-check text-slate-300"></i> أولوية دعم فني</li>
                 </ul>
-                <button onclick="openPaymentRequest('الاحترافية', 199, 'شهرياً')" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl mt-1">اشترك في الاحترافية</button>
+                <button onclick="openPaymentRequest('الاحترافية', 179, 'شهرياً')" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl mt-1">اشترك في الاحترافية</button>
+            </div>
+            <div class="rounded-xl p-3.5 space-y-2 border-2 border-amber-400/70 relative bg-[#221d12]">
+                <span class="absolute top-0 left-0 bg-amber-400 text-slate-950 text-[9px] font-bold px-2 py-0.5 rounded-br-lg rounded-tl-xl">أعلى فئة</span>
+                <h4 class="text-xs font-bold text-amber-200">النخبة</h4>
+                <p class="text-lg font-bold text-white">349 ج.م <span class="text-[10px] text-slate-500">/ شهرياً</span></p>
+                <ul class="text-[10.5px] text-slate-300 space-y-1.5">
+                    <li><i class="fa-solid fa-check text-amber-300"></i> طلبات ذكاء اصطناعي غير محدودة تماماً، بلا أي سقف شهري</li>
+                    <li><i class="fa-solid fa-check text-amber-300"></i> كل أدوات المنصة بلا استثناء</li>
+                    <li><i class="fa-solid fa-check text-amber-300"></i> أعلى أولوية في الرد من فريق الدعم</li>
+                </ul>
+                <button onclick="openPaymentRequest('النخبة', 349, 'شهرياً')" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl mt-1">اشترك في النخبة</button>
             </div>
             <div class="panel-2 rounded-xl p-3.5 space-y-2">
                 <h4 class="text-xs font-bold text-slate-200">السنوية</h4>
-                <p class="text-lg font-bold text-white">1499 ج.م <span class="text-[10px] text-slate-500">/ سنوياً</span></p>
+                <p class="text-lg font-bold text-white">1790 ج.م <span class="text-[10px] text-slate-500">/ سنوياً</span></p>
                 <ul class="text-[10.5px] text-slate-400 space-y-1.5">
-                    <li><i class="fa-solid fa-check text-slate-400"></i> كل مزايا الاحترافية</li>
-                    <li><i class="fa-solid fa-check text-slate-400"></i> شهرين مجاناً (توفير عن الشهري)</li>
+                    <li><i class="fa-solid fa-check text-slate-400"></i> كل مزايا الاحترافية (150 طلب شهرياً طول السنة)</li>
+                    <li><i class="fa-solid fa-check text-slate-400"></i> وفّر تقريباً شهرين مقارنةً بالاشتراك الشهري</li>
                     <li><i class="fa-solid fa-check text-slate-400"></i> استشارة تطوير مسار مهني مرة سنوياً</li>
                 </ul>
-                <button onclick="openPaymentRequest('السنوية', 1499, 'سنوياً')" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl mt-1">اشترك في السنوية</button>
+                <button onclick="openPaymentRequest('السنوية', 1790, 'سنوياً')" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl mt-1">اشترك في السنوية</button>
             </div>
         </div>
 
@@ -1904,7 +1935,7 @@
     // مثال: "https://yusr-worker.your-subdomain.workers.dev"
     const ADMIN_API_BASE = "https://yusr-worker.yassen-yasser29311.workers.dev";
 
-    const PLAN_NAMES = ["مجاني", "الأساسية", "الاحترافية", "السنوية"];
+    const PLAN_NAMES = ["مجاني", "الأساسية", "الاحترافية", "النخبة", "السنوية"];
     let adminToken = sessionStorage.getItem("yusr_admin_token") || null;
     let adminRole = sessionStorage.getItem("yusr_admin_role") || null; // "superadmin" أو "viewer"
     let adminUsersCache = [];

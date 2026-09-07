@@ -140,7 +140,7 @@
             "profile.googleHint":"تسجيل الدخول بيحفظ اسمك وصورتك ونقاطك على نفس الجهاز — المحاولات المجانية بتُحسب على الجهاز مش على الحساب.","profile.save":"حفظ البيانات",
             "profile.connected":"متصل بجوجل","profile.logoutBtn":"تسجيل الخروج",
             "profile.statUsage":"مرات استخدام الأدوات","profile.statDevice":"معرّف الجهاز","profile.statPlan":"باقتك الحالية","profile.planFree":"مجاني",
-            "subs.individualTitle":"باقات الأفراد","subs.individualDesc":"لكل حد بيحضّر لمقابلة أو بيبني مسيرته المهنية بنفسه.","subs.basicName":"الأساسية","subs.perMonth":"/ شهرياً","subs.proName":"الاحترافية","subs.popular":"الأكثر طلباً",
+            "subs.individualTitle":"باقات الأفراد","subs.individualDesc":"لكل حد بيحضّر لمقابلة أو بيبني مسيرته المهنية بنفسه.","subs.basicName":"الأساسية","subs.perMonth":"/ شهرياً","subs.proName":"الاحترافية","subs.eliteName":"النخبة","subs.popular":"الأكثر طلباً","subs.bestValue":"أعلى فئة",
             "subs.yearlyName":"السنوية","subs.perYear":"/ سنوياً","subs.subscribe":"اشترك الآن","subs.teamTitle":"باقات الفرق والجامعات","subs.teamDesc":"لكليات وجامعات ومراكز توظيف عايزة تدرّب مجموعة مع بعض بسعر أوفر.",
             "subs.teamSmallName":"فريق صغير","subs.teamSmallRange":"حتى 10 أفراد","subs.perSeat":"/ للفرد شهرياً","subs.recommended":"موصى بها للجامعات","subs.teamMedName":"دفعة / كلية","subs.teamMedRange":"11 إلى 100 فرد",
             "subs.uniName":"جامعة / مؤسسة كبيرة","subs.uniRange":"أكتر من 100 فرد","subs.customPrice":"سعر خاص حسب العدد","subs.contactUs":"تواصل معنا",
@@ -874,9 +874,10 @@
     //   }
     const PLAN_MONTHLY_LIMITS = {
         'مجاني': 5,
-        'الأساسية': 30,
-        'الاحترافية': Infinity,
-        'السنوية': Infinity
+        'الأساسية': 25,
+        'الاحترافية': 150,
+        'النخبة': Infinity,
+        'السنوية': 150
     };
     function getCurrentPlanName() {
         const p = getProfile();
@@ -1151,7 +1152,10 @@
             const response = await fetch(`${CLOUD_FUNCTIONS_BASE}/chatPoll`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', ...(await getAuthHeader()) },
-                body: JSON.stringify({})
+                // markRead: true بس لو الشات فاتح فعلاً قدام المستخدم دلوقتي.
+                // كده الرسائل بتتعلّم "مقروءة" لما فعلاً يشوفها، مش بمجرد إن
+                // البولينج الخلفي بينده الراوت ده كل شوية وهو مقفول.
+                body: JSON.stringify({ markRead: !!supportChatOpen })
             });
             if (!response.ok) return;
             const data = await response.json();
@@ -1441,6 +1445,19 @@
     }
 
     // ============ "نسيت كلمة السر؟" — من شاشة تسجيل الدخول نفسها، قبل ما المستخدم يدخل أصلاً ============
+    // بيبدّل حقل الباسورد بين مخفي (•••) وظاهر كنص عادي، وبيبدّل شكل الأيقونة
+    // (عين / عين مشطوبة) مع كل ضغطة. btnEl هو الزرار اللي اتضغط عليه نفسه.
+    function togglePasswordVisibility(inputId, btnEl) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        const nowHidden = input.type === 'password';
+        input.type = nowHidden ? 'text' : 'password';
+        const icon = btnEl ? btnEl.querySelector('i') : null;
+        if (icon) icon.className = nowHidden ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+        if (btnEl) btnEl.setAttribute('aria-label', nowHidden ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور');
+    }
+    window.togglePasswordVisibility = togglePasswordVisibility;
+
     function openForgotPasswordModal() {
         const prefill = document.getElementById('auth-gate-email').value.trim();
         document.getElementById('forgot-password-email').value = prefill;
@@ -3529,7 +3546,13 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
         form.append('temperature', '0');
         form.append('response_format', 'verbose_json');
         const langSelEl = document.getElementById('transcribe-source-lang');
-        const langSel = langSelEl ? langSelEl.value.split('-')[0] : '';
+        // لو الصفحة فيها دروب داون لغة (أداة "تفريغ صوتي") وسايبها المستخدم على
+        // "الكشف التلقائي" عمداً، بنحترم اختياره. لكن لو مفيش دروب داون أصلاً
+        // (زي شاشة المقابلة الصوتية)، مبنستخدمش auto-detect بصمت — لأنه بيغلط
+        // كتير في مقاطع قصيرة/فيها ضوضاء وبيلخبط اللهجة المصرية بلغة تانية قريبة
+        // في الصوت، وده أكبر سبب لظهور كلام "غلط" في التفريغ. بنفترض بدل كده إن
+        // لغة الكلام هي لغة واجهة الموقع الحالية (currentAppLang) كتلميح لـ Whisper.
+        const langSel = langSelEl ? langSelEl.value.split('-')[0] : ((currentAppLang || 'ar').split('-')[0]);
         if (langSel) form.append('language', langSel);
         // الـ prompt ده بيوجّه Whisper على سياق المحتوى المتوقع (مقابلات عمل/سير ذاتية) وعلامات ترقيم صحيحة،
         // وده بيرفع الدقة فعلياً لأن الموديل بيميل لمصطلحات السياق ده لما يقابل كلمة مش واضحة في الصوت.
