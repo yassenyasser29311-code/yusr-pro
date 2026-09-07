@@ -29,7 +29,7 @@ const CACHE_NAME = `yusr-pro-shell-${CACHE_VERSION}`;
 const SAME_ORIGIN_FILES = [
   "/",
   "/index.html",
-  "/app.js?v=6",
+  "/app.js?v=8",
   "/styles.css?v=5",
 ];
 

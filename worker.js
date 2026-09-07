@@ -75,6 +75,13 @@ const RATE_LIMITS = {
   edgeTtsSpeak: { max: 20, windowSeconds: 60 }
 };
 
+// ============================== CAPTCHA على التسجيل ==============================
+// أقل score مقبول من reCAPTCHA v3 (من 0 لـ 1 - كل ما زاد كل ما كان احتمال إنه
+// إنسان حقيقي أعلى). جوجل بتنصح بـ 0.5 كنقطة بداية معقولة؛ لو لاقيت حسابات
+// وهمية لسه بتعدي، قلّل الرقم شوية (يعني اتشدد)؛ لو مستخدمين حقيقيين بيترفضوا،
+// زوّده. يحتاج wrangler secret put RECAPTCHA_SECRET_KEY عشان يتفعّل أصلاً.
+const RECAPTCHA_MIN_SCORE = 0.5;
+
 // ============================== إعدادات الأدمن ==============================
 // أفضل حاجة: متسيبش القيم دي هنا في الكود. حطهم كـ secrets بالأمر:
 //   wrangler secret put ADMIN_USERNAME
@@ -204,6 +211,12 @@ export default {
     // ---- مسار عام (مش أدمن): "نسيت الباسورد" لأي مستخدم عادي ----
     if (url.pathname === "/forgotPassword") {
       return handleForgotPassword(request, env, corsHeaders);
+    }
+    // ---- مسار عام: التحقق من CAPTCHA (reCAPTCHA v3) وقت إنشاء حساب جديد ----
+    // شوف handleVerifyCaptcha تحت للتفاصيل ولماذا بيرجع ok:true دايمًا لو
+    // RECAPTCHA_SECRET_KEY مش متظبط (مش مفعّل لسه من صاحب الموقع).
+    if (url.pathname === "/verifyCaptcha") {
+      return handleVerifyCaptcha(request, env, corsHeaders);
     }
     // ---- مسار عام: نبضة "أنا أونلاين" من أي مستخدم مسجّل دخول (يتنادى كل دقيقة من الواجهة) ----
     if (url.pathname === "/onlinePing") {
@@ -1695,6 +1708,64 @@ async function handleForgotPassword(request, env, corsHeaders) {
   // يقدر يستخدم رسالة الخطأ عشان يعرف إيه الإيميلات المسجّلة عندنا (user
   // enumeration). لو حصل خطأ حقيقي (مفتاح مش متظبط...) بيتسجل في اللوج بس.
   return json({ ok: true }, 200, corsHeaders);
+}
+
+// ---- التحقق من reCAPTCHA v3 وقت إنشاء حساب جديد (اختياري، شوف RECAPTCHA_MIN_SCORE فوق) ----
+// ملحوظة مهمة: لو RECAPTCHA_SECRET_KEY مش متظبط كـ secret (يعني صاحب الموقع لسه
+// مفعّلش الخاصية دي)، بنرجّع ok:true دايمًا - عشان مانمنعش أي حد حقيقي من التسجيل
+// قبل ما الإعداد يخلص. أول ما الـ secret يتحط، الفحص الحقيقي بيشتغل تلقائيًا.
+async function handleVerifyCaptcha(request, env, corsHeaders) {
+  let body;
+  try {
+    body = await request.json();
+  } catch (e) {
+    return json({ error: "invalid_json" }, 400, corsHeaders);
+  }
+
+  const token = typeof body?.token === "string" ? body.token.trim() : "";
+  const expectedAction = typeof body?.action === "string" ? body.action : "";
+
+  if (!env.RECAPTCHA_SECRET_KEY) {
+    // الخاصية مش مفعّلة لسه - نسيب التسجيل يعدي عادي (الحماية الوحيدة الشغالة
+    // دلوقتي هي الـ honeypot في الواجهة).
+    return json({ ok: true, configured: false }, 200, corsHeaders);
+  }
+
+  if (!token) {
+    return json({ ok: false, error: "missing_token" }, 400, corsHeaders);
+  }
+
+  try {
+    const params = new URLSearchParams();
+    params.set("secret", env.RECAPTCHA_SECRET_KEY);
+    params.set("response", token);
+    const ip = getClientIp(request);
+    if (ip) params.set("remoteip", ip);
+
+    const res = await fetch("https://www.google.com/recaptcha/api/siteverify", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: params.toString()
+    });
+    if (!res.ok) {
+      console.warn("reCAPTCHA siteverify فشل (status):", res.status);
+      // مشكلة في التواصل مع جوجل نفسها - منمنعش تسجيل مستخدم حقيقي بسببها
+      return json({ ok: true, configured: true, degraded: true }, 200, corsHeaders);
+    }
+    const data = await res.json();
+    const success = !!data.success;
+    const score = typeof data.score === "number" ? data.score : 0;
+    const actionMatches = !expectedAction || !data.action || data.action === expectedAction;
+    const passed = success && actionMatches && score >= RECAPTCHA_MIN_SCORE;
+    if (!passed) {
+      console.warn("reCAPTCHA رفض الطلب:", { success, score, action: data.action, errors: data["error-codes"] });
+    }
+    return json({ ok: passed, score }, 200, corsHeaders);
+  } catch (e) {
+    console.error("handleVerifyCaptcha فشل:", e);
+    // خطأ داخلي/شبكة - منمنعش مستخدم حقيقي بسبب مشكلة مش غلطته
+    return json({ ok: true, configured: true, degraded: true }, 200, corsHeaders);
+  }
 }
 
 async function sendPasswordResetEmail(email, env) {

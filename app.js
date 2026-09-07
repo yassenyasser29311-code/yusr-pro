@@ -1,4 +1,3 @@
-    // ============ Toast notifications (بديل مدمج لـ alert) ============
     function showToast(message, type = 'info') {
         const container = document.getElementById('toast-container');
         if (!container) { console.warn(message); return; }
@@ -1037,6 +1036,7 @@
                 if (typeof cloud.points === 'number') p.points = cloud.points;
                 if (cloud.plan) p.plan = cloud.plan;
                 if (cloud.google) p.google = cloud.google;
+                p.subscriptionCancelRequested = !!cloud.subscriptionCancelRequested;
                 saveProfile(p);
                 if (Array.isArray(cloud.purchases)) savePurchases(cloud.purchases);
                 // حساب موجود من قبل بس ناقصه email/displayName (حسابات قديمة) -
@@ -1063,6 +1063,7 @@
             startOnlinePing();
             showSupportChatFab();
             startSupportChatPolling();
+            refreshEmailVerificationBanner(user);
             return;
         }
         // لو لقينا جلسة زائر قديمة متسجلة من قبل (قبل التحديث ده) نطلعه منها فورًا
@@ -1232,6 +1233,19 @@
     function savePurchases(list) { localStorage.setItem('yusr_purchases', JSON.stringify(list)); }
     let pendingPlanRequest = null;
     function openPaymentRequest(name, price, period) {
+        // فيكس أمني/تشغيلي: منع تفعيل باقة مدفوعة لحساب إيميل+باسورد لسه ماأكّدش
+        // إيميله. من غيره أي بوت أو حساب وهمي بإيميل مش حقيقي كان يقدر يبعت طلب
+        // اشتراك عادي زي أي حد (شوف showEmailVerifyBanner/checkTermsGate تحت لتفاصيل
+        // التأكيد نفسه). حسابات جوجل مستثناة لأن جوجل بيأكد الإيميل تلقائيًا.
+        if (isEmailVerificationRequired()) {
+            closePricingModal();
+            showToast(currentUiLang === 'en'
+                ? 'Please verify your email first before subscribing to a paid plan.'
+                : 'لازم تأكّد إيميلك الأول قبل ما تشترك في باقة مدفوعة.', 'error');
+            switchViewByName('profile');
+            setTimeout(() => { const el = document.getElementById('email-verify-banner'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 300);
+            return;
+        }
         pendingPlanRequest = { name, price, period };
         closePricingModal();
         const summary = document.getElementById('payment-request-summary');
@@ -1410,6 +1424,69 @@
         };
         return map[code] || 'حصل خطأ، حاول تاني.';
     }
+    // ============ CAPTCHA على التسجيل (honeypot + reCAPTCHA v3 اختياري) ============
+    // المشكلة: من غير أي حماية، أي حد يقدر يكتب سكريبت بسيط يعمل مئات الحسابات
+    // الوهمية تلقائيًا، وكل واحد منها بياخد "تجربة مجانية" كاملة - ده استنزاف
+    // تكلفة استضافة الـ AI (Groq وغيرها) فعليًا، مش بس مشكلة تجربة مستخدم.
+    // طبقتين حماية:
+    // 1) Honeypot (شغّال فورًا، بدون أي إعداد): حقل مخفي بـ CSS اسمه
+    //    auth-gate-website - بني آدمي عادي مش شايفه خالص فبيسيبه فاضي، لكن
+    //    بوتات بسيطة بتملا كل حقول الفورم فبتقع فيه تلقائيًا.
+    // 2) reCAPTCHA v3 (اختياري - يحتاج إعداد صاحب الموقع): بيشتغل بالكامل في
+    //    الخلفية من غير أي تفاعل ظاهر للمستخدم (مفيش صور "اختار الدراجات")
+    //    وبيدّي score من 0 لـ 1 لاحتمالية إن الطلب من بوت. لتفعيلها:
+    //    أ) هات Site Key + Secret Key (v3) من https://www.google.com/recaptcha/admin
+    //    ب) حط الـ Site Key بدل القيمة الافتراضية تحت في RECAPTCHA_SITE_KEY
+    //    ج) في الووركر: wrangler secret put RECAPTCHA_SECRET_KEY
+    //    لحد ما تحط Site Key حقيقي، الخاصية دي متعطّلة تلقائيًا والتسجيل هيفضل
+    //    شغال عادي 100% بحماية الـ honeypot بس - يعني الإضافة دي آمنة تمامًا
+    //    ومش هتوقف حد حقيقي عن التسجيل.
+    const RECAPTCHA_SITE_KEY = "6LcCHa8tAAAAAN1dnmtqPRsIUXog8--T3VsvM6-L";
+    let _recaptchaScriptLoadPromise = null;
+    function isRecaptchaConfigured() {
+        return !!RECAPTCHA_SITE_KEY && !RECAPTCHA_SITE_KEY.includes('YOUR_RECAPTCHA');
+    }
+    function ensureRecaptchaLoaded() {
+        if (!isRecaptchaConfigured()) return Promise.resolve(false);
+        if (window.grecaptcha && window.grecaptcha.execute) return Promise.resolve(true);
+        if (_recaptchaScriptLoadPromise) return _recaptchaScriptLoadPromise;
+        _recaptchaScriptLoadPromise = new Promise(resolve => {
+            const s = document.createElement('script');
+            s.src = `https://www.google.com/recaptcha/api.js?render=${encodeURIComponent(RECAPTCHA_SITE_KEY)}`;
+            s.async = true;
+            s.onload = () => resolve(true);
+            s.onerror = () => { console.warn('تعذر تحميل سكريبت reCAPTCHA'); resolve(false); };
+            document.head.appendChild(s);
+            setTimeout(() => resolve(!!(window.grecaptcha && window.grecaptcha.execute)), 6000);
+        });
+        return _recaptchaScriptLoadPromise;
+    }
+    // بيرجّع true لو مسموح يكمل التسجيل عادي، و false لو لازم يوقف (بهدوء، من
+    // غير ما نوضح للبوت بالظبط ليه اتمنع).
+    async function passesSignupCaptchaCheck() {
+        if (isHoneypotTriggered('auth-gate-website')) return false;
+        if (!isRecaptchaConfigured()) return true; // لسه محتاج إعداد Site Key من صاحب الموقع
+        try {
+            const loaded = await ensureRecaptchaLoaded();
+            if (!loaded || !window.grecaptcha) return true; // فشل تحميل خارجي - منمنعش مستخدم حقيقي بسببه
+            const token = await new Promise((resolve, reject) => {
+                window.grecaptcha.ready(() => {
+                    window.grecaptcha.execute(RECAPTCHA_SITE_KEY, { action: 'signup' }).then(resolve).catch(reject);
+                });
+            });
+            const res = await fetch(`${CLOUD_FUNCTIONS_BASE}/verifyCaptcha`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token, action: 'signup' })
+            });
+            const data = await res.json().catch(() => ({}));
+            return !!data.ok;
+        } catch (e) {
+            console.warn('تعذر التحقق من الـ CAPTCHA، هنسيب التسجيل يعدي عادي', e);
+            return true; // مشكلة شبكة عابرة - منمنعش مستخدم حقيقي بسببها
+        }
+    }
+
     async function submitEmailAuth() {
         const mode = authGateMode;
         const name = document.getElementById('auth-gate-name').value.trim();
@@ -1435,6 +1512,19 @@
         if (!password || password.length < 6) { showToast('كلمة المرور لازم تكون 6 حروف/أرقام على الأقل.', 'error'); return; }
         if (mode === 'signup' && password !== confirm) { showToast('كلمتا المرور مش متطابقتين.', 'error'); return; }
 
+        // حماية من التسجيل الآلي (بوتات) - شوف تعريف passesSignupCaptchaCheck تحت
+        // لتفاصيل الـ honeypot + reCAPTCHA v3. بيشتغل بس وقت "إنشاء حساب"، مش تسجيل الدخول.
+        if (mode === 'signup') {
+            const captchaOk = await passesSignupCaptchaCheck();
+            if (!captchaOk) {
+                // مانوريش سبب رفض واضح عشان مانفضحش للبوت إنه اتكشف بالظبط ازاي
+                statusEl.innerText = 'تعذّر إتمام التسجيل دلوقتي، جرب تاني.';
+                statusEl.className = 'text-[11px] text-center text-red-400';
+                statusEl.classList.remove('hidden');
+                return;
+            }
+        }
+
         const btn = document.getElementById('auth-gate-submit-btn');
         btn.disabled = true;
         btn.classList.add('opacity-60');
@@ -1446,6 +1536,9 @@
                 saveProfile(p);
                 try { user.updateProfile({ displayName: name }); } catch (e) {}
                 syncProfileToCloud(getProfile());
+                // بنبعت إيميل التأكيد فورًا بعد إنشاء الحساب - البانر في البروفايل
+                // (refreshEmailVerificationBanner) هو اللي هيفضل يفكّره لحد ما يأكّد.
+                try { user.sendEmailVerification(); } catch (e) { console.warn('تعذر إرسال إيميل التأكيد الأول', e); }
             }
             // hideAuthGate() و loadProfileFromCloud()/attachCloudUsageListener() بيتنفذوا
             // تلقائياً من fbAuth.onAuthStateChanged لما حالة تسجيل الدخول تتغيّر.
@@ -1534,6 +1627,160 @@
         hideSuspendedGate();
         fbAuth.signOut().catch(() => {});
     }
+
+    // ============ تأكيد البريد الإلكتروني (Email Verification) ============
+    // ليه محتاجينها: قبل كده أي حد كان يقدر يسجل حساب بإيميل حد تاني (من غير
+    // ما يملكه فعلاً)، أو بوت يعمل عشرات الحسابات بإيميلات عشوائية عشان ياخد
+    // "تجربة مجانية" كاملة لكل حساب. Firebase Auth عنده sendEmailVerification()
+    // جاهزة، فبنستخدمها + بانر بسيط في البروفايل لحد ما يأكّد.
+    // حسابات جوجل مستثناة تمامًا لأن جوجل بيتأكد من الإيميل تلقائيًا وقت التسجيل بيه.
+    function isGoogleOnlyAccount(user) {
+        user = user || fbAuth.currentUser;
+        if (!user) return false;
+        return (user.providerData || []).some(pd => pd.providerId === 'google.com')
+            && !(user.providerData || []).some(pd => pd.providerId === 'password');
+    }
+    // بيرجّع true لو المستخدم لازم يأكّد إيميله الأول قبل ما يكمل فعل معيّن
+    // (زي الاشتراك في باقة مدفوعة) - يعني: حساب إيميل/باسورد ولسه مش متأكد.
+    function isEmailVerificationRequired() {
+        const user = fbAuth.currentUser;
+        if (!user || user.isAnonymous) return false;
+        if (isGoogleOnlyAccount(user)) return false;
+        return user.emailVerified === false;
+    }
+    let _emailVerifyResendCooldownUntil = 0;
+    async function refreshEmailVerificationBanner(user) {
+        user = user || fbAuth.currentUser;
+        const banner = document.getElementById('email-verify-banner');
+        if (!banner || !user) return;
+        try { await user.reload(); } catch (e) { /* لو فشل التحديث، هنعتمد على آخر حالة معروفة */ }
+        const freshUser = fbAuth.currentUser;
+        if (!freshUser || freshUser.isAnonymous || isGoogleOnlyAccount(freshUser) || freshUser.emailVerified) {
+            banner.classList.add('hidden');
+            return;
+        }
+        const emailEl = document.getElementById('email-verify-banner-address');
+        if (emailEl) emailEl.textContent = freshUser.email || '';
+        banner.classList.remove('hidden');
+    }
+    async function resendVerificationEmail() {
+        const user = fbAuth.currentUser;
+        if (!user) return;
+        const btn = document.getElementById('email-verify-resend-btn');
+        const now = Date.now();
+        if (now < _emailVerifyResendCooldownUntil) {
+            const secsLeft = Math.ceil((_emailVerifyResendCooldownUntil - now) / 1000);
+            showToast(currentUiLang === 'en' ? `Please wait ${secsLeft}s before resending.` : `استنى ${secsLeft} ثانية قبل ما تطلب إرسال تاني.`, 'error');
+            return;
+        }
+        if (btn) { btn.disabled = true; btn.classList.add('opacity-60'); }
+        try {
+            await user.sendEmailVerification();
+            _emailVerifyResendCooldownUntil = Date.now() + 60 * 1000; // دقيقة بين كل إرسال والتاني
+            showToast(currentUiLang === 'en' ? 'Verification email sent — check your inbox (and spam).' : 'اتبعت رابط التأكيد على إيميلك — راجع صندوق الوارد (والسبام).', 'success');
+        } catch (e) {
+            console.warn('تعذر إرسال إيميل التأكيد', e);
+            const msg = (e && e.code === 'auth/too-many-requests')
+                ? (currentUiLang === 'en' ? 'Too many requests, please try again later.' : 'محاولات كتير، جرب تاني بعد شوية.')
+                : (currentUiLang === 'en' ? 'Could not send the verification email, try again.' : 'تعذّر إرسال إيميل التأكيد، جرب تاني.');
+            showToast(msg, 'error');
+        } finally {
+            if (btn) { btn.disabled = false; btn.classList.remove('opacity-60'); }
+        }
+    }
+    // بينادى يدويًا لما المستخدم يضغط "تحققت، حدّث الحالة" بعد ما يفتح رابط
+    // التأكيد من الإيميل (لأن Firebase مبيعرفش لايف إن اليوزر أكّد من نفسه من
+    // غير ما نعمل reload() لبيانات الحساب من السيرفر).
+    async function recheckEmailVerification() {
+        const user = fbAuth.currentUser;
+        if (!user) return;
+        const btn = document.getElementById('email-verify-recheck-btn');
+        if (btn) { btn.disabled = true; btn.classList.add('opacity-60'); }
+        await refreshEmailVerificationBanner(user);
+        if (btn) { btn.disabled = false; btn.classList.remove('opacity-60'); }
+        if (fbAuth.currentUser && fbAuth.currentUser.emailVerified) {
+            showToast(currentUiLang === 'en' ? 'Email verified, thank you!' : 'تم تأكيد إيميلك، شكرًا!', 'success');
+        } else {
+            showToast(currentUiLang === 'en' ? 'Not verified yet — open the link in the email first.' : 'لسه مش متأكد — افتح الرابط اللي في الإيميل الأول.', 'error');
+        }
+    }
+    window.resendVerificationEmail = resendVerificationEmail;
+    window.recheckEmailVerification = recheckEmailVerification;
+
+    // ============ إلغاء الاشتراك (وقف التجديد التلقائي) ============
+    // قبل كده كان فيه "اشترك" بس مفيش أي طريقة يلغي بيها المستخدم اشتراكه أو
+    // يمنع تجديده - وده مش بس نقص في الميزة، ده مشكلة قانونية محتملة في أغلب
+    // الدول (خصوصًا أوروبا) لأن أي خدمة اشتراكات لازم تدّي طريقة واضحة للإلغاء
+    // بنفس سهولة الاشتراك. الاشتراكات هنا بتتفعّل يدويًا من الأدمن (تحويل بنكي/
+    // محفظة، مش بوابة دفع فيها تجديد تلقائي حقيقي)، فـ"الإلغاء" هنا معناه: نعلّم
+    // الحساب إنه "مش عايز تجديد" (users/{uid}/subscriptionCancelRequested)،
+    // ويفضل مستفيد من باقته الحالية عادي لحد ما الأدمن ميجدّدهاش تاني. الأدمن
+    // بيشوف الطلب في users/{uid} من Firebase Console مباشرة (نفس مكان أي بيانات
+    // مستخدم تانية) - مفيش داعي لصفحة أدمن منفصلة لخاصية بالبساطة دي.
+    function refreshCancelSubscriptionUi(planName) {
+        const row = document.getElementById('cancel-sub-row');
+        const banner = document.getElementById('cancel-sub-active-banner');
+        if (!row && !banner) return;
+        const isFree = !planName || planName === 'مجاني' || planName === 'Free';
+        const p = getProfile();
+        const cancelRequested = !!p.subscriptionCancelRequested;
+        if (row) row.classList.toggle('hidden', isFree || cancelRequested);
+        if (banner) banner.classList.toggle('hidden', isFree || !cancelRequested);
+    }
+    function openCancelSubscriptionModal() {
+        const p = getProfile();
+        const planEl = document.getElementById('cancel-sub-plan-name');
+        if (planEl) planEl.textContent = p.plan || 'مجاني';
+        document.getElementById('cancel-subscription-modal').classList.remove('hidden');
+    }
+    function closeCancelSubscriptionModal() {
+        document.getElementById('cancel-subscription-modal').classList.add('hidden');
+    }
+    async function confirmCancelSubscription() {
+        const user = fbAuth.currentUser;
+        if (!user || user.isAnonymous) return;
+        const btn = document.getElementById('cancel-sub-confirm-btn');
+        if (btn) { btn.disabled = true; btn.classList.add('opacity-60'); }
+        try {
+            await userDocRef(user.uid).update({
+                subscriptionCancelRequested: true,
+                subscriptionCancelRequestedAt: firebase.database.ServerValue.TIMESTAMP
+            });
+            const p = getProfile();
+            p.subscriptionCancelRequested = true;
+            saveProfile(p);
+            closeCancelSubscriptionModal();
+            refreshCancelSubscriptionUi(getCurrentPlanName());
+            showToast(currentUiLang === 'en'
+                ? 'Auto-renewal stopped. You keep your current plan until the end of this period.'
+                : 'تم إيقاف التجديد التلقائي. هتفضل مستفيد من باقتك الحالية لحد آخر يوم في الفترة دي.', 'success');
+        } catch (e) {
+            console.warn('تعذر تسجيل طلب إلغاء الاشتراك', e);
+            showToast(currentUiLang === 'en' ? 'Could not process this, please try again.' : 'تعذّر تنفيذ الطلب، جرب تاني.', 'error');
+        } finally {
+            if (btn) { btn.disabled = false; btn.classList.remove('opacity-60'); }
+        }
+    }
+    async function undoCancelSubscription() {
+        const user = fbAuth.currentUser;
+        if (!user || user.isAnonymous) return;
+        try {
+            await userDocRef(user.uid).update({ subscriptionCancelRequested: false });
+            const p = getProfile();
+            p.subscriptionCancelRequested = false;
+            saveProfile(p);
+            refreshCancelSubscriptionUi(getCurrentPlanName());
+            showToast(currentUiLang === 'en' ? 'Your subscription will renew as usual.' : 'اشتراكك هيتجدّد عادي زي ما كان.', 'success');
+        } catch (e) {
+            console.warn('تعذر التراجع عن إلغاء الاشتراك', e);
+            showToast(currentUiLang === 'en' ? 'Could not undo, please try again.' : 'تعذّر التراجع، جرب تاني.', 'error');
+        }
+    }
+    window.openCancelSubscriptionModal = openCancelSubscriptionModal;
+    window.closeCancelSubscriptionModal = closeCancelSubscriptionModal;
+    window.confirmCancelSubscription = confirmCancelSubscription;
+    window.undoCancelSubscription = undoCancelSubscription;
+
     // ============ Admin access gate ============
     // ملحوظة: لوحة الأدمن بالكامل (تسجيل الدخول بخطوتين + الداشبورد) بقت
     // مستقلة تمامًا في <script> جوه index.html نفسه (شوف آخر الملف)، وبتتكلم
@@ -1577,6 +1824,7 @@
         renderPurchasesOverview();
         refreshGoogleSigninState(p);
         updateSubscriptionButtonsState();
+        refreshCancelSubscriptionUi(planName);
     }
     // ============ إبراز الباقة الحالية في صفحة "الاشتراكات" ============
     // بدل ما يفضل زرار "اشترك الآن" ظاهر على الباقة اللي المستخدم مشترك فيها

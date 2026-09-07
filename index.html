@@ -162,6 +162,10 @@
                     <button type="button" class="pw-eye-toggle" tabindex="-1" aria-label="إظهار كلمة المرور" onclick="togglePasswordVisibility('auth-gate-confirm', this)"><i class="fa-solid fa-eye"></i></button>
                 </div>
             </div>
+            <!-- Honeypot: حقل مخفي عن العين البشرية (بس موجود في الـ DOM) - بوتات بسيطة
+                 بتملا كل حقول الفورم تلقائيًا فبتقع فيه، ومستخدم حقيقي عادي مبيشوفهوش
+                 خالص فبيسيبه فاضي. شوف passesSignupCaptchaCheck في app.js. -->
+            <input id="auth-gate-website" type="text" name="website" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true">
         </div>
 
         <button id="auth-gate-submit-btn" onclick="submitEmailAuth()" class="w-full py-2.5 btn-primary font-bold text-xs rounded-xl" data-i18n="authgate.submitLogin">تسجيل الدخول</button>
@@ -584,6 +588,21 @@
         </header>
 
         <main class="flex-1 p-4 sm:p-6 max-w-4xl w-full mx-auto space-y-4">
+
+            <!-- ============ EMAIL VERIFICATION BANNER ============
+                 بيبان بس لحساب إيميل/باسورد لسه ما أكّدش إيميله (حسابات جوجل مستثناة
+                 لأن جوجل بيأكّد الإيميل تلقائيًا). شوف refreshEmailVerificationBanner
+                 في app.js. -->
+            <div id="email-verify-banner" class="hidden panel-2 rounded-xl p-3 text-xs sm:text-sm flex flex-col sm:flex-row items-start sm:items-center gap-2.5 justify-between">
+                <div class="flex items-start sm:items-center gap-2 text-slate-300">
+                    <i class="fa-solid fa-envelope-circle-check text-amber-300 mt-0.5 sm:mt-0"></i>
+                    <span>لازم تأكّد إيميلك (<span id="email-verify-banner-address" class="font-bold" dir="ltr">-</span>) عشان تقدر تشترك في باقة مدفوعة. مش لاقي الإيميل؟ راجع صندوق السبام.</span>
+                </div>
+                <div class="flex gap-2 shrink-0 w-full sm:w-auto">
+                    <button id="email-verify-resend-btn" onclick="resendVerificationEmail()" class="flex-1 chip bg-[var(--panel)] hover:bg-black/30"><i class="fa-solid fa-paper-plane"></i> إعادة الإرسال</button>
+                    <button id="email-verify-recheck-btn" onclick="recheckEmailVerification()" class="flex-1 chip hover:bg-black/30"><i class="fa-solid fa-rotate"></i> تحققت، حدّث الحالة</button>
+                </div>
+            </div>
 
             <!-- ================= INTERVIEW ================= -->
             <section id="view-interview" class="view active">
@@ -1385,6 +1404,17 @@
                                 </div>
                                 <div id="profile-purchases-list" class="space-y-2"></div>
                             </div>
+
+                            <!-- بانر بيبان لو المستخدم طلب إلغاء الاشتراك بالفعل - التجديد التلقائي متوقف لحد آخر الفترة الحالية -->
+                            <div id="cancel-sub-active-banner" class="hidden panel-2 rounded-xl p-3 text-[11px] text-amber-300 flex items-center justify-between gap-2 flex-wrap">
+                                <span class="flex items-center gap-2"><i class="fa-solid fa-circle-info"></i> تم إيقاف التجديد التلقائي لباقتك، وهتفضل مستفيد منها لحد آخر يوم في الفترة الحالية.</span>
+                                <button onclick="undoCancelSubscription()" class="chip hover:bg-[var(--panel-2)] shrink-0"><i class="fa-solid fa-rotate-left"></i> تراجع عن الإلغاء</button>
+                            </div>
+                            <!-- زرار "إلغاء الاشتراك" - بيبان بس لو المستخدم فعلاً في باقة مدفوعة ولسه ماطلبش إلغاء -->
+                            <div id="cancel-sub-row" class="hidden flex items-center justify-between gap-2 pt-1 border-t border-[var(--border)]">
+                                <p class="text-[10.5px] text-slate-500">مش عايز تكمل في باقتك الحالية؟</p>
+                                <button id="cancel-sub-btn" onclick="openCancelSubscriptionModal()" class="chip hover:bg-red-500/10 hover:text-red-300 shrink-0"><i class="fa-solid fa-ban"></i> إلغاء الاشتراك</button>
+                            </div>
                         </div>
 
                         <!-- Privacy & local data controls -->
@@ -1889,7 +1919,24 @@
     </div>
 </div>
 
-<script src="app.js?v=7"></script>
+<!-- ============ CANCEL SUBSCRIPTION (stops auto-renewal only — plan stays active until period end) ============ -->
+<div id="cancel-subscription-modal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center p-4 z-50">
+    <div class="panel modal-pop max-w-sm w-full rounded-2xl p-5 space-y-3 text-right">
+        <div class="w-11 h-11 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center mx-auto">
+            <i class="fa-solid fa-ban text-red-400"></i>
+        </div>
+        <div class="text-center space-y-1.5">
+            <h3 class="text-sm font-bold text-slate-100">إلغاء باقة <span id="cancel-sub-plan-name">-</span>؟</h3>
+            <p class="text-[11.5px] text-slate-400 leading-relaxed">هيتم إيقاف التجديد التلقائي بس - هتفضل مستفيد من كل مميزات باقتك الحالية عادي لحد آخر يوم في الفترة دي، وبعدها هترجع تلقائيًا للباقة المجانية. تقدر تتراجع عن الإلغاء في أي وقت قبل ما الفترة تخلص.</p>
+        </div>
+        <div class="flex gap-2 pt-1">
+            <button onclick="closeCancelSubscriptionModal()" class="flex-1 py-2.5 chip justify-center hover:bg-[var(--panel-2)]">تراجع</button>
+            <button id="cancel-sub-confirm-btn" onclick="confirmCancelSubscription()" class="flex-1 py-2.5 font-bold text-xs rounded-xl disabled:opacity-60" style="background:rgba(248,113,113,.12); border:1px solid rgba(248,113,113,.4); color:#f87171;">تأكيد الإلغاء</button>
+        </div>
+    </div>
+</div>
+
+<script src="app.js?v=8"></script>
 <script>
     // ============ تسجيل Service Worker (يخلي الموقع نفسه يفتح أوفلاين) ============
     if ('serviceWorker' in navigator) {
