@@ -367,3 +367,6 @@
     box-shadow: none !important;
 }
 .subs-btn-active:hover { background: #10b981 !important; }
+
+/* ============ إخفاء شارة reCAPTCHA العائمة (تحت يمين الشاشة) ============ */
+.grecaptcha-badge { visibility: hidden !important; opacity: 0 !important; }
