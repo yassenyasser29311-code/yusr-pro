@@ -182,8 +182,14 @@
     .plan-pill { display:inline-flex; align-items:center; gap:.35rem; font-size:.68rem; font-weight:800; padding:.3rem .7rem; border-radius:999px; background:linear-gradient(135deg,rgba(138,180,248,.16),rgba(94,234,212,.12)); border:1px solid rgba(138,180,248,.3); color:var(--accent-strong); }
     .quick-pill { display:flex; align-items:center; gap:.45rem; white-space:nowrap; background:var(--panel-2); border:1px solid var(--border); color:var(--muted); font-size:.72rem; font-weight:700; padding:.55rem .9rem; border-radius:999px; transition: all .18s ease; }
     .quick-pill:hover { color:var(--text); border-color:rgba(138,180,248,.4); background:rgba(138,180,248,.08); transform: translateY(-1px); }
-    .stat-card-v2 { position:relative; background:var(--panel); border:1px solid var(--border); border-radius:1rem; padding:.9rem 1rem; overflow:hidden; }
-    .stat-card-v2 .stat-icon { width:34px; height:34px; border-radius:.7rem; display:flex; align-items:center; justify-content:center; font-size:.8rem; margin-bottom:.5rem; }
+    /* فيكس: الكارت كان block عادي من غير أي تمركز، فمربع الأيقونة (عنصر بعرض/ارتفاع
+       ثابت 34px) كان بيلزق على حرف الكارت (شمال) بدل ما يفضل بالظبط في النص، وكذلك
+       الرقم والتسمية تحته كانوا بيتمددوا full-width بمحاذاة النص العادية بدل التمركز.
+       الحل: نخلي الكارت نفسه flex-column بمحتوى متمركز بالكامل (أيقونة + رقم + تسمية)
+       بغض النظر عن اتجاه الصفحة (RTL/LTR) أو أي فروق تنفيذ بين المتصفحات. */
+    .stat-card-v2 { position:relative; background:var(--panel); border:1px solid var(--border); border-radius:1rem; padding:.9rem .75rem; overflow:hidden; display:flex; flex-direction:column; align-items:center; text-align:center; }
+    .stat-card-v2 .stat-icon { width:34px; height:34px; border-radius:.7rem; display:flex; align-items:center; justify-content:center; font-size:.8rem; margin-bottom:.5rem; flex-shrink:0; }
+    .stat-card-v2 p { width:100%; }
 
     /* ---- Membership "wallet card" (بطاقة عضوية هادية الألوان بدل التصميم البنفسجي الصارخ) ---- */
     .membership-card {

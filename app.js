@@ -1727,12 +1727,39 @@
     }
     function handleProfilePhotoUpload(e) {
         const file = e.target.files[0]; if (!file) return;
+        // تحقق أساسي قبل المعالجة: نوع الملف فعلاً صورة، وحجمه معقول (أقل من 12 ميجا)
+        // عشان محدش يرفع ملف مش صورة بالغلط أو ملف ضخم يهنّج المتصفح وهو بيتقرا كـ base64.
+        if (!file.type || !file.type.startsWith('image/')) {
+            showToast(currentUiLang === 'en' ? 'Please choose an image file.' : 'من فضلك اختر ملف صورة (jpg, png...).', 'error');
+            e.target.value = ''; return;
+        }
+        if (file.size > 12 * 1024 * 1024) {
+            showToast(currentUiLang === 'en' ? 'Image is too large (max 12MB).' : 'حجم الصورة كبير جداً (الحد الأقصى 12 ميجا).', 'error');
+            e.target.value = ''; return;
+        }
+        // فيكس: كان مفيش أي مؤشر تحميل وقت ضغط/معالجة الصورة - على جهاز بطيء أو صورة
+        // كبيرة كان بيحس المستخدم إن الصفحة "علّقت" لأن الأيقونة كانت بتفضل ثابتة
+        // (كاميرا) لحد ما المعالجة تخلص فجأة. دلوقتي بنبيّن سبينر واضح جوه الأفاتار
+        // نفسه أثناء المعالجة، ونمنع رفع أكتر من صورة في نفس اللحظة.
+        const icon = document.getElementById('profile-photo-icon');
+        const preview = document.getElementById('profile-photo-preview');
+        const label = document.querySelector('label[for="profile-photo-input"]');
+        if (label && label.dataset.uploading === '1') return;
+        if (label) label.dataset.uploading = '1';
+        const prevIconClass = icon ? icon.className : '';
+        if (icon) { icon.className = 'fa-solid fa-spinner fa-spin text-slate-400 text-xl'; icon.classList.remove('hidden'); }
+        if (preview) preview.classList.add('hidden');
         compressImageFile(file, 400, 0.7).then((compressedDataUrl) => {
             const p = getProfile(); p.photo = compressedDataUrl; saveProfile(p);
             syncProfileToCloud(p);
             refreshProfileView();
+            showToast(currentUiLang === 'en' ? 'Profile photo updated.' : 'تم تحديث صورة الملف الشخصي.', 'success');
         }).catch(() => {
             showToast(currentUiLang === 'en' ? 'Could not process this image.' : 'حصلت مشكلة في معالجة الصورة.', 'error');
+            if (icon) icon.className = prevIconClass || 'fa-solid fa-camera text-slate-500 text-xl';
+        }).finally(() => {
+            if (label) delete label.dataset.uploading;
+            e.target.value = '';
         });
     }
     // بنمسح كل بيانات المنصة المحفوظة محلياً على الجهاز (بروفايل، سجل تقدم، مشتريات محلية، إلخ) بعد تأكيد صريح من المستخدم
@@ -1752,8 +1779,18 @@
         }
     }
     function saveProfileInfo() {
+        const nameInput = document.getElementById('profile-name');
+        const name = nameInput.value.trim();
+        // فيكس: زرار "حفظ البيانات" كان بيحفظ بصمت حتى لو الاسم فاضي، مع إن الاسم
+        // ده بيتستخدم في السيرة الذاتية والبورتفوليو والمقدمة الصوتية - فحفظه فاضي
+        // بيبوّظ حاجات تانية جوه التطبيق من غير ما المستخدم ياخد أي تنبيه.
+        if (!name) {
+            showToast(currentUiLang === 'en' ? 'Please enter your name first.' : 'من فضلك اكتب اسمك الكامل الأول.', 'error');
+            nameInput.focus();
+            return;
+        }
         const p = getProfile();
-        p.name = document.getElementById('profile-name').value.trim();
+        p.name = name;
         p.title = document.getElementById('profile-title').value.trim();
         saveProfile(p);
         syncProfileToCloud(p);

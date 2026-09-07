@@ -1277,20 +1277,20 @@
                 <div class="profile-hero rounded-2xl overflow-hidden">
                     <div class="relative p-4 sm:p-6 pb-5">
                         <div class="flex flex-col sm:flex-row sm:items-end gap-4">
-                            <label for="profile-photo-input" class="profile-avatar-xl cursor-pointer">
+                            <label for="profile-photo-input" class="profile-avatar-xl cursor-pointer" role="button" aria-label="تغيير صورة الملف الشخصي" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.querySelector('input,~input')||document.getElementById('profile-photo-input').click();}">
                                 <img id="profile-photo-preview" class="hidden w-full h-full object-cover" alt="صورة الملف الشخصي" />
-                                <i id="profile-photo-icon" class="fa-solid fa-camera text-slate-500 text-xl"></i>
-                                <div class="avatar-edit-hint"><i class="fa-solid fa-pen"></i>&nbsp;تغيير</div>
+                                <i id="profile-photo-icon" class="fa-solid fa-camera text-slate-500 text-xl" aria-hidden="true"></i>
+                                <div class="avatar-edit-hint"><i class="fa-solid fa-pen" aria-hidden="true"></i>&nbsp;تغيير</div>
                             </label>
-                            <input type="file" id="profile-photo-input" accept="image/*" class="hidden" onchange="handleProfilePhotoUpload(event)">
+                            <input type="file" id="profile-photo-input" accept="image/*" class="hidden" onchange="handleProfilePhotoUpload(event)" aria-label="رفع صورة الملف الشخصي">
 
                             <div class="flex-1 min-w-0 space-y-2">
                                 <div class="flex flex-wrap items-center gap-2">
                                     <span id="profile-points" class="points-badge text-[11px] px-3 py-1.5 rounded-full flex items-center gap-1.5"><i class="fa-solid fa-star"></i> <span id="profile-points-count">0</span> <span data-i18n="profile.points">نقطة</span></span>
                                     <span class="plan-pill"><i class="fa-solid fa-gem"></i> <span id="profile-stat-plan" data-i18n="profile.planFree">مجاني</span></span>
                                 </div>
-                                <input type="text" id="profile-name" data-i18n-ph="profile.namePh" placeholder="اسمك الكامل" class="input-field rounded-xl px-3.5 py-2 text-base font-extrabold w-full sm:max-w-sm">
-                                <input type="text" id="profile-title" data-i18n-ph="profile.titlePh" placeholder="المسمى الوظيفي (مثلاً: مطوّر واجهات أمامية)" class="input-field rounded-xl px-3.5 py-2 text-xs w-full sm:max-w-sm">
+                                <input type="text" id="profile-name" data-i18n-ph="profile.namePh" placeholder="اسمك الكامل" maxlength="60" aria-label="اسمك الكامل" class="input-field rounded-xl px-3.5 py-2 text-base font-extrabold w-full sm:max-w-sm">
+                                <input type="text" id="profile-title" data-i18n-ph="profile.titlePh" placeholder="المسمى الوظيفي (مثلاً: مطوّر واجهات أمامية)" maxlength="80" aria-label="المسمى الوظيفي" class="input-field rounded-xl px-3.5 py-2 text-xs w-full sm:max-w-sm">
                             </div>
 
                             <button onclick="saveProfileInfo()" class="btn-accent acc-profile font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 shrink-0 self-start sm:self-end">
