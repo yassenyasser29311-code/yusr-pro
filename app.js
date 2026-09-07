@@ -1083,10 +1083,13 @@
             } else {
                 syncProfileToCloud(getProfile());
                 syncPurchasesToCloud(getPurchases());
-                // أول مرة يتعمل فيها doc للحساب ده في users/{uid} = دي أول مرة
-                // فعلية يستخدم فيها الموقع (نقطة 6: جولة تعريفية). بنستنى شوية
-                // عشان مودال الترحيب يظهر بعد ما شاشة تسجيل الدخول تختفي تمامًا
-                // (hideAuthGate) مش فوقها.
+                // ⚠️ ده مجرد خط دفاع احتياطي بس (نادر الحدوث)، مش المكان الأساسي
+                // لإطلاق الجولة التعريفية (نقطة 6) - المكان الأساسي بقى مباشرة في
+                // لحظة التسجيل نفسها (finishSuccess/handleGoogleCredential/
+                // handleGoogleTokenResponse) لأن الشيك هنا (snap.exists()) بيوصل
+                // غالبًا "true" حتى لو الحساب جديد فعلاً، لأن syncProfileToCloud
+                // فوق دي بتتنفذ في نفس الاستدعاء اللي أنشأ الحساب أصلاً وفايربيز
+                // بيطبّق الـ update محليًا فورًا (optimistic) قبل حتى ما يوصل السيرفر.
                 setTimeout(showOnboardingModal, 700);
             }
             refreshProfileView();
@@ -1602,6 +1605,12 @@
                 // بنبعت إيميل التأكيد فورًا بعد إنشاء الحساب - البانر في البروفايل
                 // (refreshEmailVerificationBanner) هو اللي هيفضل يفكّره لحد ما يأكّد.
                 try { user.sendEmailVerification(); } catch (e) { console.warn('تعذر إرسال إيميل التأكيد الأول', e); }
+                // نقطة 6: حساب جديد بإيميل/باسورد اتعمل هنا فعلاً (createUserWithEmailAndPassword
+                // ما بينجحش أصلاً إلا لحساب جديد) - نطلق الجولة التعريفية من هنا مباشرة،
+                // مش من شيك "هل السجل موجود في قاعدة البيانات؟" لأن ده بيتعمل race مع
+                // syncProfileToCloud اللي فوق (فايربيز بيطبّق الـ update محليًا فورًا، فالشيك
+                // بعدها كان دايمًا بيلاقيه "موجود" حتى لو الحساب جديد فعلاً).
+                setTimeout(showOnboardingModal, 700);
             }
             // hideAuthGate() و loadProfileFromCloud()/attachCloudUsageListener() بيتنفذوا
             // تلقائياً من fbAuth.onAuthStateChanged لما حالة تسجيل الدخول تتغيّر.
@@ -2223,6 +2232,14 @@
                     refreshProfileView();
                     syncProfileToCloud(getProfile());
                     loadProfileFromCloud(result.user.uid);
+                    // نقطة 6: تسجيل دخول بجوجل ممكن يكون لحساب جديد أو حساب قديم بيرجع
+                    // تاني - الفيصل هنا مش "هل السجل موجود في الداتابيز؟" (ده بيعمل race
+                    // مع syncProfileToCloud اللي فوق) لكن العلم الرسمي اللي فايربيز نفسه
+                    // بيرجّعه additionalUserInfo.isNewUser، وده مضمون 100% إنه بيتحسب
+                    // وقت إنشاء الحساب على مستوى فايربيز نفسه.
+                    if (result.additionalUserInfo && result.additionalUserInfo.isNewUser) {
+                        setTimeout(showOnboardingModal, 700);
+                    }
                     // لو المستخدم كان في نص عملية "حذف الحساب" واتطلب منه يأكّد هويته
                     // بجوجل تاني (requires-recent-login)، دلوقتي بعد ما رجع سجّل دخول
                     // فعلاً بنكمّل الحذف تلقائياً من غير ما يضطر يدوس على أي حاجة تانية.
@@ -2271,6 +2288,11 @@
                     refreshProfileView();
                     syncProfileToCloud(getProfile());
                     loadProfileFromCloud(result.user.uid);
+                    // نقطة 6: نفس ملحوظة handleGoogleCredential فوق - بنعتمد على العلم
+                    // الرسمي من فايربيز مش على شيك الداتابيز عشان مفيش race condition.
+                    if (result.additionalUserInfo && result.additionalUserInfo.isNewUser) {
+                        setTimeout(showOnboardingModal, 700);
+                    }
                     if (window._pendingAccountDeletionAfterReauth) {
                         window._pendingAccountDeletionAfterReauth = false;
                         deleteAccountCore(result.user).catch(e => {
