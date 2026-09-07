@@ -62,7 +62,7 @@
         portfolio: "بورتفوليو شخصي", writing: "تدقيق وتنسيق أكاديمي",
         summarizer: "تلخيص المستندات", transcribe: "تفريغ الصوت إلى نص", pitch: "قدّم نفسك في 30 ثانية",
         profile: "الملف الشخصي", subscriptions: "الاشتراكات", donations: "التبرعات", support: "الدعم والتواصل",
-        terms: "شروط الاستخدام", privacy: "سياسة الخصوصية"
+        terms: "شروط الاستخدام", privacy: "سياسة الخصوصية", history: "السجل الموحّد"
     };
     const viewTitlesEn = {
         about: "About Us",
@@ -72,7 +72,7 @@
         portfolio: "Personal Portfolio", writing: "Academic Writing Review",
         summarizer: "Document Summarizer", transcribe: "Speech to Text", pitch: "30-Second Self Pitch",
         profile: "Profile", subscriptions: "Subscriptions", donations: "Donations", support: "Support",
-        terms: "Terms of Use", privacy: "Privacy Policy"
+        terms: "Terms of Use", privacy: "Privacy Policy", history: "Unified History"
     };
 
     function switchView(view, el) {
@@ -83,6 +83,7 @@
         document.getElementById('view-title').innerText = (currentUiLang === 'en' ? viewTitlesEn[view] : viewTitles[view]) || '';
         if (view === 'profile') refreshProfileView();
         if (view === 'progress') renderProgressView();
+        if (view === 'history') renderHistoryView();
         if (view === 'interview') checkInterviewResumeBanner();
         if (window.innerWidth < 1024) toggleSidebar(true);
     }
@@ -105,14 +106,50 @@
     // Mobile: sidebar starts hidden off-canvas
     if (window.innerWidth < 1024) document.getElementById('sidebar').classList.add('collapsed');
 
+    // ============ بحث في القائمة الجانبية ============
+    // مفيش عنده أكتر من 20 أداة مبعثرة على أقسام، فمستخدم نسي مكان أداة معينة
+    // كان لازم يدوّر بعينه في كل الأقسام. الفلترة هنا لحظية (oninput) على اسم
+    // كل .nav-item الظاهر فعليًا (سيرفر مبيتحطش، كله في المتصفح)، وبتخفي كمان
+    // عنوان أي قسم بقى فاضي تمامًا بعد الفلترة عشان مايفضلش عنوان معلّق لوحده.
+    function filterSidebarNav(query) {
+        const q = (query || '').trim().toLowerCase();
+        const clearBtn = document.getElementById('sidebar-search-clear');
+        if (clearBtn) clearBtn.classList.toggle('hidden', !q);
+        const sections = document.querySelectorAll('#sidebar nav > div');
+        let anyVisibleTotal = false;
+        sections.forEach(section => {
+            const items = section.querySelectorAll('.nav-item');
+            if (!items.length) return; // مش قسم أدوات (زي خانة البحث نفسها)
+            let anyVisible = false;
+            items.forEach(item => {
+                const label = item.querySelector('.sidebar-label');
+                const text = label ? label.textContent.toLowerCase() : '';
+                const match = !q || text.includes(q);
+                item.classList.toggle('hidden', !match);
+                if (match) anyVisible = true;
+            });
+            section.classList.toggle('hidden', !anyVisible);
+            if (anyVisible) anyVisibleTotal = true;
+        });
+        const emptyMsg = document.getElementById('sidebar-search-empty');
+        if (emptyMsg) emptyMsg.classList.toggle('hidden', !q || anyVisibleTotal);
+    }
+    function clearSidebarSearch() {
+        const input = document.getElementById('sidebar-search-input');
+        if (input) { input.value = ''; input.focus(); }
+        filterSidebarNav('');
+    }
+    window.filterSidebarNav = filterSidebarNav;
+    window.clearSidebarSearch = clearSidebarSearch;
+
     // ============ i18n ============
     let currentUiLang = 'ar';
     const I18N = {
         ar: {
-            "nav.section.interviews":"المقابلات والتوظيف","nav.interview":"مقابلة تدريبية صوتية","nav.faq":"أسئلة شائعة + إجابات نموذجية","nav.career":"خطة التطور المهني",
+            "nav.searchPh":"بحث في الأدوات...","nav.searchEmpty":"مفيش نتايج مطابقة","nav.section.interviews":"المقابلات والتوظيف","nav.interview":"مقابلة تدريبية صوتية","nav.faq":"أسئلة شائعة + إجابات نموذجية","nav.career":"خطة التطور المهني",
             "nav.section.documents":"المستندات","nav.cv":"بناء السيرة الذاتية","nav.portfolio":"بورتفوليو شخصي","nav.writing":"تدقيق وتنسيق أكاديمي","nav.summarizer":"تلخيص المستندات",
             "nav.section.audio":"الصوت والفيديو","nav.transcribe":"تفريغ الصوت إلى نص","nav.pitch":"قدّم نفسك في 30 ثانية",
-            "nav.section.account":"الحساب والدعم","nav.about":"من نحن","nav.profile":"الملف الشخصي","nav.subscriptions":"الاشتراكات","nav.donations":"التبرعات","nav.support":"الدعم والتواصل",
+            "nav.section.account":"الحساب والدعم","nav.about":"من نحن","nav.history":"السجل الموحّد","nav.profile":"الملف الشخصي","nav.subscriptions":"الاشتراكات","nav.donations":"التبرعات","nav.support":"الدعم والتواصل",
             "nav.section.legal":"قانوني","nav.terms":"شروط الاستخدام","nav.privacy":"سياسة الخصوصية",
             "account.guest":"زائر (الجهاز ده)","account.signinHint":"سجّل دخول بجوجل لحفظ صورتك ونقاطك",
             "authgate.title":"سجّل دخولك","authgate.subtitle":"لازم تسجّل دخول بجوجل أو بإيميلك عشان تستخدم الموقع.","authgate.googleBtn":"تسجيل الدخول بجوجل","authgate.orEmail":"أو بالإيميل","authgate.tabLogin":"تسجيل الدخول","authgate.tabSignup":"إنشاء حساب","authgate.namePh":"اسمك الكامل","authgate.emailPh":"الإيميل","authgate.passwordPh":"كلمة المرور","authgate.confirmPh":"تأكيد كلمة المرور","authgate.submitLogin":"تسجيل الدخول","authgate.submitSignup":"إنشاء الحساب","authgate.privacyNote":"بياناتك بتتحفظ بشكل آمن، وكلمة المرور متشفّرة ومش بنقدر نشوفها إحنا كأصحاب الموقع.","authgate.recaptchaNote":"هذا الموقع محمي بخدمة reCAPTCHA، وتنطبق <a href=\"https://policies.google.com/privacy\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit;text-decoration:underline;\">سياسة الخصوصية</a> و<a href=\"https://policies.google.com/terms\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit;text-decoration:underline;\">شروط الخدمة</a> الخاصة بـ Google.",
@@ -146,7 +183,7 @@
             "don.title":"ادعم استمرار المنصة","don.desc":"لو حابب تدعم تطوير يُسْر Pro واستمراريتها، تقدر تتبرع بأي مبلغ عن طريق الأرقام دي.","don.wallet":"محفظة إلكترونية","don.thanks":"شكراً جزيلاً لكل حد بيدعم.",
             "sup.title":"الدعم والتواصل","sup.desc":"عندك سؤال أو مشكلة أو اقتراح؟ تواصل معانا مباشرة.","sup.phone":"اتصال مباشر","sup.hours":"بنرد عادةً خلال ساعات قليلة. للاستفسارات العاجلة، الأسرع هو الواتساب.",
             "legal.lastUpdated":"آخر تحديث: أغسطس 2026",
-            "about.pageTitle":"من نحن","about.tagline":"منصة عربية بنبنيها بشغف عشان تكون رفيقك في رحلة الشغل والتطور المهني.",
+            "history.pageTitle":"السجل الموحّد","history.subtitle":"آخر 20 نتيجة من أي أداة في الموقع (تلخيص، تدقيق، خطابات، وغيرها) بتتحفظ هنا تلقائيًا عشان ماتضيعش لو قفلت الصفحة.","history.listTitle":"النتائج المحفوظة","history.clearAll":"مسح الكل","history.empty":"لسه مفيش نتايج محفوظة. أي نتيجة من أدوات الموقع هتظهر هنا تلقائيًا.","onboarding.title":"أهلاً بيك في يُسْر Pro 👋","onboarding.subtitle":"3 خطوات سريعة تخليك تبدأ صح:","onboarding.step1.title":"كمّل بياناتك","onboarding.step1.desc":"بياناتك دي بتتغذّى منها باقي الأدوات زي السيرة الذاتية والمقابلة.","onboarding.step2.title":"جرب مقابلة تدريبية","onboarding.step2.desc":"اتمرن على أسئلة حقيقية بصوتك وخد تقييم فوري على أدائك.","onboarding.step3.title":"اعمل سيرتك الذاتية","onboarding.step3.desc":"هنبنيلك سيرة ذاتية احترافية في دقايق من بياناتك المحفوظة.","onboarding.tip":"تلميح: فيه خانة بحث فوق القائمة الجانبية توصّلك لأي أداة من أكتر من 20 أداة بسرعة.","onboarding.skip":"تخطي، هدوّر بنفسي","about.pageTitle":"من نحن","about.tagline":"منصة عربية بنبنيها بشغف عشان تكون رفيقك في رحلة الشغل والتطور المهني.",
             "about.missionLabel":"رسالتنا","about.missionBody":"نؤمن إن أي حد، أياً كانت خلفيته أو ظروفه، يستاهل يوصل لفرصته المناسبة وهو واثق من نفسه ومجهّز صح. \"يُسْر Pro\" اتولدت من فكرة بسيطة: التحضير الجيد للمقابلة أو بناء سيرة ذاتية قوية متبقاش حكرة على مين عنده وقت أو فلوس أو علاقات — الذكاء الاصطناعي بقى يقدر يديك نفس الجودة دي في متناول إيدك، في أي وقت.",
             "about.pillarsTitle":"إيه اللي بيحرّكنا",
             "about.pillar1Title":"مساعدة حقيقية","about.pillar1Body":"مش بس أدوات، إحنا بنصمم كل ميزة عشان تحل مشكلة حقيقية بتقابل الباحث عن عمل.",
@@ -188,10 +225,10 @@
             "privacy.s8.title":"8. التعديلات على السياسة","privacy.s8.body":"ممكن نحدّث السياسة دي من وقت للتاني، وهنغيّر تاريخ \"آخر تحديث\" فوق أول ما نعدّل حاجة جوهرية."
         },
         en: {
-            "nav.section.interviews":"Interviews & Hiring","nav.interview":"Voice Mock Interview","nav.faq":"FAQ + Model Answers","nav.career":"Career Growth Plan",
+            "nav.searchPh":"Search tools...","nav.searchEmpty":"No matching tools","nav.section.interviews":"Interviews & Hiring","nav.interview":"Voice Mock Interview","nav.faq":"FAQ + Model Answers","nav.career":"Career Growth Plan",
             "nav.section.documents":"Documents","nav.cv":"CV Builder","nav.portfolio":"Personal Portfolio","nav.writing":"Academic Writing Review","nav.summarizer":"Document Summarizer",
             "nav.section.audio":"Audio & Video","nav.transcribe":"Speech to Text","nav.pitch":"30-Second Self Pitch",
-            "nav.section.account":"Account & Support","nav.about":"About Us","nav.profile":"Profile","nav.subscriptions":"Subscriptions","nav.donations":"Donations","nav.support":"Support",
+            "nav.section.account":"Account & Support","nav.about":"About Us","nav.history":"Unified History","nav.profile":"Profile","nav.subscriptions":"Subscriptions","nav.donations":"Donations","nav.support":"Support",
             "nav.section.legal":"Legal","nav.terms":"Terms of Use","nav.privacy":"Privacy Policy",
             "account.guest":"Guest (this device)","account.signinHint":"Sign in with Google to save your photo & points",
             "authgate.title":"Sign in","authgate.subtitle":"You need to sign in with Google or your email to use the site.","authgate.googleBtn":"Sign in with Google","authgate.orEmail":"or with email","authgate.tabLogin":"Log in","authgate.tabSignup":"Create account","authgate.namePh":"Your full name","authgate.emailPh":"Email","authgate.passwordPh":"Password","authgate.confirmPh":"Confirm password","authgate.submitLogin":"Log in","authgate.submitSignup":"Create account","authgate.privacyNote":"Your data is stored securely, and your password is encrypted — even we can't see it.","authgate.recaptchaNote":"This site is protected by reCAPTCHA and the Google <a href=\"https://policies.google.com/privacy\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit;text-decoration:underline;\">Privacy Policy</a> and <a href=\"https://policies.google.com/terms\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit;text-decoration:underline;\">Terms of Service</a> apply.",
@@ -225,7 +262,7 @@
             "don.title":"Support the Platform","don.desc":"If you'd like to support YUSR Pro's development, you can donate any amount via the numbers below.","don.wallet":"Mobile Wallet","don.thanks":"Thank you so much to everyone who supports us.",
             "sup.title":"Support & Contact","sup.desc":"Have a question, issue, or suggestion? Reach us directly through any channel below.","sup.phone":"Direct Call","sup.hours":"We usually reply within a few hours. For urgent matters, WhatsApp is fastest.",
             "legal.lastUpdated":"Last updated: August 2026",
-            "about.pageTitle":"About Us","about.tagline":"An Arabic platform we build with passion to be your companion on your career journey.",
+            "history.pageTitle":"Unified History","history.subtitle":"The last 20 results from any tool on the site (summaries, reviews, letters, and more) are saved here automatically so you don't lose them if you close the page.","history.listTitle":"Saved Results","history.clearAll":"Clear All","history.empty":"No saved results yet. Any result from the site's tools will appear here automatically.","onboarding.title":"Welcome to YUSR Pro 👋","onboarding.subtitle":"3 quick steps to get you started right:","onboarding.step1.title":"Complete your profile","onboarding.step1.desc":"Other tools like the CV builder and interview practice pull from this data.","onboarding.step2.title":"Try a mock interview","onboarding.step2.desc":"Practice real questions out loud and get instant feedback on your performance.","onboarding.step3.title":"Build your CV","onboarding.step3.desc":"We'll build you a professional CV in minutes from your saved data.","onboarding.tip":"Tip: there's a search box above the sidebar to quickly find any of the 20+ tools.","onboarding.skip":"Skip, I'll explore myself","about.pageTitle":"About Us","about.tagline":"An Arabic platform we build with passion to be your companion on your career journey.",
             "about.missionLabel":"Our Mission","about.missionBody":"We believe that everyone, whatever their background or circumstances, deserves to reach the right opportunity feeling confident and well prepared. \"YUSR Pro\" grew out of a simple idea: good interview prep or a strong CV shouldn't be reserved for whoever has the time, money, or connections — AI can now put that same quality within anyone's reach, anytime.",
             "about.pillarsTitle":"What Drives Us",
             "about.pillar1Title":"Real Help","about.pillar1Body":"Not just tools — we design every feature to solve a real problem job seekers face.",
@@ -268,10 +305,10 @@
         }
 ,
         fr: {
-            "nav.section.interviews":"Entretiens et embauche","nav.interview":"Entretien d'entraînement vocal","nav.faq":"FAQ + réponses modèles","nav.career":"Plan de développement de carrière",
+            "nav.searchPh":"Rechercher un outil...","nav.searchEmpty":"Aucun outil trouvé","nav.section.interviews":"Entretiens et embauche","nav.interview":"Entretien d'entraînement vocal","nav.faq":"FAQ + réponses modèles","nav.career":"Plan de développement de carrière",
             "nav.section.documents":"Documents","nav.cv":"Créateur de CV","nav.portfolio":"Portfolio personnel","nav.writing":"Relecture académique","nav.summarizer":"Résumé de documents",
             "nav.section.audio":"Audio et vidéo","nav.transcribe":"Transcription audio en texte",
-            "nav.section.account":"Compte et assistance","nav.about":"À propos de nous","nav.profile":"Profil","nav.subscriptions":"Abonnements","nav.donations":"Dons","nav.support":"Assistance et contact",
+            "nav.section.account":"Compte et assistance","nav.about":"À propos de nous","nav.history":"Historique unifié","nav.profile":"Profil","nav.subscriptions":"Abonnements","nav.donations":"Dons","nav.support":"Assistance et contact",
             "nav.section.legal":"Mentions légales","nav.terms":"Conditions d'utilisation","nav.privacy":"Politique de confidentialité",
             "account.guest":"Invité (cet appareil)","account.signinHint":"Connectez-vous avec Google pour enregistrer votre photo et vos points",
             "authgate.title":"Connexion","authgate.subtitle":"Si vous ne pouvez pas entrer en tant qu'invité pour le moment (généralement un problème de connexion), connectez-vous avec Google ou votre e-mail.","authgate.googleBtn":"Se connecter avec Google","authgate.orEmail":"ou par e-mail","authgate.tabLogin":"Connexion","authgate.tabSignup":"Créer un compte","authgate.namePh":"Votre nom complet","authgate.emailPh":"E-mail","authgate.passwordPh":"Mot de passe","authgate.confirmPh":"Confirmer le mot de passe","authgate.submitLogin":"Connexion","authgate.submitSignup":"Créer le compte","authgate.privacyNote":"Vos données sont stockées en toute sécurité, et votre mot de passe est chiffré — même nous ne pouvons pas le voir.","authgate.recaptchaNote":"Ce site est protégé par reCAPTCHA. Les <a href=\"https://policies.google.com/privacy\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit;text-decoration:underline;\">règles de confidentialité</a> et les <a href=\"https://policies.google.com/terms\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit;text-decoration:underline;\">conditions d'utilisation</a> de Google s'appliquent.",
@@ -304,7 +341,7 @@
             "don.title":"Soutenez la continuité de la plateforme","don.desc":"Si vous souhaitez soutenir le développement de YUSR Pro, vous pouvez faire un don de n'importe quel montant via les numéros ci-dessous.","don.wallet":"Portefeuille électronique","don.thanks":"Un grand merci à tous ceux qui nous soutiennent.",
             "sup.title":"Assistance et contact","sup.desc":"Une question, un problème ou une suggestion ? Contactez-nous directement.","sup.phone":"Appel direct","sup.hours":"Nous répondons généralement en quelques heures. Pour les urgences, WhatsApp est le plus rapide.",
             "legal.lastUpdated":"Dernière mise à jour : août 2026",
-            "about.pageTitle":"À propos de nous","about.tagline":"Une plateforme arabe que nous construisons avec passion pour être votre compagnon dans votre parcours professionnel.",
+            "history.pageTitle":"Historique unifié","history.subtitle":"Les 20 derniers résultats de n'importe quel outil du site (résumés, relectures, lettres, etc.) sont enregistrés ici automatiquement pour que vous ne les perdiez pas en fermant la page.","history.listTitle":"Résultats enregistrés","history.clearAll":"Tout effacer","history.empty":"Aucun résultat enregistré pour l'instant. Tout résultat des outils du site apparaîtra ici automatiquement.","onboarding.title":"Bienvenue sur YUSR Pro 👋","onboarding.subtitle":"3 étapes rapides pour bien démarrer :","onboarding.step1.title":"Complétez votre profil","onboarding.step1.desc":"Les autres outils (CV, entretien) utilisent ces données.","onboarding.step2.title":"Essayez un entretien simulé","onboarding.step2.desc":"Entraînez-vous sur de vraies questions à voix haute et recevez un retour instantané.","onboarding.step3.title":"Créez votre CV","onboarding.step3.desc":"Nous vous créons un CV professionnel en quelques minutes à partir de vos données.","onboarding.tip":"Astuce : une barre de recherche au-dessus du menu latéral vous aide à trouver rapidement n'importe quel outil parmi plus de 20.","onboarding.skip":"Passer, je vais explorer moi-même","about.pageTitle":"À propos de nous","about.tagline":"Une plateforme arabe que nous construisons avec passion pour être votre compagnon dans votre parcours professionnel.",
             "about.missionLabel":"Notre mission","about.missionBody":"Nous croyons que chacun, quel que soit son parcours ou sa situation, mérite d'accéder à la bonne opportunité en toute confiance et bien préparé. \"YUSR Pro\" est né d'une idée simple : une bonne préparation à l'entretien ou un CV solide ne devrait pas être réservé à ceux qui ont le temps, l'argent ou les relations — l'IA peut désormais offrir cette même qualité à portée de main, à tout moment.",
             "about.pillarsTitle":"Ce qui nous anime",
             "about.pillar1Title":"Une aide réelle","about.pillar1Body":"Pas seulement des outils : nous concevons chaque fonctionnalité pour résoudre un vrai problème rencontré par les chercheurs d'emploi.",
@@ -346,10 +383,10 @@
             "privacy.s8.title":"8. Modifications de cette politique","privacy.s8.body":"Nous pouvons mettre à jour cette politique de temps à autre, et nous changerons la date \"Dernière mise à jour\" ci-dessus dès que nous apporterons une modification substantielle."
         },
         es: {
-            "nav.section.interviews":"Entrevistas y contratación","nav.interview":"Entrevista de práctica por voz","nav.faq":"Preguntas frecuentes + respuestas modelo","nav.career":"Plan de desarrollo profesional",
+            "nav.searchPh":"Buscar herramientas...","nav.searchEmpty":"No se encontraron herramientas","nav.section.interviews":"Entrevistas y contratación","nav.interview":"Entrevista de práctica por voz","nav.faq":"Preguntas frecuentes + respuestas modelo","nav.career":"Plan de desarrollo profesional",
             "nav.section.documents":"Documentos","nav.cv":"Creador de CV","nav.portfolio":"Portafolio personal","nav.writing":"Revisión académica","nav.summarizer":"Resumen de documentos",
             "nav.section.audio":"Audio y video","nav.transcribe":"Transcripción de audio a texto",
-            "nav.section.account":"Cuenta y soporte","nav.about":"Sobre nosotros","nav.profile":"Perfil","nav.subscriptions":"Suscripciones","nav.donations":"Donaciones","nav.support":"Soporte y contacto",
+            "nav.section.account":"Cuenta y soporte","nav.about":"Sobre nosotros","nav.history":"Historial unificado","nav.profile":"Perfil","nav.subscriptions":"Suscripciones","nav.donations":"Donaciones","nav.support":"Soporte y contacto",
             "nav.section.legal":"Legal","nav.terms":"Términos de uso","nav.privacy":"Política de privacidad",
             "account.guest":"Invitado (este dispositivo)","account.signinHint":"Inicia sesión con Google para guardar tu foto y puntos",
             "authgate.title":"Iniciar sesión","authgate.subtitle":"Si no puedes entrar como invitado ahora (normalmente un problema de conexión), inicia sesión con Google o tu correo.","authgate.googleBtn":"Iniciar sesión con Google","authgate.orEmail":"o por correo","authgate.tabLogin":"Iniciar sesión","authgate.tabSignup":"Crear cuenta","authgate.namePh":"Tu nombre completo","authgate.emailPh":"Correo electrónico","authgate.passwordPh":"Contraseña","authgate.confirmPh":"Confirmar contraseña","authgate.submitLogin":"Iniciar sesión","authgate.submitSignup":"Crear cuenta","authgate.privacyNote":"Tus datos se guardan de forma segura, y tu contraseña está cifrada — ni nosotros podemos verla.","authgate.recaptchaNote":"Este sitio está protegido por reCAPTCHA y se aplican la <a href=\"https://policies.google.com/privacy\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit;text-decoration:underline;\">Política de Privacidad</a> y los <a href=\"https://policies.google.com/terms\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit;text-decoration:underline;\">Términos del Servicio</a> de Google.",
@@ -382,7 +419,7 @@
             "don.title":"Apoya la continuidad de la plataforma","don.desc":"Si quieres apoyar el desarrollo de YUSR Pro, puedes donar cualquier cantidad a través de los números de abajo.","don.wallet":"Billetera electrónica","don.thanks":"Muchas gracias a todos los que nos apoyan.",
             "sup.title":"Soporte y contacto","sup.desc":"¿Tienes una pregunta, problema o sugerencia? Contáctanos directamente.","sup.phone":"Llamada directa","sup.hours":"Solemos responder en unas pocas horas. Para asuntos urgentes, WhatsApp es lo más rápido.",
             "legal.lastUpdated":"Última actualización: agosto de 2026",
-            "about.pageTitle":"Sobre nosotros","about.tagline":"Una plataforma árabe que construimos con pasión para ser tu compañera en tu trayectoria profesional.",
+            "history.pageTitle":"Historial unificado","history.subtitle":"Los últimos 20 resultados de cualquier herramienta del sitio (resúmenes, revisiones, cartas y más) se guardan aquí automáticamente para que no los pierdas si cierras la página.","history.listTitle":"Resultados guardados","history.clearAll":"Borrar todo","history.empty":"Aún no hay resultados guardados. Cualquier resultado de las herramientas del sitio aparecerá aquí automáticamente.","onboarding.title":"Bienvenido a YUSR Pro 👋","onboarding.subtitle":"3 pasos rápidos para empezar bien:","onboarding.step1.title":"Completa tu perfil","onboarding.step1.desc":"Otras herramientas, como el CV y la entrevista, usan estos datos.","onboarding.step2.title":"Prueba una entrevista simulada","onboarding.step2.desc":"Practica preguntas reales en voz alta y recibe comentarios al instante.","onboarding.step3.title":"Crea tu CV","onboarding.step3.desc":"Te crearemos un CV profesional en minutos a partir de tus datos guardados.","onboarding.tip":"Consejo: hay un cuadro de búsqueda sobre el menú lateral para encontrar rápido cualquiera de las más de 20 herramientas.","onboarding.skip":"Omitir, exploraré por mi cuenta","about.pageTitle":"Sobre nosotros","about.tagline":"Una plataforma árabe que construimos con pasión para ser tu compañera en tu trayectoria profesional.",
             "about.missionLabel":"Nuestra misión","about.missionBody":"Creemos que todos, sea cual sea su origen o circunstancias, merecen alcanzar la oportunidad correcta sintiéndose seguros y bien preparados. \"YUSR Pro\" nació de una idea sencilla: una buena preparación para entrevistas o un CV sólido no deberían ser exclusivos de quien tiene tiempo, dinero o contactos — la IA ahora puede poner esa misma calidad al alcance de cualquiera, en cualquier momento.",
             "about.pillarsTitle":"Qué nos impulsa",
             "about.pillar1Title":"Ayuda real","about.pillar1Body":"No solo herramientas: diseñamos cada función para resolver un problema real que enfrentan quienes buscan empleo.",
@@ -424,10 +461,10 @@
             "privacy.s8.title":"8. Cambios en esta política","privacy.s8.body":"Podemos actualizar esta política de vez en cuando, y cambiaremos la fecha de \"Última actualización\" arriba cuando hagamos un cambio sustancial."
         },
         tr: {
-            "nav.section.interviews":"Mülakatlar ve İşe Alım","nav.interview":"Sesli Deneme Mülakatı","nav.faq":"SSS + Örnek Cevaplar","nav.career":"Kariyer Gelişim Planı",
+            "nav.searchPh":"Araç ara...","nav.searchEmpty":"Eşleşen araç yok","nav.section.interviews":"Mülakatlar ve İşe Alım","nav.interview":"Sesli Deneme Mülakatı","nav.faq":"SSS + Örnek Cevaplar","nav.career":"Kariyer Gelişim Planı",
             "nav.section.documents":"Belgeler","nav.cv":"CV Oluşturucu","nav.portfolio":"Kişisel Portfolyo","nav.writing":"Akademik Yazı Denetimi","nav.summarizer":"Belge Özetleyici",
             "nav.section.audio":"Ses ve Video","nav.transcribe":"Sesi Metne Dönüştürme",
-            "nav.section.account":"Hesap ve Destek","nav.about":"Hakkımızda","nav.profile":"Profil","nav.subscriptions":"Abonelikler","nav.donations":"Bağışlar","nav.support":"Destek ve İletişim",
+            "nav.section.account":"Hesap ve Destek","nav.about":"Hakkımızda","nav.history":"Birleşik Geçmiş","nav.profile":"Profil","nav.subscriptions":"Abonelikler","nav.donations":"Bağışlar","nav.support":"Destek ve İletişim",
             "nav.section.legal":"Yasal","nav.terms":"Kullanım Şartları","nav.privacy":"Gizlilik Politikası",
             "account.guest":"Misafir (bu cihaz)","account.signinHint":"Fotoğrafını ve puanlarını kaydetmek için Google ile giriş yap",
             "authgate.title":"Giriş yap","authgate.subtitle":"Şu anda misafir olarak giremiyorsan (genellikle bağlantı sorunu), Google veya e-postanla giriş yap.","authgate.googleBtn":"Google ile Giriş Yap","authgate.orEmail":"veya e-posta ile","authgate.tabLogin":"Giriş yap","authgate.tabSignup":"Hesap oluştur","authgate.namePh":"Ad Soyad","authgate.emailPh":"E-posta","authgate.passwordPh":"Şifre","authgate.confirmPh":"Şifreyi onayla","authgate.submitLogin":"Giriş yap","authgate.submitSignup":"Hesap oluştur","authgate.privacyNote":"Verilerin güvenli şekilde saklanır, şifren şifrelenir — biz bile göremeyiz.","authgate.recaptchaNote":"Bu site reCAPTCHA ile korunmaktadır; Google <a href=\"https://policies.google.com/privacy\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit;text-decoration:underline;\">Gizlilik Politikası</a> ve <a href=\"https://policies.google.com/terms\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit;text-decoration:underline;\">Hizmet Şartları</a> geçerlidir.",
@@ -460,7 +497,7 @@
             "don.title":"Platformun Sürekliliğini Destekle","don.desc":"YUSR Pro'nun gelişimini desteklemek istersen, aşağıdaki numaralar üzerinden istediğin miktarda bağış yapabilirsin.","don.wallet":"Elektronik Cüzdan","don.thanks":"Bizi destekleyen herkese çok teşekkür ederiz.",
             "sup.title":"Destek ve İletişim","sup.desc":"Bir sorun, sorunun veya önerin mi var? Bizimle doğrudan iletişime geç.","sup.phone":"Doğrudan Arama","sup.hours":"Genellikle birkaç saat içinde yanıt veriyoruz. Acil konularda en hızlısı WhatsApp'tır.",
             "legal.lastUpdated":"Son güncelleme: Ağustos 2026",
-            "about.pageTitle":"Hakkımızda","about.tagline":"Kariyer yolculuğunda yol arkadaşın olması için tutkuyla inşa ettiğimiz bir Arapça platform.",
+            "history.pageTitle":"Birleşik Geçmiş","history.subtitle":"Sitedeki herhangi bir araçtan (özetler, incelemeler, mektuplar ve daha fazlası) son 20 sonuç, sayfayı kapatsanız bile kaybolmasın diye burada otomatik olarak saklanır.","history.listTitle":"Kayıtlı Sonuçlar","history.clearAll":"Tümünü Temizle","history.empty":"Henüz kayıtlı sonuç yok. Sitedeki araçlardan alınan her sonuç otomatik olarak burada görünecek.","onboarding.title":"YUSR Pro'ya hoş geldin 👋","onboarding.subtitle":"Doğru başlamak için 3 hızlı adım:","onboarding.step1.title":"Profilini tamamla","onboarding.step1.desc":"CV ve mülakat gibi diğer araçlar bu bilgileri kullanır.","onboarding.step2.title":"Deneme mülakatı yap","onboarding.step2.desc":"Gerçek sorularla sesli pratik yap ve anında geri bildirim al.","onboarding.step3.title":"CV'ni oluştur","onboarding.step3.desc":"Kayıtlı bilgilerinden dakikalar içinde profesyonel bir CV oluşturacağız.","onboarding.tip":"İpucu: Kenar menünün üstündeki arama kutusuyla 20'den fazla araçtan istediğine hızlıca ulaşabilirsin.","onboarding.skip":"Atla, kendim keşfedeceğim","about.pageTitle":"Hakkımızda","about.tagline":"Kariyer yolculuğunda yol arkadaşın olması için tutkuyla inşa ettiğimiz bir Arapça platform.",
             "about.missionLabel":"Misyonumuz","about.missionBody":"Geçmişi veya koşulları ne olursa olsun herkesin kendine güvenerek ve iyi hazırlanmış olarak doğru fırsata ulaşmayı hak ettiğine inanıyoruz. \"YUSR Pro\" basit bir fikirden doğdu: iyi bir mülakat hazırlığı veya güçlü bir CV, zamanı, parası veya bağlantısı olanların ayrıcalığı olmamalı — yapay zeka artık bu kaliteyi herkesin her an ulaşabileceği hale getirebiliyor.",
             "about.pillarsTitle":"Bizi Ne Yönlendiriyor",
             "about.pillar1Title":"Gerçek Yardım","about.pillar1Body":"Sadece araçlar değil; iş arayanların karşılaştığı gerçek bir sorunu çözmek için her özelliği tasarlıyoruz.",
@@ -502,10 +539,10 @@
             "privacy.s8.title":"8. Bu Politikadaki Değişiklikler","privacy.s8.body":"Bu politikayı zaman zaman güncelleyebiliriz ve önemli bir değişiklik yaptığımızda yukarıdaki \"Son güncelleme\" tarihini değiştireceğiz."
         },
         de: {
-            "nav.section.interviews":"Vorstellungsgespräche & Bewerbung","nav.interview":"Sprachbasiertes Übungsinterview","nav.faq":"FAQ + Musterantworten","nav.career":"Karriereentwicklungsplan",
+            "nav.searchPh":"Werkzeuge suchen...","nav.searchEmpty":"Keine passenden Werkzeuge","nav.section.interviews":"Vorstellungsgespräche & Bewerbung","nav.interview":"Sprachbasiertes Übungsinterview","nav.faq":"FAQ + Musterantworten","nav.career":"Karriereentwicklungsplan",
             "nav.section.documents":"Dokumente","nav.cv":"Lebenslauf-Generator","nav.portfolio":"Persönliches Portfolio","nav.writing":"Akademisches Lektorat","nav.summarizer":"Dokumentenzusammenfassung",
             "nav.section.audio":"Audio & Video","nav.transcribe":"Sprache-zu-Text",
-            "nav.section.account":"Konto & Support","nav.about":"Über uns","nav.profile":"Profil","nav.subscriptions":"Abonnements","nav.donations":"Spenden","nav.support":"Support & Kontakt",
+            "nav.section.account":"Konto & Support","nav.about":"Über uns","nav.history":"Einheitlicher Verlauf","nav.profile":"Profil","nav.subscriptions":"Abonnements","nav.donations":"Spenden","nav.support":"Support & Kontakt",
             "nav.section.legal":"Rechtliches","nav.terms":"Nutzungsbedingungen","nav.privacy":"Datenschutzerklärung",
             "account.guest":"Gast (dieses Gerät)","account.signinHint":"Melde dich mit Google an, um dein Foto und deine Punkte zu speichern",
             "authgate.title":"Anmelden","authgate.subtitle":"Falls du gerade nicht als Gast einsteigen kannst (meist ein Verbindungsproblem), melde dich mit Google oder deiner E-Mail an.","authgate.googleBtn":"Mit Google anmelden","authgate.orEmail":"oder per E-Mail","authgate.tabLogin":"Anmelden","authgate.tabSignup":"Konto erstellen","authgate.namePh":"Dein vollständiger Name","authgate.emailPh":"E-Mail","authgate.passwordPh":"Passwort","authgate.confirmPh":"Passwort bestätigen","authgate.submitLogin":"Anmelden","authgate.submitSignup":"Konto erstellen","authgate.privacyNote":"Deine Daten werden sicher gespeichert, dein Passwort ist verschlüsselt — nicht einmal wir können es sehen.","authgate.recaptchaNote":"Diese Seite ist durch reCAPTCHA geschützt. Es gelten die <a href=\"https://policies.google.com/privacy\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit;text-decoration:underline;\">Datenschutzerklärung</a> und die <a href=\"https://policies.google.com/terms\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit;text-decoration:underline;\">Nutzungsbedingungen</a> von Google.",
@@ -538,7 +575,7 @@
             "don.title":"Unterstütze die Plattform","don.desc":"Wenn du die Entwicklung von YUSR Pro unterstützen möchtest, kannst du über die untenstehenden Nummern einen beliebigen Betrag spenden.","don.wallet":"Elektronische Geldbörse","don.thanks":"Vielen Dank an alle, die uns unterstützen.",
             "sup.title":"Support & Kontakt","sup.desc":"Hast du eine Frage, ein Problem oder einen Vorschlag? Kontaktiere uns direkt.","sup.phone":"Direktanruf","sup.hours":"Wir antworten in der Regel innerhalb weniger Stunden. Bei dringenden Anliegen ist WhatsApp am schnellsten.",
             "legal.lastUpdated":"Zuletzt aktualisiert: August 2026",
-            "about.pageTitle":"Über uns","about.tagline":"Eine arabische Plattform, die wir mit Leidenschaft aufbauen, um dein Begleiter auf deiner Karriereweise zu sein.",
+            "history.pageTitle":"Einheitlicher Verlauf","history.subtitle":"Die letzten 20 Ergebnisse aus jedem Werkzeug der Seite (Zusammenfassungen, Lektorate, Schreiben und mehr) werden hier automatisch gespeichert, damit sie nicht verloren gehen, wenn du die Seite schließt.","history.listTitle":"Gespeicherte Ergebnisse","history.clearAll":"Alles löschen","history.empty":"Noch keine gespeicherten Ergebnisse. Jedes Ergebnis der Werkzeuge der Seite erscheint hier automatisch.","onboarding.title":"Willkommen bei YUSR Pro 👋","onboarding.subtitle":"3 schnelle Schritte für einen guten Start:","onboarding.step1.title":"Vervollständige dein Profil","onboarding.step1.desc":"Andere Werkzeuge wie Lebenslauf und Interview nutzen diese Daten.","onboarding.step2.title":"Probiere ein Übungsinterview","onboarding.step2.desc":"Übe echte Fragen laut und erhalte sofortiges Feedback zu deiner Leistung.","onboarding.step3.title":"Erstelle deinen Lebenslauf","onboarding.step3.desc":"Wir erstellen dir in wenigen Minuten einen professionellen Lebenslauf aus deinen gespeicherten Daten.","onboarding.tip":"Tipp: Über der Seitenleiste gibt es ein Suchfeld, mit dem du schnell jedes der über 20 Werkzeuge findest.","onboarding.skip":"Überspringen, ich schaue selbst","about.pageTitle":"Über uns","about.tagline":"Eine arabische Plattform, die wir mit Leidenschaft aufbauen, um dein Begleiter auf deiner Karriereweise zu sein.",
             "about.missionLabel":"Unsere Mission","about.missionBody":"Wir glauben, dass jeder, unabhängig von Herkunft oder Umständen, es verdient, die richtige Chance selbstbewusst und gut vorbereitet zu erreichen. \"YUSR Pro\" entstand aus einer einfachen Idee: Eine gute Interviewvorbereitung oder ein starker Lebenslauf sollte nicht nur denen vorbehalten sein, die Zeit, Geld oder Beziehungen haben — KI kann diese Qualität jetzt jedem, jederzeit zugänglich machen.",
             "about.pillarsTitle":"Was uns antreibt",
             "about.pillar1Title":"Echte Hilfe","about.pillar1Body":"Nicht nur Werkzeuge — wir gestalten jede Funktion, um ein echtes Problem zu lösen, dem Arbeitssuchende begegnen.",
@@ -580,10 +617,10 @@
             "privacy.s8.title":"8. Änderungen dieser Richtlinie","privacy.s8.body":"Wir können diese Richtlinie von Zeit zu Zeit aktualisieren und werden das Datum \"Zuletzt aktualisiert\" oben ändern, sobald wir eine wesentliche Änderung vornehmen."
         },
         hi: {
-            "nav.section.interviews":"इंटरव्यू और नौकरी","nav.interview":"वॉइस मॉक इंटरव्यू","nav.faq":"सामान्य प्रश्न + नमूना उत्तर","nav.career":"करियर विकास योजना",
+            "nav.searchPh":"टूल खोजें...","nav.searchEmpty":"कोई मेल खाता टूल नहीं","nav.section.interviews":"इंटरव्यू और नौकरी","nav.interview":"वॉइस मॉक इंटरव्यू","nav.faq":"सामान्य प्रश्न + नमूना उत्तर","nav.career":"करियर विकास योजना",
             "nav.section.documents":"दस्तावेज़","nav.cv":"सीवी बिल्डर","nav.portfolio":"व्यक्तिगत पोर्टफोलियो","nav.writing":"अकादमिक लेखन समीक्षा","nav.summarizer":"दस्तावेज़ सारांश",
             "nav.section.audio":"ऑडियो और वीडियो","nav.transcribe":"ऑडियो से टेक्स्ट",
-            "nav.section.account":"खाता और सहायता","nav.about":"हमारे बारे में","nav.profile":"प्रोफ़ाइल","nav.subscriptions":"सदस्यताएँ","nav.donations":"दान","nav.support":"सहायता और संपर्क",
+            "nav.section.account":"खाता और सहायता","nav.about":"हमारे बारे में","nav.history":"एकीकृत इतिहास","nav.profile":"प्रोफ़ाइल","nav.subscriptions":"सदस्यताएँ","nav.donations":"दान","nav.support":"सहायता और संपर्क",
             "nav.section.legal":"कानूनी","nav.terms":"उपयोग की शर्तें","nav.privacy":"गोपनीयता नीति",
             "account.guest":"अतिथि (यह डिवाइस)","account.signinHint":"अपनी फ़ोटो और पॉइंट्स सेव करने के लिए Google से साइन इन करें",
             "trial.left":"बचे हुए प्रयास","trial.upgrade":"पूर्ण पैकेज में अपग्रेड करें",
@@ -615,7 +652,7 @@
             "don.title":"प्लेटफ़ॉर्म को जारी रखने में मदद करें","don.desc":"अगर आप YUSR Pro के विकास में मदद करना चाहते हैं, तो आप नीचे दिए नंबरों के ज़रिए कोई भी राशि दान कर सकते हैं।","don.wallet":"मोबाइल वॉलेट","don.thanks":"हमारा साथ देने वाले हर व्यक्ति का बहुत-बहुत धन्यवाद।",
             "sup.title":"सहायता और संपर्क","sup.desc":"कोई सवाल, समस्या या सुझाव है? हमसे सीधे संपर्क करें।","sup.phone":"सीधी कॉल","sup.hours":"हम आमतौर पर कुछ घंटों में जवाब देते हैं। तत्काल मामलों के लिए, WhatsApp सबसे तेज़ है।",
             "legal.lastUpdated":"आखिरी अपडेट: अगस्त 2026",
-            "about.pageTitle":"हमारे बारे में","about.tagline":"एक अरबी प्लेटफ़ॉर्म जिसे हम जुनून के साथ बना रहे हैं ताकि यह आपकी करियर यात्रा में आपका साथी बने।",
+            "history.pageTitle":"एकीकृत इतिहास","history.subtitle":"साइट के किसी भी टूल के आखिरी 20 परिणाम (सारांश, समीक्षा, पत्र, आदि) यहाँ अपने आप सेव हो जाते हैं ताकि पेज बंद करने पर वे खो न जाएँ।","history.listTitle":"सेव किए गए परिणाम","history.clearAll":"सभी हटाएँ","history.empty":"अभी तक कोई सेव किया गया परिणाम नहीं है। साइट के टूल्स से मिलने वाला कोई भी परिणाम यहाँ अपने आप दिखाई देगा।","onboarding.title":"YUSR Pro में आपका स्वागत है 👋","onboarding.subtitle":"सही शुरुआत के लिए 3 तेज़ कदम:","onboarding.step1.title":"अपनी प्रोफ़ाइल पूरी करें","onboarding.step1.desc":"CV और इंटरव्यू जैसे अन्य टूल इसी डेटा का उपयोग करते हैं।","onboarding.step2.title":"एक मॉक इंटरव्यू आज़माएँ","onboarding.step2.desc":"असली सवालों पर ज़ोर से अभ्यास करें और तुरंत फीडबैक पाएं।","onboarding.step3.title":"अपनी CV बनाएँ","onboarding.step3.desc":"हम आपके सेव किए गए डेटा से मिनटों में एक पेशेवर CV बनाएंगे।","onboarding.tip":"टिप: साइडबार के ऊपर एक सर्च बॉक्स है जो आपको 20+ टूल्स में से किसी को भी जल्दी ढूँढने में मदद करता है।","onboarding.skip":"छोड़ें, मैं खुद देख लूँगा","about.pageTitle":"हमारे बारे में","about.tagline":"एक अरबी प्लेटफ़ॉर्म जिसे हम जुनून के साथ बना रहे हैं ताकि यह आपकी करियर यात्रा में आपका साथी बने।",
             "about.missionLabel":"हमारा मिशन","about.missionBody":"हम मानते हैं कि हर कोई, चाहे उसकी पृष्ठभूमि या परिस्थितियां कैसी भी हों, आत्मविश्वास और अच्छी तैयारी के साथ सही अवसर पाने का हकदार है। \"YUSR Pro\" एक सरल विचार से जन्मा: अच्छी इंटरव्यू तैयारी या मज़बूत सीवी सिर्फ़ उन्हीं के लिए नहीं होनी चाहिए जिनके पास समय, पैसा या जान-पहचान है — अब AI यह गुणवत्ता किसी को भी, कभी भी उपलब्ध करा सकता है।",
             "about.pillarsTitle":"हमें क्या प्रेरित करता है",
             "about.pillar1Title":"असली मदद","about.pillar1Body":"सिर्फ़ टूल्स नहीं — हम हर फ़ीचर को नौकरी तलाशने वालों की असली समस्या हल करने के लिए डिज़ाइन करते हैं।",
@@ -657,10 +694,10 @@
             "privacy.s8.title":"8. इस नीति में बदलाव","privacy.s8.body":"हम समय-समय पर इस नीति को अपडेट कर सकते हैं, और जब भी कोई महत्वपूर्ण बदलाव करेंगे तो ऊपर दी गई \"आखिरी अपडेट\" तारीख़ बदल देंगे।"
         },
         ur: {
-            "nav.section.interviews":"انٹرویوز اور ملازمت","nav.interview":"صوتی مشقی انٹرویو","nav.faq":"عمومی سوالات + نمونہ جوابات","nav.career":"کیریئر ترقی کا منصوبہ",
+            "nav.searchPh":"ٹولز تلاش کریں...","nav.searchEmpty":"کوئی مماثل ٹول نہیں","nav.section.interviews":"انٹرویوز اور ملازمت","nav.interview":"صوتی مشقی انٹرویو","nav.faq":"عمومی سوالات + نمونہ جوابات","nav.career":"کیریئر ترقی کا منصوبہ",
             "nav.section.documents":"دستاویزات","nav.cv":"سی وی بنانے کا آلہ","nav.portfolio":"ذاتی پورٹ فولیو","nav.writing":"تعلیمی تحریر کا جائزہ","nav.summarizer":"دستاویز کا خلاصہ",
             "nav.section.audio":"آڈیو اور ویڈیو","nav.transcribe":"آواز کو تحریر میں بدلنا",
-            "nav.section.account":"اکاؤنٹ اور معاونت","nav.about":"ہمارے بارے میں","nav.profile":"پروفائل","nav.subscriptions":"سبسکرپشنز","nav.donations":"عطیات","nav.support":"معاونت اور رابطہ",
+            "nav.section.account":"اکاؤنٹ اور معاونت","nav.about":"ہمارے بارے میں","nav.history":"متحدہ ہسٹری","nav.profile":"پروفائل","nav.subscriptions":"سبسکرپشنز","nav.donations":"عطیات","nav.support":"معاونت اور رابطہ",
             "nav.section.legal":"قانونی","nav.terms":"استعمال کی شرائط","nav.privacy":"رازداری کی پالیسی",
             "account.guest":"مہمان (یہ ڈیوائس)","account.signinHint":"اپنی تصویر اور پوائنٹس محفوظ کرنے کے لیے گوگل سے سائن ان کریں",
             "trial.left":"باقی ماندہ کوششیں","trial.upgrade":"مکمل پیکیج میں اپ گریڈ کریں",
@@ -692,7 +729,7 @@
             "don.title":"پلیٹ فارم کی مسلسل کارکردگی کی حمایت کریں","don.desc":"اگر آپ YUSR Pro کی ترقی کی حمایت کرنا چاہتے ہیں تو نیچے دیے گئے نمبروں کے ذریعے کوئی بھی رقم عطیہ کر سکتے ہیں۔","don.wallet":"الیکٹرانک والیٹ","don.thanks":"حمایت کرنے والے ہر فرد کا بہت شکریہ۔",
             "sup.title":"معاونت اور رابطہ","sup.desc":"کوئی سوال، مسئلہ یا تجویز ہے؟ براہ راست ہم سے رابطہ کریں۔","sup.phone":"براہ راست کال","sup.hours":"ہم عام طور پر چند گھنٹوں میں جواب دیتے ہیں۔ فوری معاملات کے لیے، واٹس ایپ سب سے تیز ہے۔",
             "legal.lastUpdated":"آخری اپ ڈیٹ: اگست 2026",
-            "about.pageTitle":"ہمارے بارے میں","about.tagline":"ایک عربی پلیٹ فارم جسے ہم جذبے کے ساتھ بنا رہے ہیں تاکہ یہ آپ کے کیریئر کے سفر میں آپ کا ساتھی بنے۔",
+            "history.pageTitle":"متحدہ ہسٹری","history.subtitle":"سائٹ کے کسی بھی ٹول کے آخری 20 نتائج (خلاصے، جائزے، خطوط وغیرہ) یہاں خودکار طور پر محفوظ ہو جاتے ہیں تاکہ صفحہ بند کرنے پر ضائع نہ ہوں۔","history.listTitle":"محفوظ شدہ نتائج","history.clearAll":"سب صاف کریں","history.empty":"ابھی تک کوئی محفوظ شدہ نتیجہ نہیں۔ سائٹ کے ٹولز کا کوئی بھی نتیجہ یہاں خودکار طور پر ظاہر ہوگا۔","onboarding.title":"YUSR Pro میں خوش آمدید 👋","onboarding.subtitle":"صحیح آغاز کے لیے 3 تیز مراحل:","onboarding.step1.title":"اپنا پروفائل مکمل کریں","onboarding.step1.desc":"CV اور انٹرویو جیسے دوسرے ٹولز اسی ڈیٹا سے کام کرتے ہیں۔","onboarding.step2.title":"ایک مشقی انٹرویو آزمائیں","onboarding.step2.desc":"حقیقی سوالات پر بلند آواز سے مشق کریں اور فوری فیڈبیک حاصل کریں۔","onboarding.step3.title":"اپنی CV بنائیں","onboarding.step3.desc":"ہم آپ کے محفوظ شدہ ڈیٹا سے منٹوں میں ایک پیشہ ورانہ CV بنائیں گے۔","onboarding.tip":"ٹِپ: سائیڈبار کے اوپر ایک سرچ باکس ہے جو آپ کو 20 سے زیادہ ٹولز میں سے کوئی بھی جلدی ڈھونڈنے میں مدد دیتا ہے۔","onboarding.skip":"چھوڑیں، میں خود دیکھ لوں گا","about.pageTitle":"ہمارے بارے میں","about.tagline":"ایک عربی پلیٹ فارم جسے ہم جذبے کے ساتھ بنا رہے ہیں تاکہ یہ آپ کے کیریئر کے سفر میں آپ کا ساتھی بنے۔",
             "about.missionLabel":"ہمارا مشن","about.missionBody":"ہم مانتے ہیں کہ ہر شخص، چاہے اس کا پس منظر یا حالات کچھ بھی ہوں، پراعتماد اور اچھی طرح تیار ہو کر صحیح موقع تک پہنچنے کا حق دار ہے۔ \"YUSR Pro\" ایک سادہ خیال سے جنم لیا: اچھی انٹرویو کی تیاری یا مضبوط سی وی صرف اُن لوگوں کے لیے مخصوص نہیں ہونی چاہیے جن کے پاس وقت، پیسہ یا تعلقات ہیں — AI اب یہی معیار کسی کو بھی، کسی بھی وقت فراہم کر سکتا ہے۔",
             "about.pillarsTitle":"ہمیں کیا آگے بڑھاتا ہے",
             "about.pillar1Title":"حقیقی مدد","about.pillar1Body":"صرف اوزار نہیں — ہم ہر خصوصیت کو نوکری تلاش کرنے والوں کے کسی حقیقی مسئلے کو حل کرنے کے لیے ڈیزائن کرتے ہیں۔",
@@ -734,10 +771,10 @@
             "privacy.s8.title":"8. اس پالیسی میں تبدیلیاں","privacy.s8.body":"ہم وقتاً فوقتاً اس پالیسی کو اپ ڈیٹ کر سکتے ہیں، اور جب بھی کوئی اہم تبدیلی کریں گے تو اوپر \"آخری اپ ڈیٹ\" کی تاریخ بدل دیں گے۔"
         },
         fa: {
-            "nav.section.interviews":"مصاحبه‌ها و استخدام","nav.interview":"مصاحبه آزمایشی صوتی","nav.faq":"سوالات متداول + پاسخ‌های نمونه","nav.career":"برنامه رشد شغلی",
+            "nav.searchPh":"جستجوی ابزارها...","nav.searchEmpty":"ابزاری یافت نشد","nav.section.interviews":"مصاحبه‌ها و استخدام","nav.interview":"مصاحبه آزمایشی صوتی","nav.faq":"سوالات متداول + پاسخ‌های نمونه","nav.career":"برنامه رشد شغلی",
             "nav.section.documents":"مدارک","nav.cv":"سازنده رزومه","nav.portfolio":"نمونه‌کار شخصی","nav.writing":"بازبینی نگارش آکادمیک","nav.summarizer":"خلاصه‌سازی مدارک",
             "nav.section.audio":"صدا و ویدیو","nav.transcribe":"تبدیل صدا به متن",
-            "nav.section.account":"حساب کاربری و پشتیبانی","nav.about":"درباره ما","nav.profile":"پروفایل","nav.subscriptions":"اشتراک‌ها","nav.donations":"کمک مالی","nav.support":"پشتیبانی و ارتباط",
+            "nav.section.account":"حساب کاربری و پشتیبانی","nav.about":"درباره ما","nav.history":"تاریخچه یکپارچه","nav.profile":"پروفایل","nav.subscriptions":"اشتراک‌ها","nav.donations":"کمک مالی","nav.support":"پشتیبانی و ارتباط",
             "nav.section.legal":"حقوقی","nav.terms":"شرایط استفاده","nav.privacy":"سیاست حریم خصوصی",
             "account.guest":"مهمان (این دستگاه)","account.signinHint":"برای ذخیره عکس و امتیازهایتان با گوگل وارد شوید",
             "trial.left":"تلاش‌های باقی‌مانده","trial.upgrade":"ارتقا به بسته کامل",
@@ -769,7 +806,7 @@
             "don.title":"از تداوم پلتفرم حمایت کنید","don.desc":"اگر می‌خواهید از توسعه YUSR Pro حمایت کنید، می‌توانید از طریق شماره‌های زیر هر مبلغی را اهدا کنید.","don.wallet":"کیف پول الکترونیک","don.thanks":"از همه کسانی که از ما حمایت می‌کنند بسیار سپاسگزاریم.",
             "sup.title":"پشتیبانی و ارتباط","sup.desc":"سوال، مشکل یا پیشنهادی دارید؟ مستقیماً با ما تماس بگیرید.","sup.phone":"تماس مستقیم","sup.hours":"معمولاً ظرف چند ساعت پاسخ می‌دهیم. برای موارد فوری، واتس‌اپ سریع‌ترین راه است.",
             "legal.lastUpdated":"آخرین به‌روزرسانی: اوت ۲۰۲۶",
-            "about.pageTitle":"درباره ما","about.tagline":"پلتفرمی عربی که با شور و اشتیاق می‌سازیم تا همراه شما در مسیر شغلی‌تان باشد.",
+            "history.pageTitle":"تاریخچه یکپارچه","history.subtitle":"۲۰ نتیجه آخر از هر ابزاری در سایت (خلاصه‌سازی، بازبینی، نامه‌ها و غیره) به‌طور خودکار اینجا ذخیره می‌شود تا با بستن صفحه از بین نروند.","history.listTitle":"نتایج ذخیره‌شده","history.clearAll":"پاک کردن همه","history.empty":"هنوز نتیجه‌ای ذخیره نشده. هر نتیجه‌ای از ابزارهای سایت به‌طور خودکار اینجا ظاهر می‌شود.","onboarding.title":"به YUSR Pro خوش آمدید 👋","onboarding.subtitle":"۳ قدم سریع برای شروعی درست:","onboarding.step1.title":"پروفایل خود را کامل کنید","onboarding.step1.desc":"ابزارهای دیگر مثل رزومه و مصاحبه از همین اطلاعات استفاده می‌کنند.","onboarding.step2.title":"یک مصاحبه تمرینی امتحان کنید","onboarding.step2.desc":"با سوالات واقعی به‌صورت صوتی تمرین کنید و بازخورد فوری بگیرید.","onboarding.step3.title":"رزومه خود را بسازید","onboarding.step3.desc":"در چند دقیقه از اطلاعات ذخیره‌شده شما یک رزومه حرفه‌ای می‌سازیم.","onboarding.tip":"نکته: بالای نوار کناری یک کادر جستجو هست که کمک می‌کند هر کدام از بیش از ۲۰ ابزار را سریع پیدا کنید.","onboarding.skip":"رد شدن، خودم می‌گردم","about.pageTitle":"درباره ما","about.tagline":"پلتفرمی عربی که با شور و اشتیاق می‌سازیم تا همراه شما در مسیر شغلی‌تان باشد.",
             "about.missionLabel":"ماموریت ما","about.missionBody":"ما معتقدیم هر کسی، صرف‌نظر از پیشینه یا شرایطش، سزاوار رسیدن به فرصت مناسب با اعتماد به نفس و آمادگی کامل است. \"YUSR Pro\" از یک ایده ساده متولد شد: آمادگی خوب برای مصاحبه یا رزومه‌ای قوی نباید فقط در اختیار کسانی باشد که وقت، پول یا ارتباطات دارند — هوش مصنوعی اکنون می‌تواند همین کیفیت را در دسترس هر کسی، در هر زمانی قرار دهد.",
             "about.pillarsTitle":"چه چیزی ما را به حرکت درمی‌آورد",
             "about.pillar1Title":"کمک واقعی","about.pillar1Body":"نه فقط ابزار — ما هر ویژگی را برای حل یک مشکل واقعی که کارجویان با آن روبرو هستند طراحی می‌کنیم.",
@@ -1039,16 +1076,42 @@
                 p.subscriptionCancelRequested = !!cloud.subscriptionCancelRequested;
                 saveProfile(p);
                 if (Array.isArray(cloud.purchases)) savePurchases(cloud.purchases);
+                if (Array.isArray(cloud.history)) saveHistoryList(cloud.history);
                 // حساب موجود من قبل بس ناقصه email/displayName (حسابات قديمة) -
                 // نكمّلهم بهدوء في الخلفية عشان يظهروا صح في لوحة الأدمن.
                 if (!cloud.email || !cloud.displayName) syncProfileToCloud(p);
             } else {
                 syncProfileToCloud(getProfile());
                 syncPurchasesToCloud(getPurchases());
+                // أول مرة يتعمل فيها doc للحساب ده في users/{uid} = دي أول مرة
+                // فعلية يستخدم فيها الموقع (نقطة 6: جولة تعريفية). بنستنى شوية
+                // عشان مودال الترحيب يظهر بعد ما شاشة تسجيل الدخول تختفي تمامًا
+                // (hideAuthGate) مش فوقها.
+                setTimeout(showOnboardingModal, 700);
             }
             refreshProfileView();
         }).catch(e => console.warn('تعذر تحميل البيانات من الخادم', e));
     }
+    // ============ جولة تعريفية للمستخدم الجديد (نقطة 6) ============
+    // بتتفعّل مرة واحدة بس لكل حساب فعلاً جديد (شوف الاستدعاء فوق في
+    // loadProfileFromCloud). فيها 3 اختيارات سريعة بتودّي مباشرة لأهم 3
+    // أدوات (البروفايل، المقابلة، السيرة الذاتية) عشان تقلل إحساس التوهان
+    // قدام أكتر من 20 أداة مبعثرة، وممكن كمان يتخطاها المستخدم لو حابب.
+    // علم "شافها قبل كده" بيتخزن محليًا فبمجرد ما يقفلها مرة، مش هتفضل
+    // تطارده تاني على نفس الجهاز حتى لو سجّل خروج ودخول تاني.
+    function showOnboardingModal() {
+        if (localStorage.getItem('yusr_onboarding_seen')) return;
+        const modal = document.getElementById('onboarding-modal');
+        if (!modal) return;
+        modal.classList.remove('hidden');
+    }
+    function dismissOnboarding(startView) {
+        localStorage.setItem('yusr_onboarding_seen', '1');
+        const modal = document.getElementById('onboarding-modal');
+        if (modal) modal.classList.add('hidden');
+        if (startView) switchViewByName(startView);
+    }
+    window.dismissOnboarding = dismissOnboarding;
     fbAuth.onAuthStateChanged(user => {
         // تسجيل الدخول بقى إجباري لأي حد يستخدم الموقع - مفيش دخول كزائر (anonymous)
         // خالص دلوقتي. السبب مش بس شكلي: السيرفر (worker.js) أصلاً بيرفض أي طلب
@@ -2276,6 +2339,10 @@
             <button onclick="copyResult(this)" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-copy"></i> <span>${I18N[currentUiLang].copy}</span></button>
             <button onclick="downloadResult(this, '${filename}')" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-download"></i> <span>${I18N[currentUiLang].download}</span></button>
         </div>` + formatReportText(text);
+        // كل نتيجة نصية من أي أداة في الموقع بتتحفظ تلقائيًا في "السجل الموحّد"
+        // (نقطة 5) - استنتاج مفتاح الأداة من اسم الملف نفسه، من غير ما نحتاج نلمس
+        // كل أداة على حدة.
+        try { saveToHistory((filename || 'result').replace(/\.[^.]+$/, ''), text); } catch (e) { console.warn('تعذر حفظ النتيجة في السجل الموحّد', e); }
     }
     function copyResult(btn) {
         const box = btn.closest('[data-raw]');
@@ -2304,6 +2371,133 @@
         const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
         URL.revokeObjectURL(url);
     }
+
+    // ============ سجل موحّد للنتائج (نقطة 5: أرشيف عام لكل الأدوات) ============
+    // قبل كده بس "مقابلة تدريبية" عندها أرشيف جلسات محفوظ (progress view). باقي
+    // الأدوات - تلخيص المستندات، تدقيق أكاديمي، خطابات تغطية، مطابقة CV...إلخ -
+    // نتيجتها كانت بتظهر في نفس الصفحة وبس، ولو المستخدم قفل الصفحة أو غيّر
+    // view، النتيجة كانت بتروح خالص. renderResult() (اللي كل الأدوات دي بتستخدمه
+    // لعرض نتيجتها) بقى بينادي saveToHistory() تلقائيًا لأي نتيجة جديدة، فمفيش
+    // داعي نعدّل كل أداة على حدة. آخر 20 نتيجة بس بتتخزن، محليًا (localStorage)
+    // + نسخة احتياطية على الحساب (users/{uid}/history) عشان تفضل موجودة حتى لو
+    // المستخدم غيّر جهاز أو مسح بيانات المتصفح.
+    const HISTORY_MAX = 20;
+    const HISTORY_ENTRY_MAX_CHARS = 20000; // حماية بسيطة من تضخم التخزين لو النتيجة طويلة جدًا
+    const HISTORY_LABELS_AR = {
+        'summary': 'تلخيص مستند', 'writing-review': 'تدقيق أكاديمي', 'academic-abstract': 'ملخص أكاديمي (Abstract)',
+        'academic-vocab-boost': 'تحسين مفردات أكاديمية', 'cover-letter': 'خطاب تغطية', 'cv-job-match': 'مطابقة CV مع وظيفة',
+        'faq-answers': 'إجابات أسئلة شائعة', 'career-plan': 'خطة تطور مهني', 'portfolio': 'بورتفوليو', 'cv': 'سيرة ذاتية',
+        'salary-insights': 'تقدير راتب متوقع', 'scheduling-email': 'إيميل تنسيق ميعاد', 'reply-review': 'مراجعة رد',
+        'salary-followup-questions': 'أسئلة متابعة الراتب', 'dress-tips': 'نصائح ملابس المقابلة', 'transcript': 'تفريغ صوتي إلى نص',
+        'pitch-30-seconds': 'تقديم نفسك في 30 ثانية', 'progress-compare': 'مقارنة جلستين', 'progress-summary': 'تقرير تقدم',
+        'performance-report': 'تقرير أداء مقابلة'
+    };
+    const HISTORY_LABELS_EN = {
+        'summary': 'Document Summary', 'writing-review': 'Academic Review', 'academic-abstract': 'Academic Abstract',
+        'academic-vocab-boost': 'Vocabulary Booster', 'cover-letter': 'Cover Letter', 'cv-job-match': 'CV Job Match',
+        'faq-answers': 'FAQ Answers', 'career-plan': 'Career Plan', 'portfolio': 'Portfolio', 'cv': 'CV',
+        'salary-insights': 'Salary Insights', 'scheduling-email': 'Scheduling Email', 'reply-review': 'Reply Review',
+        'salary-followup-questions': 'Salary Follow-up Questions', 'dress-tips': 'Dress Tips', 'transcript': 'Transcript',
+        'pitch-30-seconds': '30-Second Pitch', 'progress-compare': 'Session Comparison', 'progress-summary': 'Progress Report',
+        'performance-report': 'Interview Performance Report'
+    };
+    function historyToolLabel(toolKey) {
+        const map = currentUiLang === 'en' ? HISTORY_LABELS_EN : HISTORY_LABELS_AR;
+        return map[toolKey] || toolKey;
+    }
+    function getHistoryList() {
+        try { return JSON.parse(localStorage.getItem('yusr_history') || '[]'); } catch (e) { return []; }
+    }
+    function saveHistoryList(arr) {
+        try { localStorage.setItem('yusr_history', JSON.stringify(arr)); } catch (e) { console.warn('تعذر حفظ السجل محليًا', e); }
+    }
+    function syncHistoryToCloud(arr) {
+        const user = fbAuth.currentUser;
+        if (!user || user.isAnonymous) return;
+        userDocRef(user.uid).update({ history: arr }).catch(e => console.warn('تعذر حفظ السجل على الخادم', e));
+    }
+    function saveToHistory(toolKey, text) {
+        const clean = String(text == null ? '' : text).trim();
+        if (!clean) return;
+        const truncated = clean.length > HISTORY_ENTRY_MAX_CHARS ? clean.slice(0, HISTORY_ENTRY_MAX_CHARS) + '…' : clean;
+        const arr = getHistoryList();
+        arr.unshift({ tool: toolKey, text: truncated, time: Date.now() });
+        const trimmed = arr.slice(0, HISTORY_MAX);
+        saveHistoryList(trimmed);
+        syncHistoryToCloud(trimmed);
+        const view = document.getElementById('view-history');
+        if (view && view.classList.contains('active')) renderHistoryView();
+    }
+    function deleteHistoryEntry(index) {
+        const arr = getHistoryList();
+        arr.splice(index, 1);
+        saveHistoryList(arr);
+        syncHistoryToCloud(arr);
+        renderHistoryView();
+    }
+    function clearAllHistory() {
+        saveHistoryList([]);
+        syncHistoryToCloud([]);
+        renderHistoryView();
+    }
+    function toggleHistoryEntry(index) {
+        const body = document.getElementById('history-body-' + index);
+        if (body) body.classList.toggle('hidden');
+    }
+    function copyHistoryEntry(index, btn) {
+        const entry = getHistoryList()[index];
+        if (!entry) return;
+        navigator.clipboard.writeText(entry.text).then(() => flashCopied(btn));
+    }
+    function downloadHistoryEntry(index) {
+        const entry = getHistoryList()[index];
+        if (!entry) return;
+        triggerDownload(entry.text, (entry.tool || 'result') + '.txt');
+    }
+    function renderHistoryView() {
+        const list = document.getElementById('history-list');
+        const empty = document.getElementById('history-empty');
+        if (!list) return;
+        const arr = getHistoryList();
+        if (!arr.length) {
+            list.innerHTML = '';
+            if (empty) empty.classList.remove('hidden');
+            return;
+        }
+        if (empty) empty.classList.add('hidden');
+        list.innerHTML = arr.map((e, i) => {
+            const d = new Date(e.time);
+            const dateStr = isNaN(d) ? '' : d.toLocaleDateString(currentUiLang === 'en' ? 'en-US' : 'ar-EG', { year: 'numeric', month: 'short', day: 'numeric' });
+            const timeStr = isNaN(d) ? '' : d.toLocaleTimeString(currentUiLang === 'en' ? 'en-US' : 'ar-EG', { hour: '2-digit', minute: '2-digit' });
+            const previewSrc = (e.text || '').replace(/\s+/g, ' ').trim();
+            const preview = escapeHtml(previewSrc.slice(0, 90)) + (previewSrc.length > 90 ? '…' : '');
+            return `
+            <div class="panel-2 rounded-xl overflow-hidden">
+                <div class="p-3 flex items-center gap-2 cursor-pointer" onclick="toggleHistoryEntry(${i})">
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs font-bold text-slate-200 truncate">${escapeHtml(historyToolLabel(e.tool))}</p>
+                        <p class="text-[10px] text-slate-500 truncate">${preview}</p>
+                    </div>
+                    <span class="text-[10px] text-slate-500 shrink-0">${dateStr} ${timeStr}</span>
+                    <i class="fa-solid fa-chevron-down text-[10px] text-slate-500 shrink-0"></i>
+                </div>
+                <div id="history-body-${i}" class="hidden border-t border-[var(--border)] p-3 space-y-2">
+                    <div class="flex justify-end gap-2">
+                        <button onclick="event.stopPropagation(); copyHistoryEntry(${i}, this)" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-copy"></i> <span>${I18N[currentUiLang].copy}</span></button>
+                        <button onclick="event.stopPropagation(); downloadHistoryEntry(${i})" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-download"></i> <span>${I18N[currentUiLang].download}</span></button>
+                        <button onclick="event.stopPropagation(); deleteHistoryEntry(${i})" class="chip hover:bg-red-500/10 hover:text-red-300 hover:border-red-500/30"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                    <div class="text-xs sm:text-sm leading-relaxed max-h-[320px] overflow-y-auto">${formatReportText(e.text)}</div>
+                </div>
+            </div>`;
+        }).join('');
+    }
+    window.clearAllHistory = clearAllHistory;
+    window.deleteHistoryEntry = deleteHistoryEntry;
+    window.toggleHistoryEntry = toggleHistoryEntry;
+    window.copyHistoryEntry = copyHistoryEntry;
+    window.downloadHistoryEntry = downloadHistoryEntry;
+
     function copyPlainText(text, btn) {
         navigator.clipboard.writeText(text).then(() => flashCopied(btn));
     }

@@ -449,6 +449,14 @@
         </div>
 
         <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-5">
+            <div class="sidebar-search-wrap">
+                <div class="sidebar-search-box">
+                    <i class="fa-solid fa-magnifying-glass sidebar-search-icon"></i>
+                    <input type="text" id="sidebar-search-input" class="sidebar-search-input" placeholder="بحث في الأدوات..." data-i18n-ph="nav.searchPh" oninput="filterSidebarNav(this.value)" autocomplete="off">
+                    <button type="button" id="sidebar-search-clear" class="sidebar-search-clear hidden" onclick="clearSidebarSearch()" aria-label="مسح البحث"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <p id="sidebar-search-empty" class="sidebar-search-empty hidden" data-i18n="nav.searchEmpty">مفيش نتايج مطابقة</p>
+            </div>
             <div>
                 <p class="sidebar-section-title text-[10px] text-slate-600 font-bold px-2 mb-1.5" data-i18n="nav.section.interviews">المقابلات والتوظيف</p>
                 <div class="space-y-1">
@@ -514,6 +522,9 @@
                 <div class="space-y-1">
                     <div class="nav-item" data-view="about" onclick="switchView('about', this)">
                         <i class="fa-solid fa-circle-info"></i><span class="sidebar-label" data-i18n="nav.about">من نحن</span>
+                    </div>
+                    <div class="nav-item" data-view="history" onclick="switchView('history', this)">
+                        <i class="fa-solid fa-clock-rotate-left"></i><span class="sidebar-label" data-i18n="nav.history">السجل الموحّد</span>
                     </div>
                     <div class="nav-item" data-view="profile" onclick="switchView('profile', this)">
                         <i class="fa-solid fa-user"></i><span class="sidebar-label" data-i18n="nav.profile">الملف الشخصي</span>
@@ -1680,6 +1691,24 @@
                 </div>
             </section>
 
+            <section id="view-history" class="view">
+                <div class="panel rounded-2xl p-4 sm:p-5 space-y-3">
+                    <div class="text-center space-y-1">
+                        <div class="w-12 h-12 rounded-full acc-history flex items-center justify-center mx-auto text-xl"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                        <h3 class="text-sm font-bold text-slate-100" data-i18n="history.pageTitle">السجل الموحّد</h3>
+                        <p class="text-[11px] text-slate-400 max-w-md mx-auto" data-i18n="history.subtitle">آخر 20 نتيجة من أي أداة في الموقع (تلخيص، تدقيق، خطابات، وغيرها) بتتحفظ هنا تلقائيًا عشان ماتضيعش لو قفلت الصفحة.</p>
+                    </div>
+                    <div class="flex items-center justify-between pt-1">
+                        <p class="text-xs font-bold text-slate-300" data-i18n="history.listTitle">النتائج المحفوظة</p>
+                        <button onclick="clearAllHistory()" class="chip hover:bg-red-500/10 hover:text-red-300 hover:border-red-500/30">
+                            <i class="fa-solid fa-trash"></i> <span data-i18n="history.clearAll">مسح الكل</span>
+                        </button>
+                    </div>
+                    <div id="history-list" class="space-y-2"></div>
+                    <p id="history-empty" class="hidden text-[11px] text-slate-500 text-center py-6" data-i18n="history.empty">لسه مفيش نتايج محفوظة. أي نتيجة من أدوات الموقع هتظهر هنا تلقائيًا.</p>
+                </div>
+            </section>
+
             <section id="view-terms" class="view">
                 <div class="panel rounded-2xl p-4 sm:p-6 space-y-5 max-w-3xl mx-auto">
                     <div class="text-center space-y-1">
@@ -1937,7 +1966,48 @@
     </div>
 </div>
 
-<script src="app.js?v=8"></script>
+<!-- ============ ONBOARDING (نقطة 6: جولة تعريفية لأول مرة بعد التسجيل) ============ -->
+<!-- بيظهر مرة واحدة بس لأي حساب جديد فعلاً (أول مرة يتعمله doc في users/{uid})،
+     مش لأي حد يفتح المتصفح - عشان المستخدمين القدامى ماتضايقهاش المودال ده تاني. -->
+<div id="onboarding-modal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center p-4 z-[65]">
+    <div class="panel modal-pop max-w-sm w-full rounded-2xl p-5 space-y-3 text-right max-h-[90vh] overflow-y-auto">
+        <div class="w-12 h-12 rounded-full bg-[var(--grad1)]/20 text-[var(--accent-strong)] flex items-center justify-center mx-auto text-xl"><i class="fa-solid fa-hand-sparkles"></i></div>
+        <div class="text-center space-y-1">
+            <h3 class="text-sm font-bold text-slate-100" data-i18n="onboarding.title">أهلاً بيك في يُسْر Pro 👋</h3>
+            <p class="text-[11.5px] text-slate-400 leading-relaxed" data-i18n="onboarding.subtitle">3 خطوات سريعة تخليك تبدأ صح:</p>
+        </div>
+        <div class="space-y-2 pt-1">
+            <div class="panel-2 rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:bg-[var(--panel)] transition" onclick="dismissOnboarding('profile')">
+                <div class="w-9 h-9 shrink-0 rounded-full bg-[var(--grad1)]/15 text-[var(--accent-strong)] flex items-center justify-center text-sm"><i class="fa-solid fa-user"></i></div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs font-bold text-slate-200" data-i18n="onboarding.step1.title">كمّل بياناتك</p>
+                    <p class="text-[10.5px] text-slate-500 leading-snug" data-i18n="onboarding.step1.desc">بياناتك دي بتتغذّى منها باقي الأدوات زي السيرة الذاتية والمقابلة.</p>
+                </div>
+                <i class="fa-solid fa-chevron-left text-[10px] text-slate-500 shrink-0"></i>
+            </div>
+            <div class="panel-2 rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:bg-[var(--panel)] transition" onclick="dismissOnboarding('interview')">
+                <div class="w-9 h-9 shrink-0 rounded-full bg-[var(--grad1)]/15 text-[var(--accent-strong)] flex items-center justify-center text-sm"><i class="fa-solid fa-microphone"></i></div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs font-bold text-slate-200" data-i18n="onboarding.step2.title">جرب مقابلة تدريبية</p>
+                    <p class="text-[10.5px] text-slate-500 leading-snug" data-i18n="onboarding.step2.desc">اتمرن على أسئلة حقيقية بصوتك وخد تقييم فوري على أدائك.</p>
+                </div>
+                <i class="fa-solid fa-chevron-left text-[10px] text-slate-500 shrink-0"></i>
+            </div>
+            <div class="panel-2 rounded-xl p-3 flex items-center gap-3 cursor-pointer hover:bg-[var(--panel)] transition" onclick="dismissOnboarding('cv')">
+                <div class="w-9 h-9 shrink-0 rounded-full bg-[var(--grad1)]/15 text-[var(--accent-strong)] flex items-center justify-center text-sm"><i class="fa-solid fa-file-lines"></i></div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-xs font-bold text-slate-200" data-i18n="onboarding.step3.title">اعمل سيرتك الذاتية</p>
+                    <p class="text-[10.5px] text-slate-500 leading-snug" data-i18n="onboarding.step3.desc">هنبنيلك سيرة ذاتية احترافية في دقايق من بياناتك المحفوظة.</p>
+                </div>
+                <i class="fa-solid fa-chevron-left text-[10px] text-slate-500 shrink-0"></i>
+            </div>
+        </div>
+        <p class="text-[10px] text-slate-500 text-center leading-relaxed pt-1"><i class="fa-solid fa-circle-info"></i> <span data-i18n="onboarding.tip">تلميح: فيه خانة بحث فوق القائمة الجانبية توصّلك لأي أداة من أكتر من 20 أداة بسرعة.</span></p>
+        <button onclick="dismissOnboarding()" class="w-full py-2 chip justify-center hover:bg-[var(--panel-2)] text-[11px]" data-i18n="onboarding.skip">تخطي، هدوّر بنفسي</button>
+    </div>
+</div>
+
+<script src="app.js?v=9"></script>
 <script>
     // ============ تسجيل Service Worker (يخلي الموقع نفسه يفتح أوفلاين) ============
     if ('serviceWorker' in navigator) {
