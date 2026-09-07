@@ -830,6 +830,10 @@
         if (activeNav) {
             document.getElementById('view-title').innerText = (currentUiLang === 'en' ? viewTitlesEn : viewTitles)[activeNav.dataset.view] || '';
         }
+        // applyI18n بيدّي القيمة الافتراضية "اشترك الآن" تاني لكل الأزرار (لأنها
+        // بتاخد data-i18n) - فلازم نرجّع نطبّق حالة "مشترك حاليًا" بعده على طول
+        // عشان مايتمسحش شكل الباقة الحالية لما المستخدم يغيّر لغة الواجهة.
+        if (typeof updateSubscriptionButtonsState === 'function') updateSubscriptionButtonsState();
     }
     function setAppLanguage(lang) {
         currentAppLang = lang;
@@ -1572,6 +1576,26 @@
         updateAccountChip(p);
         renderPurchasesOverview();
         refreshGoogleSigninState(p);
+        updateSubscriptionButtonsState();
+    }
+    // ============ إبراز الباقة الحالية في صفحة "الاشتراكات" ============
+    // بدل ما يفضل زرار "اشترك الآن" ظاهر على الباقة اللي المستخدم مشترك فيها
+    // فعلاً (وده بيلخبط ويوهم إنه لسه محتاج يدفع تاني)، بندوّر على الزرار اللي
+    // له data-plan-btn بيطابق اسم الباقة الحالية ونحوّله لشكل "مشترك حاليًا"
+    // بلون أخضر مميز ونعطّله، وأي زرار تاني بيرجّعه لشكله الطبيعي.
+    function updateSubscriptionButtonsState() {
+        const currentPlan = getCurrentPlanName();
+        const dict = I18N[currentUiLang] || I18N.ar;
+        const defaultLabel = dict['subs.subscribe'] || 'اشترك الآن';
+        const activeLabel = currentUiLang === 'en' ? 'Currently subscribed' : 'مشترك حاليًا';
+        document.querySelectorAll('[data-plan-btn]').forEach(btn => {
+            const isCurrent = btn.getAttribute('data-plan-btn') === currentPlan;
+            btn.classList.toggle('subs-btn-active', isCurrent);
+            btn.disabled = isCurrent;
+            btn.innerHTML = isCurrent
+                ? `<i class="fa-solid fa-circle-check"></i> ${activeLabel}`
+                : defaultLabel;
+        });
     }
     function refreshGoogleSigninState(p) {
         p = p || getProfile();
@@ -1996,7 +2020,7 @@
             if (!checkDeviceTrial()) { status.innerText = ''; return; }
             const previous = document.getElementById('transcribe-raw').value;
             try {
-                const text = await transcribeAudioBlob(blob, 'mic-recording.webm');
+                const text = await transcribeAudioBlob(blob, 'mic-recording.webm', false, 'general');
                 document.getElementById('transcribe-raw').value = (previous ? previous + ' ' : '') + text;
                 status.innerText = "✓ اتفرّغ بنجاح. راجع النص تحت واضغط \"نظّف وحسّن التنسيق\".";
                 incrementDeviceUsage();
@@ -3057,7 +3081,7 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
             const faceSummary = summarizeFaceExpressions(videoMockAnalysisSamples);
             const volSummary = summarizeVolume(videoMockVolumeSamples);
             let transcript = '';
-            try { transcript = await transcribeAudioBlob(audioBlob, 'mock-interview-audio.webm'); } catch (e) { console.warn('تعذر تفريغ صوت المقطع:', e); }
+            try { transcript = await transcribeAudioBlob(audioBlob, 'mock-interview-audio.webm', false, 'interview'); } catch (e) { console.warn('تعذر تفريغ صوت المقطع:', e); }
             const paceInfo = transcript ? analyzeTranscriptPace(transcript, durationSec) : null;
 
             let dataDesc = '';
@@ -3588,7 +3612,7 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
     // ============ Shared high-accuracy transcription helper (Whisper large-v3) ============
     // إعدادات مضبوطة عشان الدقة تبقى أعلى ما يمكن حتى مع الضوضاء: temperature=0 (بيمنع الموديل يتخيل كلام)،
     // + prompt سياقي يوجّه الموديل للهجة/علامات الترقيم الصحيحة، + verbose_json للحصول على أدق نتيجة ممكنة.
-    async function transcribeAudioBlob(blob, filename, returnFullData) {
+    async function transcribeAudioBlob(blob, filename, returnFullData, context) {
         const form = new FormData();
         form.append('file', blob, filename || 'audio.webm');
         form.append('model', 'whisper-large-v3');
@@ -3603,9 +3627,15 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
         // لغة الكلام هي لغة واجهة الموقع الحالية (currentAppLang) كتلميح لـ Whisper.
         const langSel = langSelEl ? langSelEl.value.split('-')[0] : ((currentAppLang || 'ar').split('-')[0]);
         if (langSel) form.append('language', langSel);
-        // الـ prompt ده بيوجّه Whisper على سياق المحتوى المتوقع (مقابلات عمل/سير ذاتية) وعلامات ترقيم صحيحة،
-        // وده بيرفع الدقة فعلياً لأن الموديل بيميل لمصطلحات السياق ده لما يقابل كلمة مش واضحة في الصوت.
-        form.append('prompt', 'نص مفرّغ بدقة عالية جداً من مقابلة عمل أو تدريب مهني، بعلامات ترقيم صحيحة وتقسيم فقرات منطقي، حتى لو في ضوضاء خلفية أو تلعثم بسيط أو تسارع في الكلام. حافظ على المصطلحات المهنية والوظيفية زي ما اتقالت بالظبط.');
+        // الـ prompt بيوجّه Whisper على سياق المحتوى المتوقع، وده بيرفع الدقة لما يقابل
+        // كلمة مش واضحة في الصوت - بس لازم يتغيّر حسب سياق الاستخدام الفعلي، عشان لو
+        // ثبّتناه على "مقابلة عمل" دايماً، الموديل هيميل يستبدل كلمات فعلية بمصطلحات
+        // وظيفية "قريبة في السياق" حتى لو الكلام مالوش أي علاقة بمقابلات شغل - وده كان
+        // بيظهر كتفريغ بكلمات غلط في أداة "تفريغ صوتي" العامة (context !== 'interview').
+        const prompt = context === 'interview'
+            ? 'نص مفرّغ بدقة عالية جداً من مقابلة عمل أو تدريب مهني، بعلامات ترقيم صحيحة وتقسيم فقرات منطقي، حتى لو في ضوضاء خلفية أو تلعثم بسيط أو تسارع في الكلام. حافظ على المصطلحات المهنية والوظيفية زي ما اتقالت بالظبط.'
+            : 'نص مفرّغ بدقة عالية جداً، بعلامات ترقيم صحيحة وتقسيم فقرات منطقي، حتى لو في ضوضاء خلفية أو تلعثم بسيط أو تسارع في الكلام. اكتب الكلام بالظبط زي ما اتقال من غير أي افتراض عن موضوعه.';
+        form.append('prompt', prompt);
         // ملحوظة: التفريغ الصوتي (Whisper) مش زي الأدوات النصية اللي بتعدي على callGroqConversation
         // وليها أكتر من مسار بديل جاهز؛ هنا مفيش مزوّد تفريغ صوتي بديل متاح من غير سيرفر، فأقصى حماية
         // ممكنة هي محاولة تانية (retry) قبل ما نستسلم، عشان مشاكل السيرفر المؤقتة/العابرة متوقفش الأداة.
@@ -3642,7 +3672,7 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
         status.innerText = (currentUiLang === 'en' ? 'Uploading & transcribing: ' : 'جاري رفع وتفريغ بدقة عالية: ') + file.name + ' …';
         if (!checkDeviceTrial()) { status.innerText = ''; return; }
         try {
-            const text = await transcribeAudioBlob(file, file.name);
+            const text = await transcribeAudioBlob(file, file.name, false, 'general');
             document.getElementById('transcribe-raw').value = text;
             status.innerText = currentUiLang === 'en' ? '✓ Transcribed successfully. Review below, then click Clean Up.' : '✓ اتفرّغ بنجاح. راجع النص تحت واضغط "نظّف وحسّن التنسيق".';
             incrementDeviceUsage();

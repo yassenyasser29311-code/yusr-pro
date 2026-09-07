@@ -341,3 +341,15 @@
     border-radius: 8px; transition: color .15s ease, background .15s ease; z-index: 2;
 }
 .pw-eye-toggle:hover, .pw-eye-toggle:active { color: var(--text); background: rgba(255,255,255,.06); }
+
+/* ============ زرار "مشترك حاليًا" في صفحة الاشتراكات ============ */
+/* بيبان بلون أخضر مختلف تمامًا عن زرار "اشترك الآن" العادي، وبيتعطّل
+   عشان محدش يضغط عليه بالغلط ويفتح مودال الدفع تاني وهو أصلاً مشترك. */
+.subs-btn-active {
+    background: #10b981 !important;
+    color: #052e1f !important;
+    cursor: default !important;
+    opacity: 1 !important;
+    box-shadow: none !important;
+}
+.subs-btn-active:hover { background: #10b981 !important; }

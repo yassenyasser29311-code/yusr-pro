@@ -95,7 +95,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Tajawal:wght@500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=4">
+<link rel="stylesheet" href="styles.css?v=6">
 </head>
 <body class="min-h-screen">
 <div id="toast-container" aria-live="polite"></div>
@@ -1437,9 +1437,7 @@
                             <ul class="text-[10.5px] text-slate-400 space-y-1.5">
                                 <li><i class="fa-solid fa-check text-slate-400"></i> 25 طلب ذكاء اصطناعي شهرياً</li>
                                 <li><i class="fa-solid fa-check text-slate-400"></i> بناء سيرة ذاتية وتلخيص مستندات</li>
-                                <li><i class="fa-solid fa-check text-slate-400"></i> أسئلة شائعة لكل وظيفة</li>
-                            </ul>
-                            <button onclick="openPricingModal()" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl" data-i18n="subs.subscribe">اشترك الآن</button>
+                            <button onclick="openPricingModal()" data-plan-btn="الأساسية" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl" data-i18n="subs.subscribe">اشترك الآن</button>
                         </div>
                         <div class="rounded-xl p-4 space-y-2 border-2 border-violet-400 relative bg-[#20252c] lift-hover">
                             <span class="absolute top-0 left-0 bg-violet-400 text-slate-950 text-[9px] font-bold px-2 py-0.5 rounded-br-lg rounded-tl-xl" data-i18n="subs.popular">الأكثر طلباً</span>
@@ -1449,9 +1447,7 @@
                                 <li><i class="fa-solid fa-check text-slate-300"></i> 150 طلب ذكاء اصطناعي شهرياً</li>
                                 <li><i class="fa-solid fa-check text-slate-300"></i> تقارير أداء تفصيلية</li>
                                 <li><i class="fa-solid fa-check text-slate-300"></i> مونتاج + تفريغ صوتي بكل اللغات</li>
-                                <li><i class="fa-solid fa-check text-slate-300"></i> أولوية دعم فني</li>
-                            </ul>
-                            <button onclick="openPricingModal()" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl" data-i18n="subs.subscribe">اشترك الآن</button>
+                            <button onclick="openPricingModal()" data-plan-btn="الاحترافية" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl" data-i18n="subs.subscribe">اشترك الآن</button>
                         </div>
                         <div class="rounded-xl p-4 space-y-2 border-2 border-amber-400/70 relative bg-[#221d12] lift-hover">
                             <span class="absolute top-0 left-0 bg-amber-400 text-slate-950 text-[9px] font-bold px-2 py-0.5 rounded-br-lg rounded-tl-xl" data-i18n="subs.bestValue">أعلى فئة</span>
@@ -1460,9 +1456,7 @@
                             <ul class="text-[10.5px] text-slate-300 space-y-1.5">
                                 <li><i class="fa-solid fa-check text-amber-300"></i> طلبات ذكاء اصطناعي غير محدودة تماماً</li>
                                 <li><i class="fa-solid fa-check text-amber-300"></i> كل أدوات المنصة بلا استثناء</li>
-                                <li><i class="fa-solid fa-check text-amber-300"></i> أعلى أولوية في الرد من الدعم</li>
-                            </ul>
-                            <button onclick="openPricingModal()" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl" data-i18n="subs.subscribe">اشترك الآن</button>
+                            <button onclick="openPricingModal()" data-plan-btn="النخبة" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl" data-i18n="subs.subscribe">اشترك الآن</button>
                         </div>
                         <div class="panel-2 rounded-xl p-4 space-y-2 lift-hover">
                             <h4 class="text-xs font-bold text-slate-200" data-i18n="subs.yearlyName">السنوية</h4>
@@ -1470,9 +1464,7 @@
                             <ul class="text-[10.5px] text-slate-400 space-y-1.5">
                                 <li><i class="fa-solid fa-check text-slate-400"></i> كل مزايا الاحترافية</li>
                                 <li><i class="fa-solid fa-check text-slate-400"></i> شهرين مجاناً</li>
-                                <li><i class="fa-solid fa-check text-slate-400"></i> استشارة تطوير مسار سنوياً</li>
-                            </ul>
-                            <button onclick="openPricingModal()" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl" data-i18n="subs.subscribe">اشترك الآن</button>
+                            <button onclick="openPricingModal()" data-plan-btn="السنوية" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl" data-i18n="subs.subscribe">اشترك الآن</button>
                         </div>
                     </div>
 
@@ -1890,7 +1882,7 @@
     </div>
 </div>
 
-<script src="app.js?v=5"></script>
+<script src="app.js?v=7"></script>
 <script>
     // ============ تسجيل Service Worker (يخلي الموقع نفسه يفتح أوفلاين) ============
     if ('serviceWorker' in navigator) {

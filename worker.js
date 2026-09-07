@@ -1231,6 +1231,20 @@ async function handleAdminReviewSubscriptionRequest(request, env, corsHeaders, c
         return json({ error: "request_missing_uid" }, 400, corsHeaders);
       }
       await fbAdminPut(`users/${reqRaw.uid}/plan`, planToSet, env);
+      // فيكس: الموافقة كانت بتفعّل الباقة (users/{uid}/plan) بس من غير ما تسجّل
+      // "عملية شراء" فعلية لليوزر - وده اللي كان بيخلي "إجمالي المدفوع" في بطاقة
+      // العضوية يفضل 0 دايمًا حتى لو الباقة اتغيّرت صح، لأن الرقم ده بيتحسب من
+      // مصفوفة users/{uid}/purchases مش من اسم الباقة. بنضيف هنا سجل شراء جديد
+      // بنفس السعر/المدة اللي طلبهم المستخدم وقت الإرسال.
+      const existingPurchases = (await fbAdminGet(`users/${reqRaw.uid}/purchases`, env)) || [];
+      const purchasesList = Array.isArray(existingPurchases) ? existingPurchases : Object.values(existingPurchases);
+      purchasesList.push({
+        name: planToSet,
+        price: Number(reqRaw.price) || 0,
+        period: reqRaw.period || "",
+        date: Date.now()
+      });
+      await fbAdminPut(`users/${reqRaw.uid}/purchases`, purchasesList, env);
       await fbAdminPut(`pending_requests/${requestId}/status`, "approved", env);
       await fbAdminPut(`pending_requests/${requestId}/reviewedAt`, Date.now(), env);
       await fbAdminPut(`pending_requests/${requestId}/reviewedBy`, admin.role, env);
@@ -1357,10 +1371,20 @@ async function handleChatPoll(request, env, corsHeaders) {
       ? messages.filter(m => m.from === otherFrom && !m[readField]).map(m => m.id)
       : [];
     if (unreadIds.length) {
-      await Promise.all(
-        unreadIds.map(id => fbAdminPut(`chat_messages/${identity.uid}/${id}/${readField}`, true, env).catch(() => {}))
+      // فيكس مهم: قبل كده كنا بنعلّم الرسائل "مقروءة" في الرد للمستخدم حتى لو
+      // الكتابة الفعلية في Firebase فشلت (كان فيه .catch(() => {}) بيبلع الغلط
+      // بصمت). ده كان بيخلي البادج يختفي فورًا لكن يرجع تاني في أول بولينج
+      // جاي، لأن Firebase نفسه لسه فيه القيمة القديمة "مش مقروءة". دلوقتي
+      // بنستنى نتيجة كل كتابة فعلياً، ومش بنعلّمها "مقروءة" في الرد إلا لو
+      // فعلاً اتسجلت بنجاح في Firebase.
+      const results = await Promise.allSettled(
+        unreadIds.map(id => fbAdminPut(`chat_messages/${identity.uid}/${id}/${readField}`, true, env))
       );
-      unreadIds.forEach(id => {
+      unreadIds.forEach((id, i) => {
+        if (results[i].status !== "fulfilled") {
+          console.error(`فشل تعليم رسالة ${id} كمقروءة:`, results[i].reason);
+          return; // نسيبها زي ما هي "مش مقروءة" في الرد عشان تتحاول تاني بعدين
+        }
         const m = messages.find(x => x.id === id);
         if (m) m[readField] = true;
       });
