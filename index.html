@@ -1,7 +1,10 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- فيكس: تثبيت الزووم (maximum-scale=1 + user-scalable=no) عشان الصفحة متفضلش
+     ممكن حد يزوم فيها بالغلط (لمس مزدوج/pinch) وتفضل شايفها متزحلقة/مش متسنطرة
+     في نص الشاشة - التصميم أصلاً متجاوب وبيكبّر النصوص لوحده، فمش محتاجين زووم يدوي. -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>يُسْر Pro | YUSR - منصتك المهنية الذكية</title>
 
 <!-- ============ Google Search Console Verification ============ -->
@@ -1882,7 +1885,7 @@
             <input id="pr-ref" type="text" placeholder="آخر أرقام العملية أو ملاحظة (اختياري)" class="w-full input-field rounded-xl px-3 py-2.5 text-xs">
             <input id="pr-website" type="text" name="website" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true">
         </div>
-        <button onclick="submitPaymentRequest()" class="w-full py-2.5 btn-primary font-bold text-xs rounded-xl">تم التحويل، ابعت الطلب</button>
+        <button id="pr-submit-btn" onclick="submitPaymentRequest()" class="w-full py-2.5 btn-primary font-bold text-xs rounded-xl disabled:opacity-60 disabled:cursor-not-allowed">تم التحويل، ابعت الطلب</button>
         <p id="payment-request-status" class="text-[11px] text-center text-emerald-400 hidden"></p>
     </div>
 </div>

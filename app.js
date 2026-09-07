@@ -1286,15 +1286,32 @@
             status: 'pending',
             createdAt: firebase.database.ServerValue.TIMESTAMP
         };
-        try {
-            db.ref('pending_requests').push(requestData);
-            markSpamCooldown('yusr_pr_cooldown');
-        } catch (e) { console.warn('Could not write pending request:', e); }
         const status = document.getElementById('payment-request-status');
-        status.innerText = '✓ تم إرسال طلبك. هيتم تفعيل الباقة على حسابك يدوياً خلال ساعات قليلة بعد مراجعة التحويل.';
-        status.classList.remove('hidden');
-        pendingPlanRequest = null;
-        setTimeout(closePaymentRequestModal, 3500);
+        const submitBtn = document.getElementById('pr-submit-btn');
+        // فيكس مهم جداً: db.ref().push() بيرجّع Promise، وأي مشكلة في الكتابة (صلاحيات،
+        // نت، إلخ) كانت بتترفض بشكل async من غير ما الـ try/catch العادي يمسكها - فكان
+        // المستخدم بيشوف "✓ تم إرسال طلبك" حتى لو الطلب أصلاً معوصلش لمسار
+        // "pending_requests" اللي الأدمن بيقرأ منه وبيراجع الاشتراكات من خلاله. دلوقتي
+        // بنستنى تأكيد الكتابة فعلاً قبل ما نقول للمستخدم إنه اتبعت، ولو فشلت بنقوله
+        // صراحة يحاول تاني بدل ما نسيبه مطمّن بالغلط إن طلبه وصل.
+        status.classList.remove('hidden', 'text-red-400', 'text-emerald-400');
+        status.classList.add('text-emerald-400');
+        status.innerText = 'جاري إرسال طلبك...';
+        if (submitBtn) submitBtn.disabled = true;
+        db.ref('pending_requests').push(requestData)
+            .then(() => {
+                markSpamCooldown('yusr_pr_cooldown');
+                status.innerText = '✓ تم إرسال طلبك. هيتم تفعيل الباقة على حسابك يدوياً خلال ساعات قليلة بعد مراجعة التحويل.';
+                pendingPlanRequest = null;
+                setTimeout(closePaymentRequestModal, 3500);
+            })
+            .catch((e) => {
+                console.warn('Could not write pending request:', e);
+                status.classList.remove('text-emerald-400');
+                status.classList.add('text-red-400');
+                status.innerText = 'تعذر إرسال الطلب دلوقتي (مشكلة اتصال). تأكد من إنك متصل بالنت وجرب تاني، أو تواصل معانا من صفحة "الدعم والتواصل".';
+            })
+            .finally(() => { if (submitBtn) submitBtn.disabled = false; });
     }
     function submitFeedback() {
         const type = document.getElementById('fb-type').value;
@@ -1935,7 +1952,7 @@
     }
 
     // ============ Mic recording for transcription tool (يستخدم Whisper مش المتصفح، عشان دقة أعلى بكتير حتى مع الضوضاء) ============
-    let isTranscribing = false, transcribeMediaRecorder = null, transcribeChunks = [], transcribeStream = null;
+    let isTranscribing = false, transcribeMediaRecorder = null, transcribeChunks = [], transcribeStream = null, isTranscribeStarting = false;
     async function toggleTranscribeMic() {
         const btn = document.getElementById('transcribe-mic-btn');
         const status = document.getElementById('transcribe-status');
@@ -1946,7 +1963,11 @@
             if (transcribeMediaRecorder && transcribeMediaRecorder.state !== 'inactive') transcribeMediaRecorder.stop();
             return;
         }
+        // منع ضغطة تانية بالغلط أثناء لحظة استئذان الكاميرا/تظبيط المايك (قبل ما التسجيل يبدأ فعلياً)
+        if (isTranscribeStarting) return;
+        isTranscribeStarting = true;
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            isTranscribeStarting = false;
             showToast("المتصفح لا يدعم التسجيل الصوتي المباشر.", 'error'); return;
         }
         try {
@@ -1954,8 +1975,16 @@
                 audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
             });
         } catch (e) {
+            isTranscribeStarting = false;
             showToast("محتاج إذن الوصول للمايك عشان التسجيل يشتغل.", 'error'); return;
         }
+        status.innerText = "المايك بيتظبط... اتكلم بعد لحظة.";
+        // فيكس أهم سبب لغلط التفريغ "أول مرة": المايك (خصوصاً أول استخدام في الجلسة) بياخد
+        // جزء من الثانية عشان يستقر (معايرة تلقائي كسب الصوت AGC/إلغاء الصدى)، ولو بدأنا التسجيل
+        // فوراً، أول كلمة أو اتنين بيتسجلوا وهم لسه مشوّهين/مكتومين جزئياً - وده اللي بيخلي
+        // Whisper يفهمهم غلط. بنستنى لحظة بسيطة (نص ثانية تقريباً) قبل ما نبدأ التسجيل فعلياً،
+        // بالظبط زي ما بيحصل في تطبيقات الكيبورد اللي بتاخد لحظة تظبط قبل ما تبدأ تسمع كلامك.
+        await new Promise(resolve => setTimeout(resolve, 450));
         transcribeChunks = [];
         const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : (MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '');
         transcribeMediaRecorder = mimeType ? new MediaRecorder(transcribeStream, { mimeType }) : new MediaRecorder(transcribeStream);
@@ -1978,6 +2007,7 @@
         };
         transcribeMediaRecorder.start();
         isTranscribing = true;
+        isTranscribeStarting = false;
         btn.classList.add('bg-red-500/20', 'text-red-400', 'recording-pulse');
         status.innerText = "بيسجل دلوقتي بجودة عالية... اضغط تاني عشان توقف ويتفرّغ النص.";
     }
@@ -3074,6 +3104,13 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
 
     async function startVideoMockCamera() {
         const status = document.getElementById('video-mock-status');
+        // فيكس "الكاميرا بتعلق": لو فيه ستريم قديم شغال من محاولة سابقة (مثلاً المستخدم ضغط
+        // "شغّل الكاميرا" أكتر من مرة بسرعة، أو قفلها بشكل غير متوقع)، بنقفله ونفضّي الفيديو
+        // الأول قبل ما نفتح ستريم جديد، عشان منسيبش تراك قديم شغال يسبب تجمّد/تلخبط في المعاينة.
+        if (videoMockStream) {
+            try { videoMockStream.getTracks().forEach(t => t.stop()); } catch (e) {}
+            videoMockStream = null;
+        }
         try {
             // بنبني constraints للفيديو بتطلب دقة كويسة، وبنلغي أي تأثيرات تلقائية بتغيّر الإطار
             // (زي auto-framing/تتبّع الوجه أو تكبير رقمي تلقائي) لو المتصفح بيدعم التحكم فيها،
@@ -3118,7 +3155,18 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
             } catch (e) { console.warn('تعذر تصفير zoom/pan/tilt التلقائي على الكاميرا:', e); }
 
             const vid = document.getElementById('video-mock-preview');
+            // فيكس مهم: أبداً منعملش أي انعكاس (mirror) على الفيديو - لا دلوقتي ولا أي وقت تاني،
+            // حتى لو فيه كلاس قديم متحط عليه من قبل بالغلط. transform:none مضمونة كمان في الـ CSS.
+            vid.classList.remove('video-mirrored');
+            vid.style.transform = 'none';
             vid.srcObject = videoMockStream; vid.classList.remove('hidden');
+            // فيكس "الكاميرا بتعلق أول مرة": بعض المتصفحات (خصوصاً على الموبايل) محتاجة نداء
+            // صريح لـ play() بعد ما نحط الـ stream، وميعتمدش بس على attribute الـ autoplay،
+            // خصوصاً أول مرة بتتحط فيها srcObject ديناميكياً بعد استئذان الكاميرا. لو معاينة
+            // الفيديو فضلت مجمّدة (لسه ملهاش أبعاد)، بنحاول تاني نبدأ التشغيل تلقائياً.
+            const tryPlay = () => vid.play().catch(() => {});
+            tryPlay();
+            vid.onloadedmetadata = tryPlay;
             document.getElementById('video-mock-start-btn').classList.add('hidden');
             document.getElementById('video-mock-record-btn').classList.remove('hidden');
             document.getElementById('video-mock-stop-btn').classList.remove('hidden');
@@ -3180,6 +3228,7 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
         stopVideoMockAnalysisSampling();
         if (videoMockStream) { videoMockStream.getTracks().forEach(t => t.stop()); videoMockStream = null; }
         const vid = document.getElementById('video-mock-preview');
+        vid.onloadedmetadata = null;
         vid.srcObject = null; vid.classList.add('hidden');
         document.getElementById('video-mock-start-btn').classList.remove('hidden');
         document.getElementById('video-mock-record-btn').classList.add('hidden');
