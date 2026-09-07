@@ -564,9 +564,14 @@
                     <p id="account-sub" class="text-[9.5px] text-slate-500 truncate" data-i18n="account.signinHint">سجّل دخول بجوجل لحفظ صورتك ونقاطك</p>
                 </div>
             </div>
-            <div class="panel-2 rounded-xl px-3 py-2 flex items-center justify-between">
-                <span class="sidebar-label text-[10px] text-slate-400" data-i18n="trial.left">المحاولات المتبقية</span>
-                <b id="trial-left" class="text-slate-200 text-xs">5</b>
+            <div id="trial-chip" class="panel-2 rounded-xl px-3 py-2 trial-ok">
+                <div class="flex items-center justify-between">
+                    <span class="sidebar-label text-[10px] text-slate-400" data-i18n="trial.left">المحاولات المتبقية</span>
+                    <b id="trial-left" class="text-slate-200 text-xs">5 / 5</b>
+                </div>
+                <div id="trial-progress-track" class="trial-progress-track sidebar-label">
+                    <div id="trial-progress-fill" class="trial-progress-fill" style="width:0%"></div>
+                </div>
             </div>
             <button onclick="openPricingModal()" class="w-full btn-primary text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-2">
                 <i class="fa-solid fa-crown"></i><span class="sidebar-label" data-i18n="trial.upgrade">ترقية للباقة الكاملة</span>
@@ -582,6 +587,9 @@
             <button onclick="toggleSidebar()" class="lg:hidden text-slate-300 text-lg"><i class="fa-solid fa-bars"></i></button>
             <h1 id="view-title" class="font-tajawal font-bold text-sm sm:text-base text-slate-100">مقابلة تدريبية صوتية</h1>
             <div class="mr-auto flex items-center gap-2">
+                <button id="header-trial-badge" onclick="openPricingModal()" title="المحاولات المجانية المتبقية الشهر ده" class="header-trial-badge trial-ok flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold shrink-0">
+                    <i class="fa-solid fa-bolt"></i><span id="header-trial-count">5</span>
+                </button>
                 <button onclick="switchViewByName('support')" title="الدعم الفني" class="w-8 h-8 rounded-lg btn-ghost flex items-center justify-center text-xs shrink-0">
                     <i class="fa-solid fa-headset"></i>
                 </button>

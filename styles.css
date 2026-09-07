@@ -325,6 +325,27 @@
     .app-toast.toast-success { border-color: rgba(52,211,153,.4); }
     .app-toast.toast-success i { color: #34d399; }
     .app-toast.toast-info i { color: #94a3b8; }
+    .app-toast.toast-warning { border-color: rgba(251,191,36,.45); }
+    .app-toast.toast-warning i { color: #fbbf24; }
+
+    /* ============ نقطة 7: تنبيه استباقي لحد الاستخدام ============ */
+    #trial-chip { transition: border-color .25s ease; }
+    .trial-progress-track { margin-top: 6px; height: 5px; border-radius: 999px; background: var(--border); overflow: hidden; }
+    .trial-progress-fill { height: 100%; border-radius: 999px; background: linear-gradient(135deg,var(--grad1),var(--grad3)); transition: width .35s ease, background .25s ease; }
+    #trial-chip.trial-warning .trial-progress-fill, .header-trial-badge.trial-warning { background: #fbbf24; }
+    #trial-chip.trial-danger .trial-progress-fill, .header-trial-badge.trial-danger { background: #f87171; }
+    #trial-chip.trial-warning #trial-left { color: #fbbf24; }
+    #trial-chip.trial-danger #trial-left { color: #f87171; }
+    #trial-chip.trial-warning { border-color: rgba(251,191,36,.45); }
+    #trial-chip.trial-danger { border-color: rgba(248,113,113,.5); }
+    .header-trial-badge { background: var(--panel-2); border: 1px solid var(--border); color: var(--muted); transition: all .18s ease; }
+    .header-trial-badge.trial-ok { color: var(--accent); }
+    .header-trial-badge.trial-ok i { color: var(--accent); }
+    .header-trial-badge.trial-warning { color: #1a1206; border-color: transparent; }
+    .header-trial-badge.trial-warning i { color: #1a1206; }
+    .header-trial-badge.trial-danger { color: #1a0606; border-color: transparent; }
+    .header-trial-badge.trial-danger i { color: #1a0606; }
+    .header-trial-badge:hover { filter: brightness(1.08); }
 
     /* ---- Floating support chat (user ⇄ admin) ---- */
     /* ⚠️ ملحوظة مهمة: display:flex ما بيتحطش هنا في الرول الأساسي عن قصد.

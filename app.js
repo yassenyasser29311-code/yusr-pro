@@ -1,7 +1,7 @@
     function showToast(message, type = 'info') {
         const container = document.getElementById('toast-container');
         if (!container) { console.warn(message); return; }
-        const icon = type === 'error' ? 'fa-circle-exclamation' : (type === 'success' ? 'fa-circle-check' : 'fa-circle-info');
+        const icon = type === 'error' ? 'fa-circle-exclamation' : (type === 'success' ? 'fa-circle-check' : (type === 'warning' ? 'fa-triangle-exclamation' : 'fa-circle-info'));
         const el = document.createElement('div');
         el.className = `app-toast toast-${type}`;
         el.innerHTML = `<i class="fa-solid ${icon}"></i><span>${message}</span>`;
@@ -154,6 +154,7 @@
             "account.guest":"زائر (الجهاز ده)","account.signinHint":"سجّل دخول بجوجل لحفظ صورتك ونقاطك",
             "authgate.title":"سجّل دخولك","authgate.subtitle":"لازم تسجّل دخول بجوجل أو بإيميلك عشان تستخدم الموقع.","authgate.googleBtn":"تسجيل الدخول بجوجل","authgate.orEmail":"أو بالإيميل","authgate.tabLogin":"تسجيل الدخول","authgate.tabSignup":"إنشاء حساب","authgate.namePh":"اسمك الكامل","authgate.emailPh":"الإيميل","authgate.passwordPh":"كلمة المرور","authgate.confirmPh":"تأكيد كلمة المرور","authgate.submitLogin":"تسجيل الدخول","authgate.submitSignup":"إنشاء الحساب","authgate.privacyNote":"بياناتك بتتحفظ بشكل آمن، وكلمة المرور متشفّرة ومش بنقدر نشوفها إحنا كأصحاب الموقع.","authgate.recaptchaNote":"هذا الموقع محمي بخدمة reCAPTCHA، وتنطبق <a href=\"https://policies.google.com/privacy\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit;text-decoration:underline;\">سياسة الخصوصية</a> و<a href=\"https://policies.google.com/terms\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit;text-decoration:underline;\">شروط الخدمة</a> الخاصة بـ Google.",
             "trial.left":"المحاولات المتبقية","trial.upgrade":"ترقية للباقة الكاملة",
+            "trial.warningLow":"باقيلك {n} بس من المحاولات المجانية الشهر ده!","trial.warningLast":"دي آخر محاولة مجانية ليك الشهر ده!",
             "copy":"نسخ","download":"تنزيل",
             "interview.desc":"تدرّب على مقابلة شفهية حقيقية بالصوت مع تقييم أداء تفصيلي في النهاية.","interview.linkCv":"ربط الـ CV",
             "interview.roleLabel":"الوظيفة المستهدفة","interview.rolePh":"مثلاً: مبيعات عقارات، خدمة عملاء، برمجة...",
@@ -233,6 +234,7 @@
             "account.guest":"Guest (this device)","account.signinHint":"Sign in with Google to save your photo & points",
             "authgate.title":"Sign in","authgate.subtitle":"You need to sign in with Google or your email to use the site.","authgate.googleBtn":"Sign in with Google","authgate.orEmail":"or with email","authgate.tabLogin":"Log in","authgate.tabSignup":"Create account","authgate.namePh":"Your full name","authgate.emailPh":"Email","authgate.passwordPh":"Password","authgate.confirmPh":"Confirm password","authgate.submitLogin":"Log in","authgate.submitSignup":"Create account","authgate.privacyNote":"Your data is stored securely, and your password is encrypted — even we can't see it.","authgate.recaptchaNote":"This site is protected by reCAPTCHA and the Google <a href=\"https://policies.google.com/privacy\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit;text-decoration:underline;\">Privacy Policy</a> and <a href=\"https://policies.google.com/terms\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit;text-decoration:underline;\">Terms of Service</a> apply.",
             "trial.left":"Trials remaining","trial.upgrade":"Upgrade to full plan",
+            "trial.warningLow":"Only {n} free attempts left this month!","trial.warningLast":"This is your last free attempt this month!",
             "copy":"Copy","download":"Download",
             "interview.desc":"Practice a real spoken interview with detailed performance feedback at the end.","interview.linkCv":"Link CV",
             "interview.roleLabel":"Target role","interview.rolePh":"e.g. Sales, Customer Service, Programming...",
@@ -313,6 +315,7 @@
             "account.guest":"Invité (cet appareil)","account.signinHint":"Connectez-vous avec Google pour enregistrer votre photo et vos points",
             "authgate.title":"Connexion","authgate.subtitle":"Si vous ne pouvez pas entrer en tant qu'invité pour le moment (généralement un problème de connexion), connectez-vous avec Google ou votre e-mail.","authgate.googleBtn":"Se connecter avec Google","authgate.orEmail":"ou par e-mail","authgate.tabLogin":"Connexion","authgate.tabSignup":"Créer un compte","authgate.namePh":"Votre nom complet","authgate.emailPh":"E-mail","authgate.passwordPh":"Mot de passe","authgate.confirmPh":"Confirmer le mot de passe","authgate.submitLogin":"Connexion","authgate.submitSignup":"Créer le compte","authgate.privacyNote":"Vos données sont stockées en toute sécurité, et votre mot de passe est chiffré — même nous ne pouvons pas le voir.","authgate.recaptchaNote":"Ce site est protégé par reCAPTCHA. Les <a href=\"https://policies.google.com/privacy\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit;text-decoration:underline;\">règles de confidentialité</a> et les <a href=\"https://policies.google.com/terms\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit;text-decoration:underline;\">conditions d'utilisation</a> de Google s'appliquent.",
             "trial.left":"Essais restants","trial.upgrade":"Passer à l'offre complète",
+            "trial.warningLow":"Il ne vous reste que {n} essais gratuits ce mois-ci !","trial.warningLast":"C'est votre dernier essai gratuit ce mois-ci !",
             "copy":"Copier","download":"Télécharger",
             "interview.desc":"Entraînez-vous à un véritable entretien oral avec une évaluation détaillée à la fin.","interview.linkCv":"Lier le CV",
             "interview.roleLabel":"Poste visé","interview.rolePh":"ex : vente immobilière, service client, programmation...",
@@ -391,6 +394,7 @@
             "account.guest":"Invitado (este dispositivo)","account.signinHint":"Inicia sesión con Google para guardar tu foto y puntos",
             "authgate.title":"Iniciar sesión","authgate.subtitle":"Si no puedes entrar como invitado ahora (normalmente un problema de conexión), inicia sesión con Google o tu correo.","authgate.googleBtn":"Iniciar sesión con Google","authgate.orEmail":"o por correo","authgate.tabLogin":"Iniciar sesión","authgate.tabSignup":"Crear cuenta","authgate.namePh":"Tu nombre completo","authgate.emailPh":"Correo electrónico","authgate.passwordPh":"Contraseña","authgate.confirmPh":"Confirmar contraseña","authgate.submitLogin":"Iniciar sesión","authgate.submitSignup":"Crear cuenta","authgate.privacyNote":"Tus datos se guardan de forma segura, y tu contraseña está cifrada — ni nosotros podemos verla.","authgate.recaptchaNote":"Este sitio está protegido por reCAPTCHA y se aplican la <a href=\"https://policies.google.com/privacy\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit;text-decoration:underline;\">Política de Privacidad</a> y los <a href=\"https://policies.google.com/terms\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit;text-decoration:underline;\">Términos del Servicio</a> de Google.",
             "trial.left":"Intentos restantes","trial.upgrade":"Actualizar al plan completo",
+            "trial.warningLow":"¡Solo te quedan {n} intentos gratuitos este mes!","trial.warningLast":"¡Este es tu último intento gratuito este mes!",
             "copy":"Copiar","download":"Descargar",
             "interview.desc":"Practica una entrevista oral real con una evaluación de desempeño detallada al final.","interview.linkCv":"Vincular CV",
             "interview.roleLabel":"Puesto objetivo","interview.rolePh":"ej.: ventas inmobiliarias, atención al cliente, programación...",
@@ -469,6 +473,7 @@
             "account.guest":"Misafir (bu cihaz)","account.signinHint":"Fotoğrafını ve puanlarını kaydetmek için Google ile giriş yap",
             "authgate.title":"Giriş yap","authgate.subtitle":"Şu anda misafir olarak giremiyorsan (genellikle bağlantı sorunu), Google veya e-postanla giriş yap.","authgate.googleBtn":"Google ile Giriş Yap","authgate.orEmail":"veya e-posta ile","authgate.tabLogin":"Giriş yap","authgate.tabSignup":"Hesap oluştur","authgate.namePh":"Ad Soyad","authgate.emailPh":"E-posta","authgate.passwordPh":"Şifre","authgate.confirmPh":"Şifreyi onayla","authgate.submitLogin":"Giriş yap","authgate.submitSignup":"Hesap oluştur","authgate.privacyNote":"Verilerin güvenli şekilde saklanır, şifren şifrelenir — biz bile göremeyiz.","authgate.recaptchaNote":"Bu site reCAPTCHA ile korunmaktadır; Google <a href=\"https://policies.google.com/privacy\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit;text-decoration:underline;\">Gizlilik Politikası</a> ve <a href=\"https://policies.google.com/terms\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit;text-decoration:underline;\">Hizmet Şartları</a> geçerlidir.",
             "trial.left":"Kalan deneme hakkı","trial.upgrade":"Tam pakete yükselt",
+            "trial.warningLow":"Bu ay sadece {n} ücretsiz deneme hakkın kaldı!","trial.warningLast":"Bu, bu ayki son ücretsiz deneme hakkın!",
             "copy":"Kopyala","download":"İndir",
             "interview.desc":"Sonunda ayrıntılı performans değerlendirmesiyle gerçek bir sözlü mülakatı deneyimle.","interview.linkCv":"CV'yi Bağla",
             "interview.roleLabel":"Hedef pozisyon","interview.rolePh":"örn: emlak satışı, müşteri hizmetleri, yazılım...",
@@ -547,6 +552,7 @@
             "account.guest":"Gast (dieses Gerät)","account.signinHint":"Melde dich mit Google an, um dein Foto und deine Punkte zu speichern",
             "authgate.title":"Anmelden","authgate.subtitle":"Falls du gerade nicht als Gast einsteigen kannst (meist ein Verbindungsproblem), melde dich mit Google oder deiner E-Mail an.","authgate.googleBtn":"Mit Google anmelden","authgate.orEmail":"oder per E-Mail","authgate.tabLogin":"Anmelden","authgate.tabSignup":"Konto erstellen","authgate.namePh":"Dein vollständiger Name","authgate.emailPh":"E-Mail","authgate.passwordPh":"Passwort","authgate.confirmPh":"Passwort bestätigen","authgate.submitLogin":"Anmelden","authgate.submitSignup":"Konto erstellen","authgate.privacyNote":"Deine Daten werden sicher gespeichert, dein Passwort ist verschlüsselt — nicht einmal wir können es sehen.","authgate.recaptchaNote":"Diese Seite ist durch reCAPTCHA geschützt. Es gelten die <a href=\"https://policies.google.com/privacy\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit;text-decoration:underline;\">Datenschutzerklärung</a> und die <a href=\"https://policies.google.com/terms\" target=\"_blank\" rel=\"noopener\" style=\"color:inherit;text-decoration:underline;\">Nutzungsbedingungen</a> von Google.",
             "trial.left":"Verbleibende Versuche","trial.upgrade":"Auf vollständigen Plan upgraden",
+            "trial.warningLow":"Nur noch {n} kostenlose Versuche in diesem Monat!","trial.warningLast":"Dies ist dein letzter kostenloser Versuch in diesem Monat!",
             "copy":"Kopieren","download":"Herunterladen",
             "interview.desc":"Übe ein echtes mündliches Vorstellungsgespräch mit einer detaillierten Leistungsbewertung am Ende.","interview.linkCv":"Lebenslauf verknüpfen",
             "interview.roleLabel":"Zielposition","interview.rolePh":"z. B.: Immobilienvertrieb, Kundenservice, Programmierung...",
@@ -624,6 +630,7 @@
             "nav.section.legal":"कानूनी","nav.terms":"उपयोग की शर्तें","nav.privacy":"गोपनीयता नीति",
             "account.guest":"अतिथि (यह डिवाइस)","account.signinHint":"अपनी फ़ोटो और पॉइंट्स सेव करने के लिए Google से साइन इन करें",
             "trial.left":"बचे हुए प्रयास","trial.upgrade":"पूर्ण पैकेज में अपग्रेड करें",
+            "trial.warningLow":"इस महीने केवल {n} मुफ़्त प्रयास बचे हैं!","trial.warningLast":"यह इस महीने आपका आखिरी मुफ़्त प्रयास है!",
             "copy":"कॉपी करें","download":"डाउनलोड करें",
             "interview.desc":"अंत में विस्तृत प्रदर्शन मूल्यांकन के साथ एक वास्तविक मौखिक इंटरव्यू का अभ्यास करें।","interview.linkCv":"CV लिंक करें",
             "interview.roleLabel":"लक्षित पद","interview.rolePh":"जैसे: रियल एस्टेट सेल्स, कस्टमर सर्विस, प्रोग्रामिंग...",
@@ -701,6 +708,7 @@
             "nav.section.legal":"قانونی","nav.terms":"استعمال کی شرائط","nav.privacy":"رازداری کی پالیسی",
             "account.guest":"مہمان (یہ ڈیوائس)","account.signinHint":"اپنی تصویر اور پوائنٹس محفوظ کرنے کے لیے گوگل سے سائن ان کریں",
             "trial.left":"باقی ماندہ کوششیں","trial.upgrade":"مکمل پیکیج میں اپ گریڈ کریں",
+            "trial.warningLow":"اس مہینے صرف {n} مفت کوششیں باقی ہیں!","trial.warningLast":"یہ اس مہینے آپ کی آخری مفت کوشش ہے!",
             "copy":"کاپی کریں","download":"ڈاؤن لوڈ کریں",
             "interview.desc":"آخر میں تفصیلی کارکردگی کے جائزے کے ساتھ ایک حقیقی زبانی انٹرویو کی مشق کریں۔","interview.linkCv":"سی وی منسلک کریں",
             "interview.roleLabel":"مطلوبہ عہدہ","interview.rolePh":"مثلاً: رئیل اسٹیٹ سیلز، کسٹمر سروس، پروگرامنگ...",
@@ -778,6 +786,7 @@
             "nav.section.legal":"حقوقی","nav.terms":"شرایط استفاده","nav.privacy":"سیاست حریم خصوصی",
             "account.guest":"مهمان (این دستگاه)","account.signinHint":"برای ذخیره عکس و امتیازهایتان با گوگل وارد شوید",
             "trial.left":"تلاش‌های باقی‌مانده","trial.upgrade":"ارتقا به بسته کامل",
+            "trial.warningLow":"این ماه فقط {n} تلاش رایگان برایتان باقی مانده است!","trial.warningLast":"این آخرین تلاش رایگان شما در این ماه است!",
             "copy":"کپی","download":"دانلود",
             "interview.desc":"یک مصاحبه شفاهی واقعی را با ارزیابی عملکرد دقیق در پایان تمرین کنید.","interview.linkCv":"اتصال رزومه",
             "interview.roleLabel":"شغل هدف","interview.rolePh":"مثلاً: فروش املاک، خدمات مشتری، برنامه‌نویسی...",
@@ -955,12 +964,68 @@
         if (cloudUsageCache && cloudUsageCache.month === monthKey) return cloudUsageCache.count;
         return getLocalUsageCache().count; // لحد ما يوصل رد السيرفر أول مرة
     }
+    // ============ نقطة 7: تنبيه استباقي لحد الاستخدام ============
+    // بدل ما المستخدم يتفاجئ بمودال الأسعار فجأة لما يستخدم أداة ومحاولاته خلصت،
+    // بنوريله باستمرار "المتبقي / الإجمالي" + شريط تقدم ملوّن (أخضر عادي، برتقالي
+    // لما يقرب من الحد، أحمر لما يخلص)، مع شارة صغيرة في الهيدر تفضل ظاهرة حتى لو
+    // الشريط الجانبي مقفول (زي حالة الموبايل). وبنطلقله تنبيه (toast) مرة واحدة بس
+    // في الشهر لما يقرب من الحد ولما يفضلّه محاولة أخيرة، عشان الإنذار يكون مبكر
+    // بدل الصدمة المفاجئة.
+    function getTrialWarnState() {
+        const monthKey = getCurrentMonthKey();
+        let state;
+        try { state = JSON.parse(localStorage.getItem('yusr_trial_warned') || '{}'); } catch (e) { state = {}; }
+        if (state.month !== monthKey) state = { month: monthKey, low: false, last: false };
+        return state;
+    }
+    function setTrialWarnState(state) {
+        localStorage.setItem('yusr_trial_warned', JSON.stringify(state));
+    }
+    function updateTrialUsageUI(remaining, limit, count) {
+        const isUnlimited = limit === Infinity;
+        const ratio = isUnlimited ? 0 : (limit > 0 ? count / limit : 1);
+        let level = 'ok';
+        if (!isUnlimited) {
+            if (remaining <= 0) level = 'danger';
+            else if (remaining <= Math.max(2, Math.ceil(limit * 0.2))) level = 'warning';
+        }
+        const trialEl = document.getElementById('trial-left');
+        if (trialEl) trialEl.innerText = isUnlimited ? '∞' : `${remaining} / ${limit}`;
+        const chip = document.getElementById('trial-chip');
+        if (chip) { chip.classList.remove('trial-ok', 'trial-warning', 'trial-danger'); chip.classList.add('trial-' + level); }
+        const fill = document.getElementById('trial-progress-fill');
+        if (fill) fill.style.width = isUnlimited ? '0%' : `${Math.min(100, Math.round(ratio * 100))}%`;
+        const track = document.getElementById('trial-progress-track');
+        if (track) track.classList.toggle('hidden', isUnlimited);
+        const headerBadge = document.getElementById('header-trial-badge');
+        const headerCount = document.getElementById('header-trial-count');
+        if (headerBadge) {
+            headerBadge.classList.toggle('hidden', isUnlimited);
+            headerBadge.classList.remove('trial-ok', 'trial-warning', 'trial-danger');
+            headerBadge.classList.add('trial-' + level);
+        }
+        if (headerCount) headerCount.innerText = isUnlimited ? '∞' : String(remaining);
+    }
+    function maybeFireTrialWarning(remaining, limit) {
+        if (limit === Infinity) return;
+        const dict = I18N[currentUiLang] || I18N.ar;
+        const state = getTrialWarnState();
+        const lowThreshold = Math.max(2, Math.ceil(limit * 0.2));
+        if (remaining <= 1 && remaining > 0 && !state.last) {
+            showToast(dict['trial.warningLast'], 'warning');
+            state.last = true; setTrialWarnState(state);
+        } else if (remaining <= lowThreshold && remaining > 1 && !state.low) {
+            showToast((dict['trial.warningLow'] || '').replace('{n}', remaining), 'warning');
+            state.low = true; setTrialWarnState(state);
+        }
+    }
     function checkDeviceTrial() {
         const plan = getCurrentPlanName();
         const limit = PLAN_MONTHLY_LIMITS[plan];
         const count = getEffectiveUsageCount();
-        const trialEl = document.getElementById('trial-left');
-        if (trialEl) trialEl.innerText = (limit === Infinity) ? '∞' : Math.max(0, limit - count);
+        const remaining = (limit === Infinity) ? Infinity : Math.max(0, limit - count);
+        updateTrialUsageUI(remaining, limit, count);
+        if (limit !== Infinity) maybeFireTrialWarning(remaining, limit);
         if (limit !== Infinity && count >= limit) { openPricingModal(); return false; }
         return true;
     }
