@@ -1342,19 +1342,21 @@
                                 <p class="text-[10.5px] text-slate-500 flex-1" data-i18n="profile.googleHint">تسجيل الدخول بيحفظ اسمك وصورتك ونقاطك على نفس الجهاز — المحاولات المجانية بتُحسب على الجهاز/المتصفح مش على الحساب.</p>
                             </div>
 
-                            <div id="google-signedin-area" class="hidden panel-2 rounded-xl p-3 flex items-center gap-3">
-                                <div class="signedin-avatar">
-                                    <img id="signedin-avatar-img" class="hidden" alt="صورة الحساب" />
-                                    <i id="signedin-avatar-icon" class="fa-solid fa-user text-slate-500"></i>
-                                </div>
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex items-center gap-2 flex-wrap">
-                                        <p id="signedin-name" class="text-xs font-bold text-slate-100 truncate">-</p>
-                                        <span class="signedin-badge"><span class="dot"></span><span data-i18n="profile.connected">متصل بجوجل</span></span>
+                            <div id="google-signedin-area" class="hidden panel-2 rounded-xl p-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <div class="signedin-avatar">
+                                        <img id="signedin-avatar-img" class="hidden" alt="صورة الحساب" />
+                                        <i id="signedin-avatar-icon" class="fa-solid fa-user text-slate-500"></i>
                                     </div>
-                                    <p id="signedin-email" class="text-[10.5px] text-slate-500 truncate">-</p>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <p id="signedin-name" class="text-xs font-bold text-slate-100 truncate">-</p>
+                                            <span class="signedin-badge"><span class="dot"></span><span data-i18n="profile.connected">متصل بجوجل</span></span>
+                                        </div>
+                                        <p id="signedin-email" class="text-[10.5px] text-slate-500 truncate">-</p>
+                                    </div>
                                 </div>
-                                <button onclick="logoutAccount()" class="g-logout-btn flex items-center gap-2 shrink-0">
+                                <button onclick="logoutAccount()" class="g-logout-btn flex items-center justify-center gap-2 shrink-0 w-full sm:w-auto">
                                     <i class="fa-solid fa-arrow-right-from-bracket"></i>
                                     <span data-i18n="profile.logoutBtn">تسجيل الخروج</span>
                                 </button>
@@ -1391,7 +1393,12 @@
                             <p class="text-[11px] text-slate-500 leading-relaxed">بيانات الملف الشخصي وسجل التدريب وسجل الاستخدام متخزنة على جهازك (المتصفح) بشكل أساسي، ولو سجّلت دخول بجوجل بتتزامن نسخة منها مع حسابك عشان تلاقيها من أي جهاز. صور الـ CV وملفات الصوت/الفيديو بتتبعت للمعالجة وقت الاستخدام بس ومش بتتخزن دائم على السيرفر.</p>
                             <div class="flex flex-wrap gap-2">
                                 <button onclick="requestPasswordChange()" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-key"></i> تغيير كلمة المرور</button>
-                                <button onclick="clearLocalAppData()" class="chip hover:bg-red-500/10 hover:text-red-300"><i class="fa-solid fa-trash-can"></i> امسح كل بياناتي المحفوظة على الجهاز ده</button>
+                                <button onclick="clearLocalAppData()" class="chip hover:bg-red-500/10 hover:text-red-300"><i class="fa-solid fa-trash-can"></i> امسح بياناتي المحفوظة على الجهاز ده بس</button>
+                            </div>
+                            <div class="pt-3 mt-1 border-t border-[var(--border)] space-y-2">
+                                <p class="text-[10.5px] font-bold text-red-300/90 flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation"></i> منطقة الخطر</p>
+                                <p class="text-[10.5px] text-slate-500 leading-relaxed">حذف الحساب بيمسح حسابك نهائياً من عندنا: بياناتك، اشتراكاتك، وسجل استخدامك على السيرفر (مش بس على الجهاز ده) - وده إجراء نهائي مينفعش يترجع.</p>
+                                <button id="delete-account-btn" onclick="deleteAccountPermanently()" class="chip" style="border-color:rgba(248,113,113,.4); color:#f87171; background:rgba(248,113,113,.08);"><i class="fa-solid fa-user-slash"></i> احذف حسابي نهائياً</button>
                             </div>
                         </div>
                     </div>

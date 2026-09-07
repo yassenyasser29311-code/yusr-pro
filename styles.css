@@ -55,6 +55,14 @@
    * { scrollbar-width: thin; scrollbar-color: #3a4048 transparent; }
     *, *::before, *::after { box-sizing: border-box; }
     html, body { overflow-x: hidden; max-width: 100%; }
+    /* فيكس إضافي احترازي: أي صف flex (زي صف "متصل بجوجل" وغيره) لو افترض إن
+       المساحة هتكفي وطلع فجأة أعرض من الشاشة على موبايل ضيق جداً، بدل ما يتقص
+       ويختفي جزء منه بره حدود الشاشة (بسبب overflow-x:hidden فوق)، خليه يلف
+       لسطر تاني تلقائياً بدل ما "يطفح" برة. الشبكة دي بتتفعل بس لو المساحة
+       فعلاً مش كافية، فمش هتأثر على الشكل العادي على شاشات كبيرة خالص. */
+    @media (max-width: 420px) {
+        #google-signin-area, #google-signedin-area { flex-wrap: wrap; }
+    }
     body { font-family: 'Cairo', sans-serif; background: var(--bg); color: var(--text); }
     img, video, canvas, svg { max-width: 100%; height: auto; }
     /* ---- شبكة أمان عامة ضد أي عنصر بيطلع بره حدود الشاشة (موبايل أو ديسكتوب) ----

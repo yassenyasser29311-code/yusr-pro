@@ -1778,6 +1778,84 @@
             showToast(currentUiLang === 'en' ? 'Could not clear local data.' : 'تعذر مسح البيانات، حاول تاني.', 'error');
         }
     }
+    // ============ حذف الحساب نهائياً (Firebase Auth + Realtime Database + المحلي) ============
+    // ده مختلف تماماً عن "امسح بياناتي المحلية" اللي بتمسح بس اللي على الجهاز ده.
+    // هنا بنمسح فعلياً: بيانات المستخدم من users/{uid} في Realtime Database، وحساب
+    // الدخول نفسه من Firebase Authentication (يعني الإيميل/حساب جوجل ده مبقاش موجود
+    // خالص عندنا تاني ويقدر يسجل من جديد بيه لو حب)، وبعدين بيانات الجهاز المحلية.
+    window._pendingAccountDeletionAfterReauth = false;
+    async function reauthenticateCurrentUser(user) {
+        const p = getProfile();
+        const isGoogleUser = !!(p.google || (user.providerData || []).some(pd => pd.providerId === 'google.com'));
+        if (isGoogleUser) {
+            // مفيش طريقة نستنى بيها نتيجة نافذة جوجل هنا مباشرة (بتفتح وتقفل بشكل غير
+            // متزامن) - فبنحط علم وبنرجّع false، وأول ما تسجيل الدخول بجوجل ينجح تاني
+            // (من نفس الـ callback المستخدم عادي) هيكمّل عملية الحذف تلقائياً من نفسه.
+            window._pendingAccountDeletionAfterReauth = true;
+            showToast(currentUiLang === 'en'
+                ? 'For your security, please confirm by signing in with Google again — deletion will continue automatically.'
+                : 'لأسباب أمنية، أكّد هويتك بتسجيل الدخول بجوجل تاني — الحذف هيكمّل تلقائي بعد كده.', 'info');
+            triggerGoogleSignIn();
+            return false;
+        }
+        const email = user.email;
+        const password = prompt(currentUiLang === 'en'
+            ? `Please re-enter the password for ${email} to confirm permanent account deletion:`
+            : `اكتب كلمة المرور الحالية لحساب ${email} عشان تأكد إنك فعلاً صاحب الحساب قبل الحذف النهائي:`);
+        if (!password) return false;
+        const cred = firebase.auth.EmailAuthProvider.credential(email, password);
+        await user.reauthenticateWithCredential(cred);
+        return true;
+    }
+    async function deleteAccountCore(user) {
+        // 1) بنمسح بيانات المستخدم من السيرفر الأول وهو لسه مسجّل دخول فعلاً - قواعد
+        //    الأمان بتشترط uid المستخدم نفسه عشان تسمح بالمسح، فلازم يحصل قبل حذف
+        //    حساب الدخول نفسه (بعد الحذف مفيش auth.uid يوثّق الطلب خالص).
+        await db.ref('users/' + user.uid).remove();
+        // 2) حذف حساب الدخول نفسه نهائياً من Firebase Authentication.
+        await user.delete();
+        // 3) مسح أي بيانات محلية على الجهاز ده كمان.
+        try {
+            Object.keys(localStorage).filter(k => k.startsWith('yusr_')).forEach(k => localStorage.removeItem(k));
+        } catch (e) {}
+        showToast(currentUiLang === 'en' ? 'Your account has been permanently deleted.' : 'تم حذف حسابك نهائياً من عندنا.', 'success');
+        setTimeout(() => location.reload(), 1200);
+    }
+    async function deleteAccountPermanently() {
+        const user = fbAuth.currentUser;
+        if (!user) { showToast(currentUiLang === 'en' ? 'No signed-in account found.' : 'مفيش حساب مسجّل دخول حالياً.', 'error'); return; }
+        // تأكيد صريح بكتابة كلمة، مش بس confirm() عادي - لأن الفعل ده نهائي 100%
+        // ومش زي "امسح بياناتي المحلية" اللي ممكن ترجع تسجل دخول تاني وتلاقي حاجتك.
+        const confirmWord = currentUiLang === 'en' ? 'DELETE' : 'حذف';
+        const typed = prompt(currentUiLang === 'en'
+            ? `This will PERMANENTLY delete your account, subscriptions, and all your data from our servers. This cannot be undone.\n\nType "${confirmWord}" to confirm.`
+            : `الإجراء ده هيمسح حسابك نهائياً من عندنا: بياناتك، اشتراكاتك، وسجل استخدامك على السيرفر - ده نهائي ومش هيرجع خالص تاني.\n\nاكتب كلمة "${confirmWord}" بالظبط عشان تأكد.`);
+        if (typed === null) return;
+        if (typed.trim() !== confirmWord) {
+            showToast(currentUiLang === 'en' ? 'Confirmation text did not match. Nothing was deleted.' : 'الكلمة اللي كتبتها مش مطابقة، فمتمسحش أي حاجة.', 'error');
+            return;
+        }
+        const btn = document.getElementById('delete-account-btn');
+        if (btn) { btn.disabled = true; btn.dataset.origHtml = btn.innerHTML; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري الحذف...'; }
+        try {
+            await deleteAccountCore(user);
+        } catch (e) {
+            if (e && e.code === 'auth/requires-recent-login') {
+                try {
+                    const ok = await reauthenticateCurrentUser(user);
+                    if (ok) await deleteAccountCore(fbAuth.currentUser);
+                } catch (e2) {
+                    console.warn('تعذر التأكد من الهوية لحذف الحساب', e2);
+                    showToast(currentUiLang === 'en' ? 'Could not verify your identity. Password may be wrong.' : 'تعذّر تأكيد هويتك - يمكن كلمة المرور غلط.', 'error');
+                }
+            } else {
+                console.warn('تعذر حذف الحساب', e);
+                showToast(currentUiLang === 'en' ? 'Could not delete your account, please try again.' : 'تعذّر حذف الحساب، جرب تاني.', 'error');
+            }
+        } finally {
+            if (btn && document.body.contains(btn)) { btn.disabled = false; btn.innerHTML = btn.dataset.origHtml || btn.innerHTML; }
+        }
+    }
     function saveProfileInfo() {
         const nameInput = document.getElementById('profile-name');
         const name = nameInput.value.trim();
@@ -1834,6 +1912,16 @@
                     refreshProfileView();
                     syncProfileToCloud(getProfile());
                     loadProfileFromCloud(result.user.uid);
+                    // لو المستخدم كان في نص عملية "حذف الحساب" واتطلب منه يأكّد هويته
+                    // بجوجل تاني (requires-recent-login)، دلوقتي بعد ما رجع سجّل دخول
+                    // فعلاً بنكمّل الحذف تلقائياً من غير ما يضطر يدوس على أي حاجة تانية.
+                    if (window._pendingAccountDeletionAfterReauth) {
+                        window._pendingAccountDeletionAfterReauth = false;
+                        deleteAccountCore(result.user).catch(e => {
+                            console.warn('تعذر إكمال حذف الحساب بعد إعادة التأكيد', e);
+                            showToast(currentUiLang === 'en' ? 'Could not delete your account, please try again.' : 'تعذّر حذف الحساب، جرب تاني.', 'error');
+                        });
+                    }
                 })
                 .catch(e => { console.warn('تعذر تسجيل الدخول على الخادم', e); showToast(googleSignInErrorMessage(e), 'error'); });
         } catch (e) { console.warn('تعذر قراءة بيانات جوجل', e); showToast('تعذّر تسجيل الدخول بجوجل، جرب تاني.', 'error'); }
@@ -1872,6 +1960,13 @@
                     refreshProfileView();
                     syncProfileToCloud(getProfile());
                     loadProfileFromCloud(result.user.uid);
+                    if (window._pendingAccountDeletionAfterReauth) {
+                        window._pendingAccountDeletionAfterReauth = false;
+                        deleteAccountCore(result.user).catch(e => {
+                            console.warn('تعذر إكمال حذف الحساب بعد إعادة التأكيد', e);
+                            showToast(currentUiLang === 'en' ? 'Could not delete your account, please try again.' : 'تعذّر حذف الحساب، جرب تاني.', 'error');
+                        });
+                    }
                 })
                 .catch(e => { console.warn('تعذر تسجيل الدخول على الخادم', e); showToast(googleSignInErrorMessage(e), 'error'); });
         })
