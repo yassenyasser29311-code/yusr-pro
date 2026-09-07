@@ -1129,6 +1129,7 @@
     }
     function loadProfileFromCloud(uid) {
         userDocRef(uid).once('value').then(snap => {
+            let onboardingCount = 0;
             if (snap.exists()) {
                 const cloud = snap.val();
                 const p = getProfile();
@@ -1142,39 +1143,61 @@
                 saveProfile(p);
                 if (Array.isArray(cloud.purchases)) savePurchases(cloud.purchases);
                 if (Array.isArray(cloud.history)) saveHistoryList(cloud.history);
+                if (typeof cloud.onboardingShownCount === 'number') onboardingCount = cloud.onboardingShownCount;
                 // حساب موجود من قبل بس ناقصه email/displayName (حسابات قديمة) -
                 // نكمّلهم بهدوء في الخلفية عشان يظهروا صح في لوحة الأدمن.
                 if (!cloud.email || !cloud.displayName) syncProfileToCloud(p);
             } else {
                 syncProfileToCloud(getProfile());
                 syncPurchasesToCloud(getPurchases());
-                // ⚠️ ده مجرد خط دفاع احتياطي بس (نادر الحدوث)، مش المكان الأساسي
-                // لإطلاق الجولة التعريفية (نقطة 6) - المكان الأساسي بقى مباشرة في
-                // لحظة التسجيل نفسها (finishSuccess/handleGoogleCredential/
-                // handleGoogleTokenResponse) لأن الشيك هنا (snap.exists()) بيوصل
-                // غالبًا "true" حتى لو الحساب جديد فعلاً، لأن syncProfileToCloud
-                // فوق دي بتتنفذ في نفس الاستدعاء اللي أنشأ الحساب أصلاً وفايربيز
-                // بيطبّق الـ update محليًا فورًا (optimistic) قبل حتى ما يوصل السيرفر.
-                setTimeout(showOnboardingModal, 700);
             }
+            // نقطة 6: بنفحص هنا بس - المكان الوحيد - لأن الدالة دي بتتنادى تلقائيًا
+            // في كل مرة الحساب بيفتح فيها (مش بس لحظة التسجيل)، سواء كان الحساب
+            // جديد فعلاً (cloud.onboardingShownCount هيبقى 0/مش موجود) أو حساب
+            // بيرجع تاني (هيبقى ≥2 فمش هتظهر). بكده الجولة بتظهر أول مرتين بالظبط
+            // بغض النظر عن جهاز/متصفح المستخدم، ومربوطة بالحساب نفسه مش بالجهاز.
+            maybeShowOnboarding(uid, onboardingCount);
             refreshProfileView();
         }).catch(e => console.warn('تعذر تحميل البيانات من الخادم', e));
     }
     // ============ جولة تعريفية للمستخدم الجديد (نقطة 6) ============
-    // بتتفعّل مرة واحدة بس لكل حساب فعلاً جديد (شوف الاستدعاء فوق في
-    // loadProfileFromCloud). فيها 3 اختيارات سريعة بتودّي مباشرة لأهم 3
-    // أدوات (البروفايل، المقابلة، السيرة الذاتية) عشان تقلل إحساس التوهان
-    // قدام أكتر من 20 أداة مبعثرة، وممكن كمان يتخطاها المستخدم لو حابب.
-    // علم "شافها قبل كده" بيتخزن محليًا فبمجرد ما يقفلها مرة، مش هتفضل
-    // تطارده تاني على نفس الجهاز حتى لو سجّل خروج ودخول تاني.
-    function showOnboardingModal() {
-        if (localStorage.getItem('yusr_onboarding_seen')) return;
+    // المشكلة اللي كانت موجودة: العلم "شافها قبل كده" كان متخزّن في localStorage
+    // بمفتاح واحد ثابت (yusr_onboarding_seen) من غير ما يتربط بحساب معيّن. يعني
+    // أول حساب جديد يتعمل على الجهاز/المتصفح (حتى وقت الاختبار) بيسجّل الجولة
+    // "اتشافت" للأبد على المتصفح ده كله - فأي حساب جديد تاني بعده على نفس الجهاز
+    // (حتى لو حساب مختلف 100%) مكانش بيشوفها خالص. كمان كانت بتتقفل نهائياً من
+    // أول مرة بس، مش أول مرتين زي المطلوب.
+    // الحل: عداد "اتشافت كام مرة" مربوط بمعرّف الحساب (uid) نفسه، ومتخزّن في
+    // مكانين: محليًا (استجابة فورية) وفي حساب المستخدم على فايربيز (عشان يفضل
+    // شغال حتى لو غيّر جهاز أو مسح بيانات المتصفح وهو لسه مسجّل بنفس الحساب).
+    // بيتفعّل من مكان واحد بس (جوه loadProfileFromCloud اللي بتتنادى تلقائيًا في
+    // كل مرة الحساب بيفتح فيها - مش بس لحظة التسجيل)، وده بيحل مشكلة الاعتماد على
+    // isNewUser أو على "هل السجل موجود في الداتابيز؟" اللي كانت بتعمل race condition.
+    let onboardingCheckedUids = new Set(); // نمنع تكرار الفحص لنفس الحساب أكتر من مرة في نفس الجلسة (تجديد التوكن مثلاً)
+    function getLocalOnboardingCount(uid) {
+        return parseInt(localStorage.getItem('yusr_onboarding_count_' + uid) || '0', 10) || 0;
+    }
+    function setLocalOnboardingCount(uid, count) {
+        localStorage.setItem('yusr_onboarding_count_' + uid, String(count));
+    }
+    function syncOnboardingCountToCloud(uid, count) {
+        userDocRef(uid).update({ onboardingShownCount: count }).catch(e => console.warn('تعذر مزامنة عداد الجولة التعريفية', e));
+    }
+    // cloudCount: القيمة القادمة من فايربيز (لو معروفة) - بناخد الأعلى بينها وبين
+    // النسخة المحلية عشان نتجنب أي تعارض بين جهازين لنفس الحساب.
+    function maybeShowOnboarding(uid, cloudCount) {
+        if (!uid || onboardingCheckedUids.has(uid)) return;
+        onboardingCheckedUids.add(uid);
+        const count = Math.max(cloudCount || 0, getLocalOnboardingCount(uid));
+        if (count >= 2) return; // شافها أول مرتين بالفعل - مش هتظهر تاني
         const modal = document.getElementById('onboarding-modal');
         if (!modal) return;
-        modal.classList.remove('hidden');
+        const newCount = count + 1;
+        setLocalOnboardingCount(uid, newCount);
+        syncOnboardingCountToCloud(uid, newCount);
+        setTimeout(() => modal.classList.remove('hidden'), 700);
     }
     function dismissOnboarding(startView) {
-        localStorage.setItem('yusr_onboarding_seen', '1');
         const modal = document.getElementById('onboarding-modal');
         if (modal) modal.classList.add('hidden');
         if (startView) switchViewByName(startView);
@@ -1670,12 +1693,9 @@
                 // بنبعت إيميل التأكيد فورًا بعد إنشاء الحساب - البانر في البروفايل
                 // (refreshEmailVerificationBanner) هو اللي هيفضل يفكّره لحد ما يأكّد.
                 try { user.sendEmailVerification(); } catch (e) { console.warn('تعذر إرسال إيميل التأكيد الأول', e); }
-                // نقطة 6: حساب جديد بإيميل/باسورد اتعمل هنا فعلاً (createUserWithEmailAndPassword
-                // ما بينجحش أصلاً إلا لحساب جديد) - نطلق الجولة التعريفية من هنا مباشرة،
-                // مش من شيك "هل السجل موجود في قاعدة البيانات؟" لأن ده بيتعمل race مع
-                // syncProfileToCloud اللي فوق (فايربيز بيطبّق الـ update محليًا فورًا، فالشيك
-                // بعدها كان دايمًا بيلاقيه "موجود" حتى لو الحساب جديد فعلاً).
-                setTimeout(showOnboardingModal, 700);
+                // نقطة 6: الجولة التعريفية بقت بتتفعّل مركزيًا جوه loadProfileFromCloud
+                // (بتتنادى تلقائيًا من fbAuth.onAuthStateChanged بعد نجاح التسجيل هنا)،
+                // فمش محتاجين نستدعيها يدوي من هنا تاني.
             }
             // hideAuthGate() و loadProfileFromCloud()/attachCloudUsageListener() بيتنفذوا
             // تلقائياً من fbAuth.onAuthStateChanged لما حالة تسجيل الدخول تتغيّر.
@@ -2297,14 +2317,9 @@
                     refreshProfileView();
                     syncProfileToCloud(getProfile());
                     loadProfileFromCloud(result.user.uid);
-                    // نقطة 6: تسجيل دخول بجوجل ممكن يكون لحساب جديد أو حساب قديم بيرجع
-                    // تاني - الفيصل هنا مش "هل السجل موجود في الداتابيز؟" (ده بيعمل race
-                    // مع syncProfileToCloud اللي فوق) لكن العلم الرسمي اللي فايربيز نفسه
-                    // بيرجّعه additionalUserInfo.isNewUser، وده مضمون 100% إنه بيتحسب
-                    // وقت إنشاء الحساب على مستوى فايربيز نفسه.
-                    if (result.additionalUserInfo && result.additionalUserInfo.isNewUser) {
-                        setTimeout(showOnboardingModal, 700);
-                    }
+                    // نقطة 6: الجولة التعريفية بقت بتتفعّل مركزيًا جوه loadProfileFromCloud
+                    // نفسها (بناءً على عداد onboardingShownCount)، فمش محتاجين نشيك
+                    // isNewUser هنا تاني - العداد بيتصرف صح سواء الحساب جديد أو قديم.
                     // لو المستخدم كان في نص عملية "حذف الحساب" واتطلب منه يأكّد هويته
                     // بجوجل تاني (requires-recent-login)، دلوقتي بعد ما رجع سجّل دخول
                     // فعلاً بنكمّل الحذف تلقائياً من غير ما يضطر يدوس على أي حاجة تانية.
@@ -2353,11 +2368,8 @@
                     refreshProfileView();
                     syncProfileToCloud(getProfile());
                     loadProfileFromCloud(result.user.uid);
-                    // نقطة 6: نفس ملحوظة handleGoogleCredential فوق - بنعتمد على العلم
-                    // الرسمي من فايربيز مش على شيك الداتابيز عشان مفيش race condition.
-                    if (result.additionalUserInfo && result.additionalUserInfo.isNewUser) {
-                        setTimeout(showOnboardingModal, 700);
-                    }
+                    // نقطة 6: نفس ملحوظة handleGoogleCredential فوق - العداد جوه
+                    // loadProfileFromCloud هو اللي بيقرر يظهرها ولا لأ.
                     if (window._pendingAccountDeletionAfterReauth) {
                         window._pendingAccountDeletionAfterReauth = false;
                         deleteAccountCore(result.user).catch(e => {
