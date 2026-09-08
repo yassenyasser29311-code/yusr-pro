@@ -916,6 +916,67 @@
         applyTheme(saved);
     }
 
+    // ============ تثبيت الموقع كتطبيق حقيقي (PWA Install) ============
+    // الهدف: المستخدم يقدر يحط أيقونة يُسْر Pro على شاشته الرئيسية وتفتح
+    // بملء الشاشة زي أي تطبيق عادي (من غير شريط عنوان/أزرار متصفح)، مش مجرد
+    // تبويب في المتصفح. أندرويد/كروم بيدعموا حدث beforeinstallprompt اللي
+    // بيدّينا زرار تثبيت فوري؛ آيفون (Safari) مبيدعمش الحدث ده خالص، فبنعرض
+    // بدله شرح "إضافة إلى الشاشة الرئيسية" يدوي.
+    let deferredPwaInstallPrompt = null;
+    function isRunningAsStandaloneApp() {
+        return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+    }
+    function isIosDevice() {
+        return /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+    }
+    function showPwaInstallBannerIfEligible() {
+        if (isRunningAsStandaloneApp()) return;
+        try { if (localStorage.getItem('yusr_pwa_install_dismissed') === '1') return; } catch (e) {}
+        const banner = document.getElementById('pwa-install-banner');
+        if (banner && (deferredPwaInstallPrompt || isIosDevice())) banner.classList.remove('hidden');
+    }
+    function hidePwaInstallBanner() {
+        const banner = document.getElementById('pwa-install-banner');
+        if (banner) banner.classList.add('hidden');
+    }
+    function dismissPwaInstallBanner(e) {
+        if (e) e.stopPropagation();
+        try { localStorage.setItem('yusr_pwa_install_dismissed', '1'); } catch (e) {}
+        hidePwaInstallBanner();
+    }
+    async function triggerPwaInstall() {
+        if (deferredPwaInstallPrompt) {
+            deferredPwaInstallPrompt.prompt();
+            try {
+                const choice = await deferredPwaInstallPrompt.userChoice;
+                if (choice && choice.outcome === 'accepted') hidePwaInstallBanner();
+            } catch (e) {}
+            deferredPwaInstallPrompt = null;
+            return;
+        }
+        if (isIosDevice()) { openIosInstallModal(); return; }
+        // متصفحات ديسكتوب بعض الأحيان بتشيل الحدث بعد أول ظهور - تعليمات عامة بدل ما نسيب الزرار من غير رد فعل
+        showToast(currentUiLang === 'en'
+            ? 'Open your browser menu and choose "Install app" or "Add to Home screen".'
+            : 'افتح قائمة المتصفح (⋮ أو ⋯) واختار "تثبيت التطبيق" أو "إضافة إلى الشاشة الرئيسية".', 'info');
+    }
+    function openIosInstallModal() { const m = document.getElementById('ios-install-modal'); if (m) m.classList.remove('hidden'); }
+    function closeIosInstallModal() { const m = document.getElementById('ios-install-modal'); if (m) m.classList.add('hidden'); }
+    window.addEventListener('beforeinstallprompt', function (e) {
+        e.preventDefault();
+        deferredPwaInstallPrompt = e;
+        showPwaInstallBannerIfEligible();
+    });
+    window.addEventListener('appinstalled', function () {
+        deferredPwaInstallPrompt = null;
+        hidePwaInstallBanner();
+        showToast(currentUiLang === 'en' ? 'App installed! Open it from your home screen from now on.' : 'اتثبّت التطبيق بنجاح! دلوقتي تقدر تفتحه من شاشتك الرئيسية زي أي تطبيق.', 'success');
+    });
+    function initPwaInstall() {
+        if (isRunningAsStandaloneApp()) { hidePwaInstallBanner(); return; }
+        if (isIosDevice()) showPwaInstallBannerIfEligible();
+    }
+
     function getDeviceId() {
         let id = localStorage.getItem('yusr_device_fingerprint');
         if (!id) { id = 'DEV-' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36); localStorage.setItem('yusr_device_fingerprint', id); }
@@ -4542,6 +4603,7 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
     function saveCvData() { cvContent = document.getElementById('cv-text-input').value; closeCvModal(); showToast("تم حفظ الخبرات! هتتخصص أسئلة المقابلة بناءً عليها.", 'success'); }
 
     initTheme();
+    initPwaInstall();
     checkDeviceTrial();
     updateAccountChip();
     applyI18n();

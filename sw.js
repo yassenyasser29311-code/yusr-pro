@@ -34,7 +34,7 @@
 // بس مش شرط تتظبط يدويًا بنفس الدقة زي الأول.
 // ================================================================
 
-const CACHE_VERSION = "v8";
+const CACHE_VERSION = "v9";
 const CACHE_NAME = `yusr-pro-shell-${CACHE_VERSION}`;
 
 // ملفات "هيكل" الموقع بتاعتك (نفس الدومين) — لو غيّرت اسم أو رقم نسخة
@@ -46,7 +46,7 @@ const CACHE_NAME = `yusr-pro-shell-${CACHE_VERSION}`;
 const SAME_ORIGIN_FILES = [
   "/",
   "/index.html",
-  "/app.js?v=11",
+  "/app.js?v=12",
   "/styles.css?v=7",
 ];
 

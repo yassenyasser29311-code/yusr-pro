@@ -31,6 +31,12 @@
 <meta name="googlebot" content="index, follow">
 <link rel="canonical" href="https://yusr-pro.vercel.app/">
 <meta name="theme-color" content="#000000">
+<!-- ============ دعم "تطبيق مثبّت" حقيقي (PWA) — بيخلي الأيقونة على الشاشة الرئيسية
+     تفتح بملء الشاشة زي أي تطبيق عادي من غير شريط عنوان/أزرار متصفح ============ -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="يُسْر Pro">
 
 <!-- ============ Favicon / App Icons ============ -->
 <link rel="icon" type="image/x-icon" href="/favicon.ico">
@@ -568,6 +574,26 @@
         </nav>
 
         <div class="p-3 border-t border-[var(--border)] space-y-2">
+            <!-- ============ تثبيت التطبيق (PWA Install) ============
+                 بتبان بس لو التطبيق مش متثبّت بالفعل، وبتختفي نهائيًا بعد التثبيت
+                 أو لو المستخدم ضغط "إخفاء" (محفوظ في localStorage عشان ميتكررش). -->
+            <div id="pwa-install-banner" class="panel-2 rounded-xl px-2.5 py-2.5 hidden">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-lg flex items-center justify-center text-[13px] shrink-0" style="background:var(--accent-strong); color:#08131f;">
+                        <i class="fa-solid fa-mobile-screen-button"></i>
+                    </div>
+                    <div class="flex-1 min-w-0 sidebar-label">
+                        <p class="text-[11px] font-bold text-slate-200">نزّل يُسْر Pro كتطبيق</p>
+                        <p class="text-[9.5px] text-slate-500">أيقونة على شاشتك الرئيسية، بيفتح زي أي تطبيق عادي</p>
+                    </div>
+                    <button type="button" onclick="dismissPwaInstallBanner(event)" title="إخفاء" aria-label="إخفاء اقتراح التثبيت" class="text-slate-500 hover:text-slate-300 shrink-0 sidebar-label p-1">
+                        <i class="fa-solid fa-xmark text-[11px]"></i>
+                    </button>
+                </div>
+                <button id="pwa-install-btn" type="button" onclick="triggerPwaInstall()" class="w-full mt-2 btn-primary text-[11px] font-bold py-2 rounded-lg sidebar-label flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-download"></i> تثبيت التطبيق
+                </button>
+            </div>
             <div id="account-chip" class="panel-2 rounded-xl px-2.5 py-2 flex items-center gap-2 cursor-pointer" onclick="switchViewByName('profile')">
                 <div id="account-avatar" class="w-7 h-7 rounded-full bg-[#2a2f36] flex items-center justify-center text-[10px] text-slate-400 shrink-0 overflow-hidden">
                     <i class="fa-solid fa-user"></i>
@@ -1845,6 +1871,23 @@
 </div>
 
 <!-- Modal: Pricing (sized like a phone screen, with X to go back) -->
+<!-- ============ تعليمات تثبيت التطبيق على آيفون (Safari مبيدعمش زرار التثبيت التلقائي) ============ -->
+<div id="ios-install-modal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center p-4 z-50" onclick="if(event.target===this) closeIosInstallModal()">
+    <div class="panel modal-pop w-full max-w-[360px] rounded-2xl p-5 space-y-4 relative text-center" onclick="event.stopPropagation()">
+        <button onclick="closeIosInstallModal()" aria-label="إغلاق" class="absolute top-3 left-3 w-8 h-8 rounded-full panel-2 text-slate-400 hover:text-white flex items-center justify-center z-10">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <div class="w-12 h-12 rounded-full bg-slate-700/40 text-slate-300 flex items-center justify-center mx-auto text-xl"><i class="fa-solid fa-mobile-screen-button"></i></div>
+        <h3 class="font-bold text-sm">تثبيت التطبيق على آيفون</h3>
+        <ol class="text-[12.5px] text-slate-300 space-y-2.5 text-right list-decimal pr-4 leading-relaxed">
+            <li>اضغط زرار المشاركة <i class="fa-solid fa-arrow-up-from-bracket px-0.5"></i> تحت في متصفح Safari.</li>
+            <li>مرّر لحد ما تلاقي "إضافة إلى الشاشة الرئيسية" (Add to Home Screen).</li>
+            <li>اضغط "إضافة" فوق — هتلاقي أيقونة يُسْر Pro على شاشتك زي أي تطبيق عادي.</li>
+        </ol>
+        <button onclick="closeIosInstallModal()" class="w-full btn-ghost text-xs font-bold py-2.5 rounded-xl">تمام، فهمت</button>
+    </div>
+</div>
+
 <div id="pricing-modal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center p-0 sm:p-4 z-50">
     <div class="panel modal-pop w-full max-w-[380px] h-full sm:h-auto sm:max-h-[88vh] rounded-none sm:rounded-2xl p-5 space-y-4 overflow-y-auto relative">
         <button onclick="closePricingModal()" aria-label="رجوع" class="absolute top-3 left-3 w-8 h-8 rounded-full panel-2 text-slate-400 hover:text-white flex items-center justify-center z-10">
@@ -2032,7 +2075,7 @@
     </div>
 </div>
 
-<script src="app.js?v=11"></script>
+<script src="app.js?v=12"></script>
 <script>
     // ============ تسجيل Service Worker (يخلي الموقع نفسه يفتح أوفلاين) ============
     if ('serviceWorker' in navigator) {
