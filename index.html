@@ -1,6 +1,19 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
+<!-- ============ نقطة 8: تطبيق الوضع الفاتح/الداكن بدري قبل أي رسم (يمنع "الوميض" الأبيض/الأسود) ============
+     بنقرأ الاختيار المحفوظ من localStorage(yusr_theme) ونضيف كلاس light-mode على <html> فورًا،
+     قبل ما الـ CSS حتى يتحمّل، عشان الصفحة تتولد بالوضع الصح من أول فريم بدل ما تبان بالوضع
+     الغلط لحظة وبعدين تتقلب. باقي منطق التبديل (toggleTheme/initTheme) موجود في app.js. -->
+<script>
+(function(){
+    try {
+        if (localStorage.getItem('yusr_theme') === 'light') {
+            document.documentElement.classList.add('light-mode');
+        }
+    } catch (e) {}
+})();
+</script>
 <!-- فيكس: تثبيت الزووم (maximum-scale=1 + user-scalable=no) عشان الصفحة متفضلش
      ممكن حد يزوم فيها بالغلط (لمس مزدوج/pinch) وتفضل شايفها متزحلقة/مش متسنطرة
      في نص الشاشة - التصميم أصلاً متجاوب وبيكبّر النصوص لوحده، فمش محتاجين زووم يدوي. -->
@@ -95,7 +108,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Tajawal:wght@500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=6">
+<link rel="stylesheet" href="styles.css?v=7">
 </head>
 <body class="min-h-screen">
 <div id="toast-container" aria-live="polite"></div>
@@ -592,6 +605,10 @@
                 </button>
                 <button onclick="switchViewByName('support')" title="الدعم الفني" class="w-8 h-8 rounded-lg btn-ghost flex items-center justify-center text-xs shrink-0">
                     <i class="fa-solid fa-headset"></i>
+                </button>
+                <!-- نقطة 8: زرار تبديل الوضع الفاتح/الداكن -->
+                <button id="theme-toggle-btn" onclick="toggleTheme()" title="التحويل للوضع الفاتح" class="w-8 h-8 rounded-lg btn-ghost flex items-center justify-center text-xs shrink-0">
+                    <i id="theme-toggle-icon" class="fa-solid fa-sun"></i>
                 </button>
                 <select id="lang-picker" class="input-field rounded-lg text-[11px] px-2 py-1.5" onchange="setAppLanguage(this.value)">
                     <option value="ar-EG">العربية</option>
@@ -2015,7 +2032,7 @@
     </div>
 </div>
 
-<script src="app.js?v=10"></script>
+<script src="app.js?v=11"></script>
 <script>
     // ============ تسجيل Service Worker (يخلي الموقع نفسه يفتح أوفلاين) ============
     if ('serviceWorker' in navigator) {

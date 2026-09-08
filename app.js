@@ -891,6 +891,31 @@
         applyI18n();
     }
 
+    // ============ نقطة 8: وضع فاتح (Light Mode) ============
+    // بنحفظ الاختيار في localStorage(yusr_theme) قيمته 'light' أو 'dark' فقط،
+    // وبنضيف/نشيل كلاس light-mode على <html> (نفس الكلاس اللي index.html بيطبّقه
+    // بدري في الـ <head> عشان يمنع وميض الألوان الغلط أول ما الصفحة تفتح).
+    function applyTheme(theme) {
+        const isLight = theme === 'light';
+        document.documentElement.classList.toggle('light-mode', isLight);
+        const icon = document.getElementById('theme-toggle-icon');
+        if (icon) icon.className = isLight ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+        const btn = document.getElementById('theme-toggle-btn');
+        if (btn) btn.title = isLight ? 'التحويل للوضع الداكن' : 'التحويل للوضع الفاتح';
+        const metaTheme = document.querySelector('meta[name="theme-color"]');
+        if (metaTheme) metaTheme.setAttribute('content', isLight ? '#ffffff' : '#000000');
+    }
+    function toggleTheme() {
+        const next = document.documentElement.classList.contains('light-mode') ? 'dark' : 'light';
+        try { localStorage.setItem('yusr_theme', next); } catch (e) {}
+        applyTheme(next);
+    }
+    function initTheme() {
+        let saved = 'dark';
+        try { saved = localStorage.getItem('yusr_theme') || 'dark'; } catch (e) {}
+        applyTheme(saved);
+    }
+
     function getDeviceId() {
         let id = localStorage.getItem('yusr_device_fingerprint');
         if (!id) { id = 'DEV-' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36); localStorage.setItem('yusr_device_fingerprint', id); }
@@ -4516,6 +4541,7 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
     function closeCvModal() { document.getElementById('cv-modal').classList.add('hidden'); }
     function saveCvData() { cvContent = document.getElementById('cv-text-input').value; closeCvModal(); showToast("تم حفظ الخبرات! هتتخصص أسئلة المقابلة بناءً عليها.", 'success'); }
 
+    initTheme();
     checkDeviceTrial();
     updateAccountChip();
     applyI18n();

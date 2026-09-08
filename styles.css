@@ -20,6 +20,41 @@
     .text-slate-500 { color: #ababab !important; }
     .text-slate-600 { color: #8a8a8a !important; }
     .bg-\[\#2a2f36\], .bg-\[\#20252c\], .bg-\[\#262b32\] { background-color: #1a1a1a !important; }
+
+    /* ============ نقطة 8: وضع فاتح (Light Mode) ============
+       بيتفعّل بإضافة كلاس light-mode على <html> — شوف initTheme()/toggleTheme()
+       في app.js اللي بيقروا ويحفظوا الاختيار في localStorage (yusr_theme) عشان
+       الوضع يفضل ثابت بين الزيارات. بنعيد تعريف نفس متغيرات الجذر، وبعدين
+       بنكرر بالظبط نفس العناصر اللي فوق مثبتة بألوان سودا صريحة (قسم
+       "Gemini-style black/white overrides")، عشان الوضع الفاتح يغطي نفس
+       السطح بالظبط ومفيش حتة تفضل سودا وسط باقي الواجهة الفاتحة. */
+    html.light-mode {
+        --bg: #f4f5f7; --panel: #ffffff; --panel-2: #edeff2; --border: #dde1e7;
+        --text: #14161a; --muted: #5a6170; --accent: #2f6fed; --accent-strong:#1a56d6;
+    }
+    html.light-mode body, html.light-mode #sidebar, html.light-mode .input-field,
+    html.light-mode .avatar-upload, html.light-mode .signedin-avatar,
+    html.light-mode .app-toast, html.light-mode .modal-backdrop { color-scheme: light; }
+    html.light-mode #sidebar { background: #ffffff !important; }
+    html.light-mode .input-field, html.light-mode .avatar-upload, html.light-mode .signedin-avatar,
+    html.light-mode .sidebar-search-input, html.light-mode .admin-mini-input { background: #eef0f3 !important; }
+    html.light-mode .nav-item.active { background: #e6ebf3 !important; color: #10131a !important; box-shadow: inset 0 0 0 1px #c7cfdc !important; }
+    html.light-mode .modal-backdrop { background: rgba(20,24,32,.45) !important; }
+    html.light-mode .app-toast { background: #ffffff !important; color: #14161a; box-shadow: 0 8px 24px -6px rgba(16,24,40,.18); }
+    html.light-mode .profile-cover { background: linear-gradient(120deg,#e8ecf2,#ffffff 60%,#eef1f6) !important; }
+    html.light-mode .profile-avatar-lg, html.light-mode .profile-avatar-xl { background: #edeff2 !important; }
+    html.light-mode .profile-hero { background: radial-gradient(120% 140% at 15% 0%, #eef2f8 0%, #f8f9fb 55%, #ffffff 100%) !important; }
+    html.light-mode .membership-card { background: linear-gradient(135deg,#eef1f6 0%,#f7f8fa 55%,#ffffff 100%) !important; border-color: rgba(15,23,42,.12) !important; }
+    html.light-mode .membership-card-id { color: rgba(30,41,59,.6) !important; }
+    html.light-mode .text-slate-100 { color: #14161a !important; }
+    html.light-mode .text-slate-200 { color: #1e232e !important; }
+    html.light-mode .text-slate-300 { color: #333a48 !important; }
+    html.light-mode .text-slate-400 { color: #4a5263 !important; }
+    html.light-mode .text-slate-500 { color: #6b7280 !important; }
+    html.light-mode .text-slate-600 { color: #838a99 !important; }
+    html.light-mode .bg-\[\#2a2f36\], html.light-mode .bg-\[\#20252c\], html.light-mode .bg-\[\#262b32\] { background-color: #edeff2 !important; }
+    html.light-mode ::-webkit-scrollbar-thumb { background: #c7cfdc; }
+    html.light-mode * { scrollbar-color: #c7cfdc transparent; }
     /* Floating animated blobs used behind the header/hero.
        ملحوظة مهمة (فيكس): كان عندها z-index:0 بس مش موقّعة موضع "خلف كل حاجة" مضمون -
        عنصر position:fixed بـ z-index:0 بيتحط في نفس طبقة الرسم بتاعة أي حاجة تانية z-index:0
