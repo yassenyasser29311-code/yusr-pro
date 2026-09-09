@@ -2285,6 +2285,12 @@
     let adminUsersCache = [];
     let secretTapCount = 0;
     let secretTapTimer = null;
+    // ---- حالة إضافية: كاش سجل النشاط (لتصدير CSV)، والشكاوى، والمحادثة المفتوحة في مودال "كل المحادثات" ----
+    let adminActivityLogCache = [];
+    let adminFeedbackCache = [];
+    let adminAllChatsCurrentUid = null;
+    let adminAllChatsListPollTimer = null;
+    let adminAllChatsCurrentPollTimer = null;
 
     // ---- دور "viewer" بيشوف بس من غير ما يعدل أي حاجة (شوف نظام الأدوار في الووركر) ----
     function isViewerRole() { return adminRole === "viewer"; }
@@ -2305,6 +2311,8 @@
         }
         const backupBtn = document.getElementById("admin-backup-btn");
         if (backupBtn) backupBtn.classList.toggle("hidden", isViewerRole());
+        const accountsPanel = document.getElementById("admin-accounts-panel");
+        if (accountsPanel) accountsPanel.classList.toggle("hidden", isViewerRole());
     }
 
     function adminToast(msg, type) {
@@ -2604,28 +2612,351 @@
         }
     };
 
-    // ---- سجل نشاط الأدمن ----
+    // ---- سجل نشاط الأدمن (بند 8: فلترة بنوع العملية + limit مخصّص + عمود "بواسطة" + عدّاد النتائج) ----
     window.adminLoadActivityLog = async function () {
         const tbody = document.getElementById("admin-log-tbody");
         const empty = document.getElementById("admin-log-empty");
+        const countLabel = document.getElementById("admin-log-count-label");
+        const action = document.getElementById("admin-log-filter-action").value;
+        let limit = parseInt(document.getElementById("admin-log-limit").value, 10);
+        if (!Number.isFinite(limit) || limit <= 0) limit = 200;
         try {
-            const data = await adminFetch("/adminActivityLog");
+            const data = await adminFetch("/adminActivityLog", { method: "POST", body: JSON.stringify({ limit, action }) });
             const logs = data.logs || [];
+            adminActivityLogCache = logs; // نحتفظ بيها هنا عشان زرار "تصدير CSV" يصدّر نفس اللي متعروض بالظبط
             tbody.innerHTML = "";
             empty.classList.toggle("hidden", logs.length > 0);
             logs.forEach(entry => {
                 const tr = document.createElement("tr");
                 const time = entry.time ? new Date(entry.time).toLocaleString("ar-EG") : "-";
+                const by = (entry.details && entry.details.by) ? entry.details.by : "-";
                 const details = entry.details ? escapeHtml(JSON.stringify(entry.details)) : "-";
                 tr.innerHTML = `
                     <td class="text-slate-400 whitespace-nowrap">${escapeHtml(time)}</td>
                     <td class="font-bold text-slate-200">${escapeHtml(entry.action || "-")}</td>
+                    <td class="text-slate-400 whitespace-nowrap">${escapeHtml(by)}</td>
                     <td class="text-slate-500" style="max-width:340px; overflow-wrap:anywhere;">${details}</td>`;
+                tbody.appendChild(tr);
+            });
+            const totalKnown = typeof data.total === "number" ? data.total : logs.length;
+            countLabel.textContent = totalKnown > logs.length
+                ? `معروض ${logs.length} من إجمالي ${totalKnown}`
+                : `عدد النتائج: ${logs.length}`;
+        } catch (e) {
+            empty.classList.remove("hidden");
+            empty.textContent = "تعذر تحميل سجل النشاط.";
+            countLabel.textContent = "";
+        }
+    };
+
+    // ---- تصدير سجل النشاط المعروض حاليًا كملف CSV ----
+    window.adminExportActivityLogCsv = function () {
+        if (!adminActivityLogCache.length) { adminToast("مفيش سجل نشاط لتصديره بعد. اضغط \"تحديث السجل\" الأول.", "error"); return; }
+        const headers = ["الوقت", "العملية", "بواسطة", "التفاصيل"];
+        const rows = adminActivityLogCache.map(entry => [
+            entry.time ? new Date(entry.time).toLocaleString("ar-EG") : "",
+            entry.action || "",
+            (entry.details && entry.details.by) ? entry.details.by : "",
+            entry.details ? JSON.stringify(entry.details) : ""
+        ]);
+        const csvEscape = v => `"${String(v).replace(/"/g, '""')}"`;
+        const csv = "\uFEFF" + [headers, ...rows].map(r => r.map(csvEscape).join(",")).join("\r\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `yusr-activity-log-${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(a); a.click(); a.remove();
+    };
+
+    // ================================================================
+    // ============== بند 1: الشكاوى والاقتراحات (Feedback) ==============
+    // ================================================================
+    window.adminLoadFeedback = async function () {
+        const tbody = document.getElementById("admin-feedback-tbody");
+        const empty = document.getElementById("admin-feedback-empty");
+        const badge = document.getElementById("admin-feedback-badge");
+        try {
+            const data = await adminFetch("/adminListFeedback");
+            const items = data.items || [];
+            adminFeedbackCache = items;
+            tbody.innerHTML = "";
+            empty.classList.toggle("hidden", items.length > 0);
+            const readOnly = isViewerRole();
+            items.forEach(f => {
+                const tr = document.createElement("tr");
+                if (!f.adminRead) tr.style.background = "rgba(138,180,248,.06)";
+                const time = f.createdAt ? new Date(f.createdAt).toLocaleString("ar-EG") : "-";
+                tr.innerHTML = `
+                    <td class="text-slate-300 whitespace-nowrap">${escapeHtml(f.type || "-")}</td>
+                    <td class="text-slate-400" dir="ltr" style="max-width:140px; overflow-wrap:anywhere;">${escapeHtml(f.contact || "-")}</td>
+                    <td class="text-slate-300" style="max-width:280px; overflow-wrap:anywhere;">${escapeHtml(f.message || "")}</td>
+                    <td class="text-slate-500 whitespace-nowrap">${escapeHtml(time)}</td>
+                    <td>
+                        <div class="flex flex-wrap gap-1">
+                            <button class="admin-mini-btn" ${readOnly ? "disabled" : ""} onclick="adminFeedbackAction('${f.id}','${f.adminRead ? "markUnread" : "markRead"}')">${f.adminRead ? "غير مقروء" : "علّم كمقروء"}</button>
+                            <button class="admin-mini-btn hover:bg-red-500/10 hover:text-red-300" ${readOnly ? "disabled" : ""} onclick="adminFeedbackAction('${f.id}','delete')"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </td>`;
+                tbody.appendChild(tr);
+            });
+            const unread = data.unreadCount || 0;
+            badge.classList.toggle("hidden", unread === 0);
+            badge.textContent = unread + " جديد";
+        } catch (e) {
+            empty.classList.remove("hidden");
+            empty.textContent = "تعذر تحميل الشكاوى.";
+        }
+    };
+
+    window.adminFeedbackAction = async function (id, action) {
+        if (isViewerRole()) { adminToast("دور المشاهدة مش مسموح له بالتعديل.", "error"); return; }
+        try {
+            await adminFetch("/adminFeedbackAction", { method: "POST", body: JSON.stringify({ id, action }) });
+            adminLoadFeedback();
+        } catch (e) {
+            adminToast("تعذر تنفيذ الإجراء.", "error");
+        }
+    };
+
+    // ================================================================
+    // ============== بند 5: منحنى نمو المستخدمين/الإيرادات ==============
+    // ================================================================
+    window.adminRenderTrendChart = async function () {
+        const svg = document.getElementById("admin-trend-chart");
+        const emptyEl = document.getElementById("admin-trend-empty");
+        const metric = document.getElementById("admin-trend-metric").value;
+        try {
+            const data = await adminFetch("/adminStatsHistory", { method: "POST", body: JSON.stringify({ days: 30 }) });
+            const history = data.history || [];
+            if (history.length < 2) {
+                svg.innerHTML = "";
+                emptyEl.classList.remove("hidden");
+                return;
+            }
+            emptyEl.classList.add("hidden");
+            const values = history.map(h => Number(h[metric]) || 0);
+            const maxV = Math.max(...values, 1);
+            const minV = Math.min(...values, 0);
+            const W = 640, H = 180, PAD = 26;
+            const stepX = values.length > 1 ? (W - PAD * 2) / (values.length - 1) : 0;
+            const scaleY = v => H - PAD - ((v - minV) / ((maxV - minV) || 1)) * (H - PAD * 2);
+            const points = values.map((v, i) => `${PAD + i * stepX},${scaleY(v)}`).join(" ");
+            const accent = "#8ab4f8";
+            let svgContent = `<polyline points="${points}" fill="none" stroke="${accent}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></polyline>`;
+            const labelEvery = Math.max(1, Math.ceil(values.length / 6));
+            values.forEach((v, i) => {
+                const x = PAD + i * stepX, y = scaleY(v);
+                svgContent += `<circle cx="${x}" cy="${y}" r="2.5" fill="${accent}"></circle>`;
+                if (i === 0 || i === values.length - 1 || i % labelEvery === 0) {
+                    svgContent += `<text x="${x}" y="${H - 6}" font-size="9" fill="#94a3b8" text-anchor="middle">${escapeHtml(String(history[i].date || "").slice(5))}</text>`;
+                }
+            });
+            svgContent += `<text x="${PAD}" y="14" font-size="10" fill="#94a3b8">أعلى قيمة: ${maxV.toLocaleString("ar-EG")}</text>`;
+            svg.innerHTML = svgContent;
+        } catch (e) {
+            emptyEl.classList.remove("hidden");
+            emptyEl.textContent = "تعذر تحميل بيانات المنحنى.";
+        }
+    };
+
+    window.adminRecordStatsNow = async function () {
+        if (isViewerRole()) { adminToast("دور المشاهدة مش مسموح له بهذا الإجراء.", "error"); return; }
+        try {
+            await adminFetch("/adminRecordStatsNow");
+            adminToast("اتسجلت لقطة إحصائيات جديدة لليوم.", "success");
+            adminRenderTrendChart();
+        } catch (e) {
+            adminToast("تعذر تسجيل اللقطة.", "error");
+        }
+    };
+
+    // ================================================================
+    // ============== بند 6: إدارة حسابات الأدمن الإضافية ==============
+    // ================================================================
+    window.adminLoadAccounts = async function () {
+        if (isViewerRole()) return; // اللوحة نفسها متخفية عن الـ viewer برضه، ده مجرد حماية إضافية
+        const tbody = document.getElementById("admin-accounts-tbody");
+        const empty = document.getElementById("admin-accounts-empty");
+        try {
+            const data = await adminFetch("/adminListAdmins");
+            const admins = data.admins || [];
+            tbody.innerHTML = "";
+            empty.classList.toggle("hidden", admins.length > 0);
+            admins.forEach(a => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td class="font-bold text-slate-200">${escapeHtml(a.username)}</td>
+                    <td>${a.role === "superadmin" ? "صلاحية كاملة" : "مشاهدة فقط"}</td>
+                    <td class="text-slate-500">${escapeHtml(a.createdBy || "-")}</td>
+                    <td><button class="admin-mini-btn hover:bg-red-500/10 hover:text-red-300" onclick="adminDeleteAccount('${a.id}', ${JSON.stringify(a.username)})"><i class="fa-solid fa-trash"></i> حذف</button></td>`;
                 tbody.appendChild(tr);
             });
         } catch (e) {
             empty.classList.remove("hidden");
-            empty.textContent = "تعذر تحميل سجل النشاط.";
+            empty.textContent = "تعذر تحميل حسابات الأدمن.";
+        }
+    };
+
+    window.adminCreateAccount = async function () {
+        if (isViewerRole()) { adminToast("دور المشاهدة مش مسموح له بهذا الإجراء.", "error"); return; }
+        const usernameInput = document.getElementById("admin-newacc-username");
+        const passwordInput = document.getElementById("admin-newacc-password");
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value;
+        const role = document.getElementById("admin-newacc-role").value;
+        if (!username || username.length < 3) { adminToast("اكتب اسم مستخدم صحيح (3 أحرف على الأقل).", "error"); return; }
+        if (!password || password.length < 6) { adminToast("كلمة المرور لازم تكون 6 أحرف على الأقل.", "error"); return; }
+        try {
+            await adminFetch("/adminCreateAdmin", { method: "POST", body: JSON.stringify({ username, password, role }) });
+            adminToast("اتضاف حساب الأدمن بنجاح.", "success");
+            usernameInput.value = "";
+            passwordInput.value = "";
+            adminLoadAccounts();
+        } catch (e) {
+            const reason = (e && e.data && e.data.error) || "";
+            const msgMap = {
+                username_taken: "اسم المستخدم ده مستخدم بالفعل.",
+                username_reserved: "اسم المستخدم ده محجوز.",
+                weak_password: "كلمة المرور دي ضعيفة.",
+                invalid_username: "اسم المستخدم غير صالح."
+            };
+            adminToast(msgMap[reason] || "تعذر إضافة الحساب.", "error");
+        }
+    };
+
+    window.adminDeleteAccount = async function (id, username) {
+        if (isViewerRole()) { adminToast("دور المشاهدة مش مسموح له بهذا الإجراء.", "error"); return; }
+        const ok = await adminConfirm(`متأكد إنك عايز تحذف حساب الأدمن "${username}"؟`);
+        if (!ok) return;
+        try {
+            await adminFetch("/adminDeleteAdmin", { method: "POST", body: JSON.stringify({ id }) });
+            adminToast("اتحذف الحساب.", "success");
+            adminLoadAccounts();
+        } catch (e) {
+            adminToast("تعذر حذف الحساب.", "error");
+        }
+    };
+
+    // ================================================================
+    // ============== بند 4: رسالة جماعية (Broadcast) ==============
+    // ================================================================
+    window.adminSendBroadcast = async function () {
+        if (isViewerRole()) { adminToast("دور المشاهدة مش مسموح له بإرسال رسائل جماعية.", "error"); return; }
+        const target = document.getElementById("admin-broadcast-target").value;
+        const textInput = document.getElementById("admin-broadcast-text");
+        const text = textInput.value.trim();
+        if (!text) { adminToast("اكتب نص الرسالة الأول.", "error"); return; }
+        const targetLabel = target === "all" ? "كل المستخدمين" : `مستخدمي باقة "${target}"`;
+        const ok = await adminConfirm(`متأكد إنك عايز تبعت الرسالة دي لـ ${targetLabel}؟`);
+        if (!ok) return;
+        try {
+            const data = await adminFetch("/adminBroadcast", { method: "POST", body: JSON.stringify({ target, text }) });
+            adminToast(`اتبعتت الرسالة لـ ${data.sent} مستخدم.`, "success");
+            textInput.value = "";
+        } catch (e) {
+            const reason = (e && e.data && e.data.error) || "";
+            adminToast(reason === "no_matching_users" ? "مفيش مستخدمين مطابقين للفئة دي." : "تعذر إرسال الرسالة.", "error");
+        }
+    };
+
+    // ================================================================
+    // ============== نظرة عامة على كل المحادثات (Global Chat Inbox) ==============
+    // ================================================================
+    window.adminOpenAllChats = async function () {
+        document.getElementById("admin-allchats-modal").classList.remove("hidden");
+        document.getElementById("admin-allchats-current-name").textContent = "اختر محادثة من القائمة";
+        document.getElementById("admin-allchats-log").innerHTML = "";
+        adminAllChatsCurrentUid = null;
+        await adminAllChatsLoadList();
+        clearInterval(adminAllChatsListPollTimer);
+        adminAllChatsListPollTimer = setInterval(adminAllChatsLoadList, 15000);
+    };
+
+    window.adminCloseAllChats = function () {
+        document.getElementById("admin-allchats-modal").classList.add("hidden");
+        clearInterval(adminAllChatsListPollTimer);
+        clearInterval(adminAllChatsCurrentPollTimer);
+        adminAllChatsCurrentUid = null;
+    };
+
+    window.adminAllChatsLoadList = async function () {
+        const listEl = document.getElementById("admin-allchats-list");
+        const emptyEl = document.getElementById("admin-allchats-empty");
+        const badge = document.getElementById("admin-allchats-badge");
+        try {
+            const data = await adminFetch("/adminListChats");
+            const conversations = data.conversations || [];
+            emptyEl.classList.toggle("hidden", conversations.length > 0);
+            const totalUnread = conversations.reduce((sum, c) => sum + (c.unreadFromUser || 0), 0);
+            badge.classList.toggle("hidden", totalUnread === 0);
+            badge.textContent = totalUnread;
+            listEl.innerHTML = conversations.map(c => {
+                const time = c.lastTime ? new Date(c.lastTime).toLocaleString("ar-EG", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" }) : "";
+                const activeStyle = c.uid === adminAllChatsCurrentUid ? "background:rgba(138,180,248,.1);" : "";
+                return `<button type="button" class="w-full text-right p-2.5 hover:bg-[var(--panel)] transition-colors" style="${activeStyle}" onclick="adminAllChatsOpen('${c.uid}')">
+                    <div class="flex items-center justify-between gap-2">
+                        <p class="font-bold text-slate-200 text-[11px]">${escapeHtml(c.displayName || c.email || c.uid)}</p>
+                        ${c.unreadFromUser ? `<span class="admin-badge admin-badge-suspended" style="font-size:.55rem;">${c.unreadFromUser}</span>` : ""}
+                    </div>
+                    <p class="text-slate-500 text-[10px] truncate">${escapeHtml(c.lastMessage || "")}</p>
+                    <p class="text-slate-600 text-[9px] mt-0.5">${escapeHtml(time)}</p>
+                </button>`;
+            }).join("");
+        } catch (e) {
+            emptyEl.classList.remove("hidden");
+            emptyEl.textContent = "تعذر تحميل المحادثات.";
+        }
+    };
+
+    window.adminAllChatsOpen = async function (uid) {
+        adminAllChatsCurrentUid = uid;
+        const u = adminFindUser(uid);
+        document.getElementById("admin-allchats-current-name").textContent = (u && (u.displayName || u.email)) || uid;
+        await adminAllChatsLoadCurrent();
+        clearInterval(adminAllChatsCurrentPollTimer);
+        adminAllChatsCurrentPollTimer = setInterval(adminAllChatsLoadCurrent, 8000);
+        adminAllChatsLoadList(); // عشان نحدّث الهايلايت وعدّاد الغير مقروء في القائمة
+    };
+
+    window.adminAllChatsLoadCurrent = async function () {
+        if (!adminAllChatsCurrentUid) return;
+        const uid = adminAllChatsCurrentUid;
+        try {
+            const data = await adminFetch("/chatPoll", { method: "POST", body: JSON.stringify({ uid }) });
+            if (adminAllChatsCurrentUid !== uid) return; // اتغيّرت المحادثة المفتوحة قبل ما الرد يوصل
+            const log = document.getElementById("admin-allchats-log");
+            const messages = data.messages || [];
+            if (!messages.length) {
+                log.innerHTML = '<p class="text-slate-500 text-center">لسه مفيش أي رسائل في المحادثة دي.</p>';
+                return;
+            }
+            log.innerHTML = messages.map(m => {
+                const isAdmin = m.from === "admin";
+                const time = m.createdAt ? new Date(m.createdAt).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" }) : "";
+                return `<div style="text-align:${isAdmin ? "left" : "right"};">
+                    <span class="inline-block rounded-lg px-2 py-1" style="max-width:85%; background:${isAdmin ? "var(--accent-strong)" : "var(--panel-2)"}; color:${isAdmin ? "#08131f" : "inherit"};">
+                        ${escapeHtml(m.text || "")}
+                    </span>
+                    <div class="text-[9px] text-slate-500 mt-0.5">${isAdmin ? "أنت (الدعم)" : "المستخدم"} · ${time}</div>
+                </div>`;
+            }).join("");
+            log.scrollTop = log.scrollHeight;
+        } catch (e) { /* فشل التحميل مش خطير - هيحاول تاني في البولينج الجاي */ }
+    };
+
+    window.adminAllChatsSend = async function () {
+        if (!adminAllChatsCurrentUid) { adminToast("اختر محادثة من القائمة الأول.", "error"); return; }
+        if (isViewerRole()) { adminToast("دور المشاهدة مش مسموح له بإرسال رسائل.", "error"); return; }
+        const input = document.getElementById("admin-allchats-input");
+        const text = input.value.trim();
+        if (!text) return;
+        input.value = "";
+        try {
+            await adminFetch("/chatSend", { method: "POST", body: JSON.stringify({ uid: adminAllChatsCurrentUid, text }) });
+            adminAllChatsLoadCurrent();
+        } catch (e) {
+            adminToast("تعذر إرسال الرسالة.", "error");
+            input.value = text;
         }
     };
 
