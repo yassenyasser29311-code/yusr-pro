@@ -170,7 +170,7 @@ export default {
     if (url.pathname === "/adminMe") {
       const admin = await requireAdminSession(request, env);
       if (!admin.ok) return json({ error: admin.error }, 401, corsHeaders);
-      return json({ ok: true, role: admin.role }, 200, corsHeaders);
+      return json({ ok: true, role: admin.role, name: admin.name }, 200, corsHeaders);
     }
     // ---- باقي مسارات لوحة الأدمن (كلها بتتحقق من جلسة الأدمن جوه نفسها) ----
     if (url.pathname === "/adminListUsers") {
@@ -196,6 +196,38 @@ export default {
     }
     if (url.pathname === "/adminReviewSubscriptionRequest") {
       return handleAdminReviewSubscriptionRequest(request, env, corsHeaders, ctx);
+    }
+    // ---- الشكاوى والاقتراحات (feedback) اللي المستخدمين بيبعتوها من فورم "عندك شكوى أو استفسار" ----
+    if (url.pathname === "/adminListFeedback") {
+      return handleAdminListFeedback(request, env, corsHeaders);
+    }
+    if (url.pathname === "/adminFeedbackAction") {
+      return handleAdminFeedbackAction(request, env, corsHeaders, ctx);
+    }
+    // ---- رسالة جماعية (Broadcast) لكل المستخدمين أو لفئة معيّنة (باقة معيّنة) ----
+    if (url.pathname === "/adminBroadcast") {
+      return handleAdminBroadcast(request, env, corsHeaders, ctx);
+    }
+    // ---- تاريخ الإحصائيات (نمو المستخدمين/الإيرادات يوميًا) للرسم البياني ----
+    if (url.pathname === "/adminStatsHistory") {
+      return handleAdminStatsHistory(request, env, corsHeaders);
+    }
+    if (url.pathname === "/adminRecordStatsNow") {
+      return handleAdminRecordStatsNow(request, env, corsHeaders, ctx);
+    }
+    // ---- إدارة حسابات الأدمن الإضافية (تُخزّن في Firebase، بجانب حساب superadmin/viewer الأساسي في الـ secrets) ----
+    if (url.pathname === "/adminListAdmins") {
+      return handleAdminListAdmins(request, env, corsHeaders);
+    }
+    if (url.pathname === "/adminCreateAdmin") {
+      return handleAdminCreateAdmin(request, env, corsHeaders, ctx);
+    }
+    if (url.pathname === "/adminDeleteAdmin") {
+      return handleAdminDeleteAdmin(request, env, corsHeaders, ctx);
+    }
+    // ---- نظرة عامة على كل محادثات الدعم مع كل المستخدمين في مكان واحد ----
+    if (url.pathname === "/adminListChats") {
+      return handleAdminListChats(request, env, corsHeaders);
     }
 
     // ---- شات مباشر بين الأدمن ومستخدم بعينه: الأدمن بيبعت من لوحة التحكم
@@ -291,6 +323,9 @@ export default {
   // متظبطين، الـ trigger ميعملش حاجة غير إنه يسجّل في اللوج بس (مأمن 100%).
   async scheduled(event, env, ctx) {
     ctx.waitUntil(runScheduledBackup(env));
+    // بند 5: لقطة يومية من الإحصائيات (عدد المستخدمين/توزيع الباقات/الإيرادات
+    // التراكمية) عشان نقدر نرسم بيها منحنى النمو بمرور الوقت في لوحة الأدمن.
+    ctx.waitUntil(recordDailyStats(env));
   }
 };
 
@@ -801,6 +836,142 @@ function timingSafeEqual(a, b) {
   return diff === 0;
 }
 
+// ============================== حسابات أدمن إضافية (Dynamic Admins) ==============================
+// بند 6: بدل ما تضطر تدخل تعدّل secrets الووركر يدويًا كل ما عايز تضيف أدمن
+// جديد أو تغيّر باسورد، دلوقتي في مسارات (/adminListAdmins, /adminCreateAdmin,
+// /adminDeleteAdmin) بتدير حسابات إضافية متخزّنة في Firebase تحت "adminAccounts".
+// الباسورد بيتخزن مشفّر (PBKDF2-SHA256 + salt عشوائي) مش نص صريح أبدًا. الحساب
+// الأساسي (superadmin/viewer المتظبطين كـ secrets) بيفضلوا شغالين زي ما هم -
+// دول بس إضافة اختيارية فوقهم، ومفيش أي تغيير في سلوك تسجيل الدخول القديم.
+async function hashPassword(password, saltB64) {
+  const enc = new TextEncoder();
+  const salt = saltB64
+    ? base64UrlDecodeToBytes(saltB64) // نعيد استخدام دالة فك الـ base64url الموجودة فوق أصلاً
+    : crypto.getRandomValues(new Uint8Array(16));
+  const keyMaterial = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" },
+    keyMaterial,
+    256
+  );
+  return {
+    salt: saltB64 || base64UrlEncodeBytes(salt),
+    hash: base64UrlEncodeBytes(new Uint8Array(bits))
+  };
+}
+async function verifyPassword(password, saltB64, expectedHashB64) {
+  try {
+    const { hash } = await hashPassword(password, saltB64);
+    return timingSafeEqual(hash, expectedHashB64);
+  } catch (e) {
+    return false;
+  }
+}
+async function findDynamicAdminByUsername(username, env) {
+  const all = (await fbAdminGet("adminAccounts", env)) || {};
+  for (const [id, acc] of Object.entries(all)) {
+    if (acc && timingSafeEqual(acc.username || "", username)) {
+      return { id, ...acc };
+    }
+  }
+  return null;
+}
+
+async function handleAdminListAdmins(request, env, corsHeaders) {
+  const admin = await requireSuperAdmin(request, env);
+  if (!admin.ok) return json({ error: admin.error }, admin.error === "forbidden_role" ? 403 : 401, corsHeaders);
+  if (!env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    return json({ error: "firebase_service_account_not_configured" }, 500, corsHeaders);
+  }
+  try {
+    const raw = (await fbAdminGet("adminAccounts", env)) || {};
+    // مبنرجّعش الباسورد المشفّر ولا الـ salt للواجهة - مفيش داعي أصلاً
+    const admins = Object.entries(raw).map(([id, a]) => ({
+      id,
+      username: a.username || "",
+      role: a.role === "superadmin" ? "superadmin" : "viewer",
+      createdAt: a.createdAt || null,
+      createdBy: a.createdBy || null
+    }));
+    return json({ ok: true, admins }, 200, corsHeaders);
+  } catch (e) {
+    console.error("handleAdminListAdmins فشل:", e);
+    return json({ error: "internal_error" }, 500, corsHeaders);
+  }
+}
+
+async function handleAdminCreateAdmin(request, env, corsHeaders, ctx) {
+  const admin = await requireSuperAdmin(request, env);
+  if (!admin.ok) return json({ error: admin.error }, admin.error === "forbidden_role" ? 403 : 401, corsHeaders);
+  if (!env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    return json({ error: "firebase_service_account_not_configured" }, 500, corsHeaders);
+  }
+  let body;
+  try {
+    body = await request.json();
+  } catch (e) {
+    return json({ error: "invalid_json" }, 400, corsHeaders);
+  }
+  const username = typeof body?.username === "string" ? body.username.trim() : "";
+  const password = typeof body?.password === "string" ? body.password : "";
+  const role = body?.role === "superadmin" ? "superadmin" : "viewer";
+  if (!username || username.length < 3 || username.length > 60) {
+    return json({ error: "invalid_username" }, 400, corsHeaders);
+  }
+  if (!password || password.length < 6 || password.length > 200) {
+    return json({ error: "weak_password" }, 400, corsHeaders);
+  }
+  // مايبقاش نفس اسم حساب الـ superadmin/viewer الأساسي (المتظبط كـ secret) ولا نفس
+  // اسم حساب إضافي موجود بالفعل - عشان مايحصلش تعارض وقت تسجيل الدخول
+  const expectedUsername = env.ADMIN_USERNAME || DEFAULT_ADMIN_USERNAME;
+  if (timingSafeEqual(username, expectedUsername) ||
+      (env.ADMIN_VIEWER_USERNAME && timingSafeEqual(username, env.ADMIN_VIEWER_USERNAME))) {
+    return json({ error: "username_reserved" }, 400, corsHeaders);
+  }
+  try {
+    const existing = await findDynamicAdminByUsername(username, env);
+    if (existing) return json({ error: "username_taken" }, 409, corsHeaders);
+
+    const { salt, hash } = await hashPassword(password, null);
+    const id = crypto.randomUUID();
+    await fbAdminPut(`adminAccounts/${id}`, {
+      username, role, salt, hash,
+      createdAt: Date.now(),
+      createdBy: admin.name || admin.role
+    }, env);
+    if (ctx) ctx.waitUntil(logAdminActivity(env, "admin_account_created", { username, role, by: admin.name || admin.role }));
+    return json({ ok: true, id }, 200, corsHeaders);
+  } catch (e) {
+    console.error("handleAdminCreateAdmin فشل:", e);
+    return json({ error: "internal_error" }, 500, corsHeaders);
+  }
+}
+
+async function handleAdminDeleteAdmin(request, env, corsHeaders, ctx) {
+  const admin = await requireSuperAdmin(request, env);
+  if (!admin.ok) return json({ error: admin.error }, admin.error === "forbidden_role" ? 403 : 401, corsHeaders);
+  if (!env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    return json({ error: "firebase_service_account_not_configured" }, 500, corsHeaders);
+  }
+  let body;
+  try {
+    body = await request.json();
+  } catch (e) {
+    return json({ error: "invalid_json" }, 400, corsHeaders);
+  }
+  const id = typeof body?.id === "string" ? body.id.trim() : "";
+  if (!id) return json({ error: "invalid_request" }, 400, corsHeaders);
+  try {
+    const existing = await fbAdminGet(`adminAccounts/${id}`, env);
+    await fbAdminPut(`adminAccounts/${id}`, null, env);
+    if (ctx) ctx.waitUntil(logAdminActivity(env, "admin_account_deleted", { username: existing?.username || id, by: admin.name || admin.role }));
+    return json({ ok: true }, 200, corsHeaders);
+  } catch (e) {
+    console.error("handleAdminDeleteAdmin فشل:", e);
+    return json({ error: "internal_error" }, 500, corsHeaders);
+  }
+}
+
 // ---- الخطوة 1: اسم المستخدم + الباسورد ----
 async function handleAdminLogin(request, env, corsHeaders) {
   let body;
@@ -831,7 +1002,27 @@ async function handleAdminLogin(request, env, corsHeaders) {
       timingSafeEqual(password, env.ADMIN_VIEWER_PASSWORD);
   }
 
-  if (!superOk && !viewerOk) {
+  let role = null;
+  let name = null;
+  if (superOk) { role = "superadmin"; name = username || "الأدمن الرئيسي"; }
+  else if (viewerOk) { role = "viewer"; name = username || "مشاهد"; }
+
+  // ---- حسابات أدمن إضافية (بند 6: تتضاف/تتحذف من لوحة التحكم نفسها من غير
+  // ما تلمس secrets الووركر) — متخزّنة في Firebase تحت "adminAccounts" بباسورد
+  // مشفّر (PBKDF2)، شوف handleAdminCreateAdmin تحت. ----
+  if (!role && env.FIREBASE_SERVICE_ACCOUNT_JSON && username) {
+    try {
+      const dynamicAdmin = await findDynamicAdminByUsername(username, env);
+      if (dynamicAdmin && await verifyPassword(password, dynamicAdmin.salt, dynamicAdmin.hash)) {
+        role = dynamicAdmin.role === "superadmin" ? "superadmin" : "viewer";
+        name = dynamicAdmin.username;
+      }
+    } catch (e) {
+      console.warn("فحص حسابات الأدمن الإضافية فشل:", e);
+    }
+  }
+
+  if (!role) {
     await registerAdminLoginFail(env, ip);
     // رد عام مقصود — مش بيفرّق بين "يوزر غلط" و"باسورد غلط"، وبنفس شكل رد
     // اللوجين العادي الفاشل عشان محدش يعرف إنه لمس مسار مختلف خالص
@@ -844,9 +1035,8 @@ async function handleAdminLogin(request, env, corsHeaders) {
     return json({ error: "server_not_configured" }, 500, corsHeaders);
   }
 
-  const role = superOk ? "superadmin" : "viewer";
   const confirmToken = crypto.randomUUID();
-  await env.RATE_LIMIT_KV.put(`adminPending:${confirmToken}`, JSON.stringify({ role }), {
+  await env.RATE_LIMIT_KV.put(`adminPending:${confirmToken}`, JSON.stringify({ role, name }), {
     expirationTtl: ADMIN_PENDING_TTL_SECONDS
   });
 
@@ -890,10 +1080,12 @@ async function handleAdminConfirm(request, env, corsHeaders, ctx) {
   await env.RATE_LIMIT_KV.delete(`adminPending:${confirmToken}`);
 
   let role = "superadmin";
+  let name = "الأدمن الرئيسي";
   try {
     const pending = JSON.parse(pendingRaw);
     if (pending && (pending.role === "superadmin" || pending.role === "viewer")) {
       role = pending.role;
+      if (typeof pending.name === "string" && pending.name) name = pending.name;
     }
   } catch (e) {
     // توكنات قديمة قبل إضافة نظام الأدوار كانت بتتخزن كسترينج "1" بس —
@@ -906,17 +1098,19 @@ async function handleAdminConfirm(request, env, corsHeaders, ctx) {
   const sessionToken = crypto.randomUUID();
   await env.RATE_LIMIT_KV.put(
     `adminSession:${sessionToken}`,
-    JSON.stringify({ role, createdAt: Date.now() }),
+    JSON.stringify({ role, name, createdAt: Date.now() }),
     { expirationTtl: ADMIN_SESSION_TTL_SECONDS }
   );
 
   // سجل نشاط + إشعار فوري — بعد الرد عشان ميبطّئش الدخول (ctx.waitUntil)
+  // (بند 7: بقى بيسجل "مين" فعليًا دخل، مش بس دوره، عشان لو فيه أكتر من حساب
+  // بنفس الصلاحية تقدر تفرّق بينهم في سجل النشاط)
   if (ctx) {
-    ctx.waitUntil(logAdminActivity(env, "admin_login", { ip, role }));
-    ctx.waitUntil(notifyRealAdmin(env, ip, role));
+    ctx.waitUntil(logAdminActivity(env, "admin_login", { ip, role, by: name }));
+    ctx.waitUntil(notifyRealAdmin(env, ip, role, name));
   }
 
-  return json({ adminToken: sessionToken, role }, 200, corsHeaders);
+  return json({ adminToken: sessionToken, role, name }, 200, corsHeaders);
 }
 
 // ---- التحقق من جلسة أدمن قائمة (لأي مسار لوحة أدمن جاي في الخطوة الجاية) ----
@@ -932,7 +1126,7 @@ async function requireAdminSession(request, env) {
   } catch (e) {
     return { ok: false, error: "invalid_session_data" };
   }
-  return { ok: true, role: session.role || "admin", token };
+  return { ok: true, role: session.role || "admin", name: session.name || null, token };
 }
 
 // ---- سجل نشاط الأدمن (Activity Log) — بيتسجل في Firebase RTDB ----
@@ -965,16 +1159,17 @@ async function logAdminActivity(env, action, details) {
 // شغّالة بس لو ضبطت ADMIN_NOTIFY_WEBHOOK كـ secret (رابط Webhook من Discord
 // أو Slack أو Telegram — أي حد فيهم بيقبل POST بشكل JSON بسيط زي ده).
 // لو مش متظبط، الدخول لسه بيشتغل عادي، بس من غير إشعار.
-async function notifyRealAdmin(env, ip, role) {
+async function notifyRealAdmin(env, ip, role, name) {
   if (!env.ADMIN_NOTIFY_WEBHOOK) return;
   const roleLabel = role === "viewer" ? "أدمن (مشاهدة فقط)" : "أدمن (صلاحية كاملة)";
+  const who = name ? ` — الاسم: ${name}` : "";
   try {
     await fetch(env.ADMIN_NOTIFY_WEBHOOK, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        content: `⚠️ تسجيل دخول لحساب ${roleLabel} — الوقت: ${new Date().toISOString()} — IP: ${ip}`,
-        text: `⚠️ تسجيل دخول لحساب ${roleLabel} — الوقت: ${new Date().toISOString()} — IP: ${ip}`
+        content: `⚠️ تسجيل دخول لحساب ${roleLabel}${who} — الوقت: ${new Date().toISOString()} — IP: ${ip}`,
+        text: `⚠️ تسجيل دخول لحساب ${roleLabel}${who} — الوقت: ${new Date().toISOString()} — IP: ${ip}`
       })
     });
   } catch (e) {
@@ -1020,7 +1215,9 @@ async function requireSuperAdmin(request, env) {
 // من الصفر في كل مرة (تولّد التوكن فيه توقيع RSA وطلب شبكة زيادة).
 let _cachedFirebaseAccessToken = null; // { token, expiresAt(seconds) }
 const GOOGLE_OAUTH_TOKEN_URL = "https://oauth2.googleapis.com/token";
-const FIREBASE_DB_OAUTH_SCOPE = "https://www.googleapis.com/auth/firebase.database https://www.googleapis.com/auth/userinfo.email";
+// بند 3: ضفنا سكوب identitytoolkit عشان نقدر نمسح حساب الدخول (Firebase Auth)
+// نفسه مش بس بياناته في قاعدة البيانات - شوف deleteFirebaseAuthAccount تحت.
+const FIREBASE_DB_OAUTH_SCOPE = "https://www.googleapis.com/auth/firebase.database https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/identitytoolkit";
 
 function base64UrlEncodeBytes(bytes) {
   let binary = "";
@@ -1122,10 +1319,48 @@ async function fbAdminPut(pathNoExt, value, env) {
   if (!res.ok) throw new Error("firebase_put_failed:" + res.status);
 }
 
+// ---- بند 3: مسح حساب الدخول (Firebase Authentication) نفسه، مش بس نوده في
+// قاعدة البيانات - عن طريق Identity Toolkit Admin REST API. لو نجحت، الشخص
+// مش هيقدر يسجّل دخول تاني بنفس الإيميل/حساب جوجل القديم خالص (ولو سجّل من
+// جديد هيكون حساب جديد فعليًا من الصفر، مش استرجاع للحساب المحذوف). لو فشلت
+// (مثلاً صلاحيات الـ Service Account ناقصة)، بنرجّع ok:false من غير ما نوقف
+// عملية حذف بيانات قاعدة البيانات اللي أصلاً حصلت بنجاح. ----
+async function deleteFirebaseAuthAccount(uid, env) {
+  try {
+    const token = await getFirebaseAccessToken(env);
+    const res = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/accounts:delete`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ localId: uid })
+      }
+    );
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      console.warn("deleteFirebaseAuthAccount فشل:", res.status, detail.slice(0, 300));
+      return { ok: false };
+    }
+    return { ok: true };
+  } catch (e) {
+    console.warn("deleteFirebaseAuthAccount استثناء:", e);
+    return { ok: false };
+  }
+}
+
 // اليوزر بيتعتبر "أونلاين" لو بعت نبضة /onlinePing خلال آخر دقيقتين
 const ONLINE_THRESHOLD_MS = 2 * 60 * 1000;
 
 // ---- GET (POST فعليًا) كل المستخدمين + حالتهم ----
+// بند 2: بقت بتدعم Pagination حقيقي عن طريق query الـ Firebase REST نفسه
+// (orderBy="$key"&limitToFirst) بدل ما تجيب كل قاعدة اليوزرز مرة واحدة في كل
+// طلب. ابعت { limit, cursor } في الـ body: cursor هو آخر uid وصلتله في الصفحة
+// اللي فاتت (بترجعه الاستجابة كـ nextCursor)؛ من غير أي body، بترجع أول صفحة
+// بحجم افتراضي 200 (زي ما كان يرجّع كل حاجة قبل كده تقريبًا، من غير ما تكسر
+// أي كود قديم كان بيستخدم المسار من غير body أصلاً).
+const ADMIN_USERS_DEFAULT_PAGE_SIZE = 200;
+const ADMIN_USERS_MAX_PAGE_SIZE = 1000;
+
 async function handleAdminListUsers(request, env, corsHeaders) {
   const admin = await requireAdminSession(request, env);
   if (!admin.ok) return json({ error: admin.error }, 401, corsHeaders);
@@ -1133,12 +1368,42 @@ async function handleAdminListUsers(request, env, corsHeaders) {
     return json({ error: "firebase_service_account_not_configured" }, 500, corsHeaders);
   }
 
+  let body = {};
+  try { body = await request.json(); } catch (e) { body = {}; }
+  let limit = parseInt(body?.limit, 10);
+  if (!Number.isFinite(limit) || limit <= 0) limit = ADMIN_USERS_DEFAULT_PAGE_SIZE;
+  limit = Math.min(limit, ADMIN_USERS_MAX_PAGE_SIZE);
+  const cursor = typeof body?.cursor === "string" && body.cursor ? body.cursor : null;
+
   try {
-    const usersRaw = (await fbAdminGet("users", env)) || {};
+    const token = await getFirebaseAccessToken(env);
+    // بنطلب limit+1 عشان نعرف هل فيه صفحة تانية بعد دي ولا لأ من غير طلب إضافي
+    let url = `${FIREBASE_DB_URL}/users.json?access_token=${encodeURIComponent(token)}` +
+      `&orderBy=${encodeURIComponent('"$key"')}&limitToFirst=${limit + 1}`;
+    if (cursor) url += `&startAt=${encodeURIComponent('"' + cursor + '"')}`;
+
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("firebase_get_failed:" + res.status);
+    const usersRaw = (await res.json()) || {};
+
     const monthKey = getCurrentMonthKey();
     const now = Date.now();
+    let entries = Object.entries(usersRaw);
+    // orderBy=$key بيرجّع مرتّب أبجديًا فعليًا، بس بنرتّبهم تاني هنا للأمان
+    entries.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
 
-    const users = Object.entries(usersRaw).map(([uid, u]) => {
+    let nextCursor = null;
+    if (entries.length > limit) {
+      nextCursor = entries[limit][0]; // أول uid في الصفحة الجاية
+      entries = entries.slice(0, limit);
+    }
+    // لو فيه cursor (يعني مش أول صفحة)، أول عنصر في النتيجة هو نفسه آخر عنصر
+    // في الصفحة اللي فاتت (startAt شامل) - بنشيله عشان مايتكررش
+    if (cursor && entries.length && entries[0][0] === cursor) {
+      entries = entries.slice(1);
+    }
+
+    const users = entries.map(([uid, u]) => {
       u = u || {};
       const planName = PLAN_LIMITS.hasOwnProperty(u.plan) ? u.plan : "مجاني";
       const usageThisMonth =
@@ -1160,7 +1425,7 @@ async function handleAdminListUsers(request, env, corsHeaders) {
       };
     });
 
-    return json({ ok: true, users }, 200, corsHeaders);
+    return json({ ok: true, users, nextCursor, pageSize: limit }, 200, corsHeaders);
   } catch (e) {
     console.error("handleAdminListUsers فشل:", e);
     return json({ error: "internal_error" }, 500, corsHeaders);
@@ -1261,14 +1526,14 @@ async function handleAdminReviewSubscriptionRequest(request, env, corsHeaders, c
       await fbAdminPut(`pending_requests/${requestId}/status`, "approved", env);
       await fbAdminPut(`pending_requests/${requestId}/reviewedAt`, Date.now(), env);
       await fbAdminPut(`pending_requests/${requestId}/reviewedBy`, admin.role, env);
-      if (ctx) ctx.waitUntil(logAdminActivity(env, "subscription_approved", { requestId, uid: reqRaw.uid, plan: planToSet }));
+      if (ctx) ctx.waitUntil(logAdminActivity(env, "subscription_approved", { requestId, uid: reqRaw.uid, plan: planToSet, by: admin.name || admin.role }));
     } else {
       const reason = typeof body.reason === "string" ? body.reason.slice(0, 500) : "";
       await fbAdminPut(`pending_requests/${requestId}/status`, "rejected", env);
       await fbAdminPut(`pending_requests/${requestId}/reviewedAt`, Date.now(), env);
       await fbAdminPut(`pending_requests/${requestId}/reviewedBy`, admin.role, env);
       if (reason) await fbAdminPut(`pending_requests/${requestId}/rejectReason`, reason, env);
-      if (ctx) ctx.waitUntil(logAdminActivity(env, "subscription_rejected", { requestId, uid: reqRaw.uid || null, reason }));
+      if (ctx) ctx.waitUntil(logAdminActivity(env, "subscription_rejected", { requestId, uid: reqRaw.uid || null, reason, by: admin.name || admin.role }));
     }
 
     return json({ ok: true }, 200, corsHeaders);
@@ -1300,7 +1565,7 @@ async function resolveChatIdentity(request, env, body) {
     if (!admin.ok) return { ok: false, error: admin.error, status: 401 };
     const targetUid = typeof body?.uid === "string" ? body.uid.trim() : "";
     if (!targetUid) return { ok: false, error: "uid_required", status: 400 };
-    return { ok: true, role: "admin", adminRole: admin.role, uid: targetUid };
+    return { ok: true, role: "admin", adminRole: admin.role, adminName: admin.name, uid: targetUid };
   }
   const auth = await verifyFirebaseToken(request, env);
   if (!auth.ok) return { ok: false, error: auth.error, status: 401 };
@@ -1341,7 +1606,7 @@ async function handleChatSend(request, env, corsHeaders, ctx) {
     const messageId = makeChatMessageId();
     await fbAdminPut(`chat_messages/${identity.uid}/${messageId}`, message, env);
     if (identity.role === "admin" && ctx) {
-      ctx.waitUntil(logAdminActivity(env, "chat_message_sent", { uid: identity.uid }));
+      ctx.waitUntil(logAdminActivity(env, "chat_message_sent", { uid: identity.uid, by: identity.adminName || identity.adminRole }));
     }
     return json({ ok: true, id: messageId }, 200, corsHeaders);
   } catch (e) {
@@ -1541,11 +1806,12 @@ async function handleAdminUserAction(request, env, corsHeaders, ctx) {
   } else if (action === "delete") {
     // مسح فعلي بالكامل: النود بتاع اليوزر ده (users/{uid}) بيتشال تمامًا من
     // قاعدة البيانات - مفيش اسم/صورة/نقط/باقة/سجل استخدام ولا أي أثر ليه فيها.
-    // ملحوظة مهمة برضه: حساب الدخول نفسه (Firebase Auth: الإيميل/الباسورد أو
-    // حساب جوجل) بيفضل موجود تقنيًا برة قاعدة البيانات دي، لأن حذفه فعليًا
-    // محتاج مفتاح Service Account منفصل مش متظبط عندك دلوقتي. يعني لو نفس
-    // الشخص سجّل دخول تاني بنفس الحساب هيدخل كمستخدم جديد تمامًا (باقة مجانية
-    // من الصفر) لأن مفيش أي أثر ليه في الداتابيز يمنعه.
+    // بند 3 (كان الفرق): بعد كده كمان بنحاول نمسح حساب الدخول نفسه (Firebase
+    // Auth) فعليًا عن طريق deleteFirebaseAuthAccount تحت - مش بس نوده في
+    // قاعدة البيانات زي الأول. لو نجحت، الشخص میقدرش يسجّل دخول تاني بنفس
+    // الحساب القديم خالص. لو فشلت (صلاحيات الـ Service Account ناقصة مثلاً)،
+    // بنرجّع authDeleted:false في الرد عشان الواجهة توضح للأدمن بالظبط إيه
+    // اللي اتنفّذ وإيه اللي لأ (بدل ما يفترض إن كل حاجة اتمسحت وهي مش كذلك).
     path = `users/${uid}`;
     value = null;
   }
@@ -1557,8 +1823,18 @@ async function handleAdminUserAction(request, env, corsHeaders, ctx) {
     return json({ error: "firebase_write_failed" }, 502, corsHeaders);
   }
 
-  if (ctx) ctx.waitUntil(logAdminActivity(env, "admin_user_action", { uid, action, value }));
-  return json({ ok: true }, 200, corsHeaders);
+  let authDeleted = null;
+  if (action === "delete") {
+    const authResult = await deleteFirebaseAuthAccount(uid, env);
+    authDeleted = authResult.ok;
+  }
+
+  if (ctx) {
+    ctx.waitUntil(logAdminActivity(env, "admin_user_action", {
+      uid, action, value, authDeleted, by: admin.name || admin.role
+    }));
+  }
+  return json({ ok: true, authDeleted }, 200, corsHeaders);
 }
 
 // ---- الأدمن بيبعت رابط تغيير باسورد لإيميل مستخدم معيّن ----
@@ -1581,12 +1857,15 @@ async function handleAdminSendPasswordReset(request, env, corsHeaders, ctx) {
   const sent = await sendPasswordResetEmail(email, env);
   if (!sent.ok) return json({ error: sent.error }, 502, corsHeaders);
 
-  if (ctx) ctx.waitUntil(logAdminActivity(env, "admin_password_reset_sent", { email }));
+  if (ctx) ctx.waitUntil(logAdminActivity(env, "admin_password_reset_sent", { email, by: admin.name || admin.role }));
   return json({ ok: true }, 200, corsHeaders);
 }
 
 // ---- سجل نشاط الأدمن: عرض آخر العمليات (تسجيل دخول/إيقاف/تعديل باقة...) ----
 // متاح لأي جلسة أدمن (superadmin أو viewer) — مجرد عرض، مفيش تعديل هنا.
+// بند 8: بقى بيقبل limit مخصّص (لحد 5000 بدل الـ 200 الثابتة قبل كده) وفلترة
+// اختيارية بنوع العملية أو بتاريخ ("منذ" فترة معيّنة) - عشان تقدر تصدّر أو
+// تراجع سجل نشاط أطول من غير ما تفتح Firebase Console يدوي.
 async function handleAdminActivityLog(request, env, corsHeaders) {
   const admin = await requireAdminSession(request, env);
   if (!admin.ok) return json({ error: admin.error }, 401, corsHeaders);
@@ -1594,14 +1873,27 @@ async function handleAdminActivityLog(request, env, corsHeaders) {
     return json({ error: "firebase_service_account_not_configured" }, 500, corsHeaders);
   }
 
+  let body = {};
+  try { body = await request.json(); } catch (e) { body = {}; }
+  let limit = parseInt(body?.limit, 10);
+  if (!Number.isFinite(limit) || limit <= 0) limit = 200;
+  limit = Math.min(limit, 5000);
+  const actionFilter = typeof body?.action === "string" ? body.action.trim() : "";
+  const sinceTime = typeof body?.sinceTime === "string" ? body.sinceTime : "";
+
   try {
     const logsRaw = (await fbAdminGet("adminLogs", env)) || {};
-    const logs = Object.entries(logsRaw)
+    let logs = Object.entries(logsRaw)
       .map(([id, entry]) => ({ id, ...(entry || {}) }))
-      .sort((a, b) => (b.time || "").localeCompare(a.time || ""))
-      .slice(0, 200); // آخر 200 عملية بس، عشان الرد يفضل خفيف وسريع
+      .sort((a, b) => (b.time || "").localeCompare(a.time || ""));
 
-    return json({ ok: true, logs }, 200, corsHeaders);
+    if (actionFilter) logs = logs.filter(l => l.action === actionFilter);
+    if (sinceTime) logs = logs.filter(l => (l.time || "") >= sinceTime);
+
+    const total = logs.length;
+    logs = logs.slice(0, limit);
+
+    return json({ ok: true, logs, total }, 200, corsHeaders);
   } catch (e) {
     console.error("handleAdminActivityLog فشل:", e);
     return json({ error: "internal_error" }, 500, corsHeaders);
@@ -1625,7 +1917,7 @@ async function handleAdminBackupNow(request, env, corsHeaders, ctx) {
     if (!res.ok) throw new Error("firebase_get_failed:" + res.status);
     const fullData = await res.json();
 
-    if (ctx) ctx.waitUntil(logAdminActivity(env, "admin_backup_download", { ip: getClientIp(request) }));
+    if (ctx) ctx.waitUntil(logAdminActivity(env, "admin_backup_download", { ip: getClientIp(request), by: admin.name || admin.role }));
 
     return json(
       { ok: true, generatedAt: new Date().toISOString(), data: fullData },
@@ -1635,6 +1927,255 @@ async function handleAdminBackupNow(request, env, corsHeaders, ctx) {
   } catch (e) {
     console.error("handleAdminBackupNow فشل:", e);
     return json({ error: "backup_failed" }, 502, corsHeaders);
+  }
+}
+
+// ================================================================
+// ============== بند 1: الشكاوى والاقتراحات (Feedback) ==============
+// ================================================================
+// الفورم في الواجهة ("عندك شكوى أو استفسار") بيكتب مباشرة في feedback/{id}
+// جوه Firebase عن طريق db.ref('feedback').push(...) من المستخدم نفسه (مش عن
+// طريق الووركر). المسارات هنا بس بتعرضها/تديرها من لوحة الأدمن.
+async function handleAdminListFeedback(request, env, corsHeaders) {
+  const admin = await requireAdminSession(request, env);
+  if (!admin.ok) return json({ error: admin.error }, 401, corsHeaders);
+  if (!env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    return json({ error: "firebase_service_account_not_configured" }, 500, corsHeaders);
+  }
+  try {
+    const raw = (await fbAdminGet("feedback", env)) || {};
+    const items = Object.entries(raw)
+      .map(([id, f]) => ({ id, ...(f || {}) }))
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    const unreadCount = items.filter(f => !f.adminRead).length;
+    return json({ ok: true, items, unreadCount }, 200, corsHeaders);
+  } catch (e) {
+    console.error("handleAdminListFeedback فشل:", e);
+    return json({ error: "internal_error" }, 500, corsHeaders);
+  }
+}
+
+const ADMIN_FEEDBACK_ACTIONS = new Set(["markRead", "markUnread", "delete"]);
+async function handleAdminFeedbackAction(request, env, corsHeaders, ctx) {
+  const admin = await requireSuperAdmin(request, env);
+  if (!admin.ok) return json({ error: admin.error }, admin.error === "forbidden_role" ? 403 : 401, corsHeaders);
+  if (!env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    return json({ error: "firebase_service_account_not_configured" }, 500, corsHeaders);
+  }
+  let body;
+  try {
+    body = await request.json();
+  } catch (e) {
+    return json({ error: "invalid_json" }, 400, corsHeaders);
+  }
+  const id = typeof body?.id === "string" ? body.id.trim() : "";
+  const action = typeof body?.action === "string" ? body.action : "";
+  if (!id || !ADMIN_FEEDBACK_ACTIONS.has(action)) {
+    return json({ error: "invalid_request" }, 400, corsHeaders);
+  }
+  try {
+    if (action === "markRead") await fbAdminPut(`feedback/${id}/adminRead`, true, env);
+    else if (action === "markUnread") await fbAdminPut(`feedback/${id}/adminRead`, false, env);
+    else if (action === "delete") await fbAdminPut(`feedback/${id}`, null, env);
+    if (ctx) ctx.waitUntil(logAdminActivity(env, "feedback_action", { id, action, by: admin.name || admin.role }));
+    return json({ ok: true }, 200, corsHeaders);
+  } catch (e) {
+    console.error("handleAdminFeedbackAction فشل:", e);
+    return json({ error: "internal_error" }, 500, corsHeaders);
+  }
+}
+
+// ================================================================
+// ============== بند 4: رسالة جماعية (Broadcast) ==============
+// ================================================================
+// بتبعت رسالة للشات العائم بتاع كل المستخدمين (أو فئة معيّنة بس - باقة
+// بعينها) دفعة واحدة، بدل ما تضطر تفتح كل مستخدم لوحده من مساحة العمل بتاعته.
+async function handleAdminBroadcast(request, env, corsHeaders, ctx) {
+  const admin = await requireSuperAdmin(request, env);
+  if (!admin.ok) return json({ error: admin.error }, admin.error === "forbidden_role" ? 403 : 401, corsHeaders);
+  if (!env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    return json({ error: "firebase_service_account_not_configured" }, 500, corsHeaders);
+  }
+  let body;
+  try {
+    body = await request.json();
+  } catch (e) {
+    return json({ error: "invalid_json" }, 400, corsHeaders);
+  }
+  const text = typeof body?.text === "string" ? body.text.trim() : "";
+  const target = typeof body?.target === "string" ? body.target : "all"; // "all" أو اسم باقة بعينها
+  if (!text) return json({ error: "text_required" }, 400, corsHeaders);
+  if (text.length > 2000) return json({ error: "text_too_long" }, 400, corsHeaders);
+  if (target !== "all" && !PLAN_LIMITS.hasOwnProperty(target)) {
+    return json({ error: "invalid_target" }, 400, corsHeaders);
+  }
+
+  try {
+    const usersRaw = (await fbAdminGet("users", env)) || {};
+    const uids = Object.entries(usersRaw)
+      .filter(([, u]) => {
+        if (target === "all") return true;
+        const planName = PLAN_LIMITS.hasOwnProperty(u?.plan) ? u.plan : "مجاني";
+        return planName === target;
+      })
+      .map(([uid]) => uid);
+
+    if (!uids.length) return json({ error: "no_matching_users" }, 400, corsHeaders);
+
+    const message = {
+      from: "admin",
+      text,
+      createdAt: Date.now(),
+      readByAdmin: true,
+      readByUser: false,
+      broadcast: true
+    };
+
+    // بنبعتها على دفعات (chunks) صغيرة عشان مانضربش Firebase بآلاف الطلبات
+    // المتوازية مرة واحدة لو قاعدة المستخدمين كبيرة.
+    const CHUNK_SIZE = 25;
+    let sent = 0, failed = 0;
+    for (let i = 0; i < uids.length; i += CHUNK_SIZE) {
+      const chunk = uids.slice(i, i + CHUNK_SIZE);
+      const results = await Promise.allSettled(
+        chunk.map(uid => fbAdminPut(`chat_messages/${uid}/${makeChatMessageId()}`, message, env))
+      );
+      results.forEach(r => { if (r.status === "fulfilled") sent++; else failed++; });
+    }
+
+    if (ctx) ctx.waitUntil(logAdminActivity(env, "admin_broadcast", { target, count: uids.length, sent, failed, by: admin.name || admin.role }));
+    return json({ ok: true, sent, failed, total: uids.length }, 200, corsHeaders);
+  } catch (e) {
+    console.error("handleAdminBroadcast فشل:", e);
+    return json({ error: "internal_error" }, 500, corsHeaders);
+  }
+}
+
+// ================================================================
+// ============== بند 5: تاريخ الإحصائيات (نمو المستخدمين/الإيرادات) ==============
+// ================================================================
+// بيتسجل يوميًا (تلقائيًا عن طريق الـ Cron Trigger زي النسخة الاحتياطية، شوف
+// scheduled() فوق) تحت dailyStats/{YYYY-MM-DD}. لو معندكش Cron Trigger مضبوط،
+// تقدر تضغط "سجّل لقطة دلوقتي" يدويًا من لوحة الأدمن (/adminRecordStatsNow).
+async function computeDailyStatsSnapshot(env) {
+  const usersRaw = (await fbAdminGet("users", env)) || {};
+  const planCounts = {};
+  for (const key of Object.keys(PLAN_LIMITS)) planCounts[key] = 0;
+  let totalRevenue = 0;
+  let totalUsers = 0;
+
+  for (const u of Object.values(usersRaw)) {
+    totalUsers++;
+    const planName = PLAN_LIMITS.hasOwnProperty(u?.plan) ? u.plan : "مجاني";
+    planCounts[planName] = (planCounts[planName] || 0) + 1;
+    const purchases = u?.purchases;
+    if (Array.isArray(purchases)) {
+      for (const p of purchases) totalRevenue += Number(p?.price) || 0;
+    } else if (purchases && typeof purchases === "object") {
+      for (const p of Object.values(purchases)) totalRevenue += Number(p?.price) || 0;
+    }
+  }
+
+  return { totalUsers, planCounts, totalRevenue, recordedAt: Date.now() };
+}
+
+async function recordDailyStats(env) {
+  if (!env.FIREBASE_SERVICE_ACCOUNT_JSON) return;
+  try {
+    const snapshot = await computeDailyStatsSnapshot(env);
+    const dateKey = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    await fbAdminPut(`dailyStats/${dateKey}`, snapshot, env);
+  } catch (e) {
+    console.warn("recordDailyStats فشل:", e);
+  }
+}
+
+async function handleAdminStatsHistory(request, env, corsHeaders) {
+  const admin = await requireAdminSession(request, env);
+  if (!admin.ok) return json({ error: admin.error }, 401, corsHeaders);
+  if (!env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    return json({ error: "firebase_service_account_not_configured" }, 500, corsHeaders);
+  }
+  let body = {};
+  try { body = await request.json(); } catch (e) { body = {}; }
+  let days = parseInt(body?.days, 10);
+  if (!Number.isFinite(days) || days <= 0) days = 30;
+  days = Math.min(days, 365);
+
+  try {
+    const raw = (await fbAdminGet("dailyStats", env)) || {};
+    const history = Object.entries(raw)
+      .map(([date, s]) => ({ date, ...(s || {}) }))
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(-days);
+    return json({ ok: true, history }, 200, corsHeaders);
+  } catch (e) {
+    console.error("handleAdminStatsHistory فشل:", e);
+    return json({ error: "internal_error" }, 500, corsHeaders);
+  }
+}
+
+async function handleAdminRecordStatsNow(request, env, corsHeaders, ctx) {
+  const admin = await requireSuperAdmin(request, env);
+  if (!admin.ok) return json({ error: admin.error }, admin.error === "forbidden_role" ? 403 : 401, corsHeaders);
+  if (!env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    return json({ error: "firebase_service_account_not_configured" }, 500, corsHeaders);
+  }
+  try {
+    const snapshot = await computeDailyStatsSnapshot(env);
+    const dateKey = new Date().toISOString().slice(0, 10);
+    await fbAdminPut(`dailyStats/${dateKey}`, snapshot, env);
+    if (ctx) ctx.waitUntil(logAdminActivity(env, "stats_snapshot_manual", { by: admin.name || admin.role }));
+    return json({ ok: true, snapshot }, 200, corsHeaders);
+  } catch (e) {
+    console.error("handleAdminRecordStatsNow فشل:", e);
+    return json({ error: "internal_error" }, 500, corsHeaders);
+  }
+}
+
+// ================================================================
+// ============== نظرة عامة على كل المحادثات (Global Chat Inbox) ==============
+// ================================================================
+// بدل ما تفتح كل مستخدم لوحده من الجدول عشان تشوف/تبعت له رسالة، الزرار
+// "كل المحادثات" في أعلى لوحة التحكم بيفتح صندوق وارد واحد فيه كل المحادثات
+// اللي فيها رسايل، مرتّبة بآخر رسالة، مع عدّاد غير مقروء لكل واحدة.
+async function handleAdminListChats(request, env, corsHeaders) {
+  const admin = await requireAdminSession(request, env);
+  if (!admin.ok) return json({ error: admin.error }, 401, corsHeaders);
+  if (!env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    return json({ error: "firebase_service_account_not_configured" }, 500, corsHeaders);
+  }
+  try {
+    const [chatsRaw, usersRaw] = await Promise.all([
+      fbAdminGet("chat_messages", env),
+      fbAdminGet("users", env)
+    ]);
+    const chats = chatsRaw || {};
+    const users = usersRaw || {};
+
+    const conversations = Object.entries(chats).map(([uid, messagesRaw]) => {
+      const messages = Object.values(messagesRaw || {});
+      messages.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+      const last = messages[messages.length - 1] || {};
+      const unreadFromUser = messages.filter(m => m.from === "user" && !m.readByAdmin).length;
+      const u = users[uid] || {};
+      return {
+        uid,
+        email: u.email || null,
+        displayName: u.displayName || u.name || null,
+        lastMessage: last.text || "",
+        lastFrom: last.from || null,
+        lastTime: last.createdAt || 0,
+        unreadFromUser,
+        totalMessages: messages.length
+      };
+    });
+
+    conversations.sort((a, b) => b.lastTime - a.lastTime);
+    return json({ ok: true, conversations }, 200, corsHeaders);
+  } catch (e) {
+    console.error("handleAdminListChats فشل:", e);
+    return json({ error: "internal_error" }, 500, corsHeaders);
   }
 }
 
