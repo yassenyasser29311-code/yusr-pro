@@ -14,10 +14,11 @@
     } catch (e) {}
 })();
 </script>
-<!-- فيكس: تثبيت الزووم (maximum-scale=1 + user-scalable=no) عشان الصفحة متفضلش
-     ممكن حد يزوم فيها بالغلط (لمس مزدوج/pinch) وتفضل شايفها متزحلقة/مش متسنطرة
-     في نص الشاشة - التصميم أصلاً متجاوب وبيكبّر النصوص لوحده، فمش محتاجين زووم يدوي. -->
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<!-- تعديل UX/Accessibility: شلنا تعطيل الزووم (maximum-scale=1 + user-scalable=no) اللي كان
+     موجود قبل كده. تعطيل الزووم بيمنع أي حد محتاج يكبّر النص (كبار السن/ضعف البصر) إنه
+     يعمل pinch-zoom عادي، وده مخالف لمعايير الوصولية (WCAG 1.4.4). التصميم متجاوب أصلاً
+     فمفيش داعي نمنع المستخدم من الزووم اليدوي وقت الحاجة. -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>يُسْر Pro | YUSR - منصتك المهنية الذكية</title>
 
 <!-- ============ Google Search Console Verification ============ -->
@@ -117,6 +118,9 @@
 <link rel="stylesheet" href="styles.css?v=7">
 </head>
 <body class="min-h-screen">
+<!-- شريط تحميل عام أعلى الشاشة: بيظهر تلقائيًا أثناء أي طلب شبكة (adminFetch / fetchWithTimeout)
+     عشان المستخدم يحس إن حاجة بتتحمل بدل ما يشوف شاشة ساكنة على نت الموبايل البطيء. -->
+<div id="global-loading-bar" class="hidden" role="status" aria-label="جاري التحميل"></div>
 <div id="toast-container" aria-live="polite"></div>
 
 <!-- ============== شات الدعم العائم (المستخدم ⇄ الأدمن) ============== -->
@@ -340,7 +344,12 @@
                             <th class="py-2 px-2 font-bold">إجراءات</th>
                         </tr>
                     </thead>
-                    <tbody id="admin-users-tbody"></tbody>
+                    <tbody id="admin-users-tbody">
+                        <!-- صفوف شيمر مؤقتة لحد ما adminRenderUsers() يستبدلها بالبيانات الحقيقية -->
+                        <tr><td colspan="6"><div class="skeleton" style="height:16px;margin:4px 0;">.</div></td></tr>
+                        <tr><td colspan="6"><div class="skeleton" style="height:16px;margin:4px 0;">.</div></td></tr>
+                        <tr><td colspan="6"><div class="skeleton" style="height:16px;margin:4px 0;">.</div></td></tr>
+                    </tbody>
                 </table>
             </div>
             <p id="admin-users-empty" class="hidden text-[11px] text-slate-500 text-center py-4">لا يوجد مستخدمين مطابقين.</p>
@@ -378,7 +387,7 @@
                 <h3 id="admin-user-modal-name" class="text-sm font-bold text-slate-100">-</h3>
                 <p id="admin-user-modal-email" class="text-[11px] text-slate-500" dir="ltr">-</p>
             </div>
-            <button onclick="adminCloseUserModal()" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-xmark"></i></button>
+            <button onclick="adminCloseUserModal()" class="chip hover:bg-[var(--panel-2)]" aria-label="إغلاق"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div id="admin-user-modal-status-badge"></div>
 
@@ -422,7 +431,7 @@
             <div id="admin-user-modal-chat-log" class="space-y-1.5 rounded-lg p-2 text-[11px]" style="max-height:180px; overflow-y:auto; background:var(--panel);"></div>
             <div class="flex gap-1.5">
                 <input id="admin-user-modal-chat-input" type="text" placeholder="اكتب رسالتك للمستخدم..." class="admin-mini-input flex-1" style="width:100%" onkeydown="if(event.key==='Enter'){event.preventDefault();adminModalSendChat();}">
-                <button class="admin-mini-btn" onclick="adminModalSendChat()"><i class="fa-solid fa-paper-plane"></i></button>
+                <button class="admin-mini-btn" onclick="adminModalSendChat()" aria-label="إرسال رسالة"><i class="fa-solid fa-paper-plane"></i></button>
             </div>
         </div>
 
@@ -462,7 +471,7 @@
                 <p class="font-tajawal font-bold text-sm text-slate-100 leading-tight">يُسْر Pro</p>
                 <p class="text-[10px] text-slate-500">YUSR Platform</p>
             </div>
-            <button onclick="toggleSidebar()" class="lg:hidden mr-auto text-slate-500 hover:text-white px-1">
+            <button onclick="toggleSidebar()" class="lg:hidden mr-auto text-slate-500 hover:text-white px-1" aria-label="إغلاق القائمة">
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
@@ -623,17 +632,17 @@
     <!-- ============ MAIN ============ -->
     <div class="flex-1 flex flex-col min-w-0">
         <header class="sticky top-0 z-20 flex items-center gap-3 px-4 sm:px-6 py-3.5 panel border-b">
-            <button onclick="toggleSidebar()" class="lg:hidden text-slate-300 text-lg"><i class="fa-solid fa-bars"></i></button>
+            <button onclick="toggleSidebar()" class="lg:hidden text-slate-300 text-lg" aria-label="فتح القائمة"><i class="fa-solid fa-bars"></i></button>
             <h1 id="view-title" class="font-tajawal font-bold text-sm sm:text-base text-slate-100">مقابلة تدريبية صوتية</h1>
             <div class="mr-auto flex items-center gap-2">
                 <button id="header-trial-badge" onclick="openPricingModal()" title="المحاولات المجانية المتبقية الشهر ده" class="header-trial-badge trial-ok flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold shrink-0">
                     <i class="fa-solid fa-bolt"></i><span id="header-trial-count">5</span>
                 </button>
-                <button onclick="switchViewByName('support')" title="الدعم الفني" class="w-8 h-8 rounded-lg btn-ghost flex items-center justify-center text-xs shrink-0">
+                <button onclick="switchViewByName('support')" title="الدعم الفني" aria-label="الدعم الفني" class="w-8 h-8 rounded-lg btn-ghost flex items-center justify-center text-xs shrink-0">
                     <i class="fa-solid fa-headset"></i>
                 </button>
                 <!-- نقطة 8: زرار تبديل الوضع الفاتح/الداكن -->
-                <button id="theme-toggle-btn" onclick="toggleTheme()" title="التحويل للوضع الفاتح" class="w-8 h-8 rounded-lg btn-ghost flex items-center justify-center text-xs shrink-0">
+                <button id="theme-toggle-btn" onclick="toggleTheme()" title="التحويل للوضع الفاتح" aria-label="التحويل للوضع الفاتح" class="w-8 h-8 rounded-lg btn-ghost flex items-center justify-center text-xs shrink-0">
                     <i id="theme-toggle-icon" class="fa-solid fa-sun"></i>
                 </button>
                 <select id="lang-picker" class="input-field rounded-lg text-[11px] px-2 py-1.5" onchange="setAppLanguage(this.value)">
@@ -735,14 +744,14 @@
                             </button>
                         </div>
                         <div class="flex gap-2 items-center">
-                            <button id="mic-btn" onclick="toggleMic()" title="تحدث بصوتك" class="w-10 h-10 rounded-xl panel-2 text-slate-300 hover:text-white flex items-center justify-center shrink-0">
+                            <button id="mic-btn" onclick="toggleMic()" title="تحدث بصوتك" aria-label="تحدث بصوتك" class="w-10 h-10 rounded-xl panel-2 text-slate-300 hover:text-white flex items-center justify-center shrink-0">
                                 <i class="fa-solid fa-microphone text-sm"></i>
                             </button>
                             <input type="text" id="user-chat-input" onkeypress="handleKeyPress(event)" data-i18n-ph="interview.inputPh" placeholder="تحدث بالميكروفون أو اكتب هنا..." class="flex-1 input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
-                            <button onclick="sendUserAnswer()" class="btn-accent acc-interview w-10 h-10 rounded-xl flex items-center justify-center shrink-0">
+                            <button onclick="sendUserAnswer()" class="btn-accent acc-interview w-10 h-10 rounded-xl flex items-center justify-center shrink-0" aria-label="إرسال الإجابة">
                                 <i class="fa-solid fa-paper-plane text-xs"></i>
                             </button>
-                            <button onclick="generatePerformanceReport()" class="bg-amber-500/15 text-amber-300 border border-amber-500/25 font-bold px-3 py-2.5 rounded-xl text-xs shrink-0" title="تقييم الأداء">
+                            <button onclick="generatePerformanceReport()" class="bg-amber-500/15 text-amber-300 border border-amber-500/25 font-bold px-3 py-2.5 rounded-xl text-xs shrink-0" title="تقييم الأداء" aria-label="تقييم الأداء">
                                 <i class="fa-solid fa-chart-line"></i>
                             </button>
                         </div>
@@ -1164,7 +1173,7 @@
                         <div id="pf-chat-history" class="h-[260px] sm:h-[320px] overflow-y-auto space-y-3 p-3 panel-2 rounded-xl"></div>
                         <div class="flex gap-2 items-center">
                             <input type="text" id="pf-chat-input" onkeypress="if(event.key==='Enter') sendPortfolioAnswer()" data-i18n-ph="pf.inputPh" placeholder="اكتب ردّك هنا..." class="flex-1 input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
-                            <button onclick="sendPortfolioAnswer()" class="btn-accent acc-portfolio w-10 h-10 rounded-xl flex items-center justify-center shrink-0">
+                            <button onclick="sendPortfolioAnswer()" class="btn-accent acc-portfolio w-10 h-10 rounded-xl flex items-center justify-center shrink-0" aria-label="إرسال">
                                 <i class="fa-solid fa-paper-plane text-xs"></i>
                             </button>
                         </div>
@@ -1281,7 +1290,7 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-3">
-                        <button id="transcribe-mic-btn" onclick="toggleTranscribeMic()" class="w-12 h-12 rounded-xl panel-2 text-slate-300 hover:text-white flex items-center justify-center shrink-0">
+                        <button id="transcribe-mic-btn" onclick="toggleTranscribeMic()" class="w-12 h-12 rounded-xl panel-2 text-slate-300 hover:text-white flex items-center justify-center shrink-0" aria-label="تسجيل صوتي للتفريغ">
                             <i class="fa-solid fa-microphone"></i>
                         </button>
                         <p id="transcribe-status" class="text-xs text-slate-500" data-i18n="tr.micHint">اضغط للتسجيل، أو ارفع ملف فوق، أو الصق نص جاهز تحت.</p>
@@ -1341,7 +1350,7 @@
                             <button onclick="previewPitchAudio()" class="flex-1 py-2.5 btn-accent acc-pitch font-bold text-xs rounded-xl flex items-center justify-center gap-2">
                                 <i class="fa-solid fa-play"></i> استمع للنص
                             </button>
-                            <button onclick="stopSpeaking()" class="px-4 py-2.5 chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-stop"></i></button>
+                            <button onclick="stopSpeaking()" class="px-4 py-2.5 chip hover:bg-[var(--panel-2)]" aria-label="إيقاف القراءة الصوتية"><i class="fa-solid fa-stop"></i></button>
                         </div>
                     </div>
 
@@ -1622,18 +1631,18 @@
                             <p class="text-[11px] text-slate-400 flex items-center gap-2"><i class="fa-solid fa-wallet"></i> <span data-i18n="don.wallet">محفظة إلكترونية</span></p>
                             <div class="flex items-center justify-between panel rounded-lg px-3 py-2">
                                 <span class="font-bold text-slate-100 text-sm" dir="ltr">01279383905</span>
-                                <button onclick="copyPlainText('01279383905', this)" class="chip"><i class="fa-solid fa-copy"></i></button>
+                                <button onclick="copyPlainText('01279383905', this)" class="chip" aria-label="نسخ الرقم"><i class="fa-solid fa-copy"></i></button>
                             </div>
                             <div class="flex items-center justify-between panel rounded-lg px-3 py-2">
                                 <span class="font-bold text-slate-100 text-sm" dir="ltr">01279383843</span>
-                                <button onclick="copyPlainText('01279383843', this)" class="chip"><i class="fa-solid fa-copy"></i></button>
+                                <button onclick="copyPlainText('01279383843', this)" class="chip" aria-label="نسخ الرقم"><i class="fa-solid fa-copy"></i></button>
                             </div>
                         </div>
                         <div class="panel-2 rounded-xl p-4 space-y-2">
                             <p class="text-[11px] text-slate-400 flex items-center gap-2"><i class="fa-solid fa-money-bill-transfer"></i> InstaPay</p>
                             <div class="flex items-center justify-between panel rounded-lg px-3 py-2">
                                 <span class="font-bold text-slate-100 text-sm" dir="ltr">01279383905</span>
-                                <button onclick="copyPlainText('01279383905', this)" class="chip"><i class="fa-solid fa-copy"></i></button>
+                                <button onclick="copyPlainText('01279383905', this)" class="chip" aria-label="نسخ الرقم"><i class="fa-solid fa-copy"></i></button>
                             </div>
                         </div>
                     </div>
@@ -1970,7 +1979,7 @@
     <div class="panel modal-pop max-w-xl w-full max-h-[85vh] rounded-2xl p-5 flex flex-col space-y-3">
         <div class="flex justify-between items-center border-b border-[var(--border)] pb-2 shrink-0">
             <h3 class="text-sm font-bold text-amber-300 flex items-center gap-2"><i class="fa-solid fa-chart-line"></i> تقرير الأداء التفصيلي</h3>
-            <button onclick="closeReportModal()" class="text-slate-500 hover:text-white text-sm"><i class="fa-solid fa-xmark"></i></button>
+            <button onclick="closeReportModal()" class="text-slate-500 hover:text-white text-sm" aria-label="إغلاق"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div id="report-body" class="text-xs sm:text-sm text-slate-200 leading-relaxed overflow-y-auto pr-1"></div>
     </div>
@@ -1995,14 +2004,14 @@
     <div class="panel modal-pop max-w-md w-full rounded-2xl p-5 space-y-3 text-right max-h-[90vh] overflow-y-auto">
         <div class="flex justify-between items-center">
             <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2"><i class="fa-solid fa-money-bill-transfer"></i> إتمام الاشتراك</h3>
-            <button onclick="closePaymentRequestModal()" class="text-slate-500 hover:text-white text-sm"><i class="fa-solid fa-xmark"></i></button>
+            <button onclick="closePaymentRequestModal()" class="text-slate-500 hover:text-white text-sm" aria-label="إغلاق"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div id="payment-request-summary" class="panel-2 rounded-xl p-3 text-xs text-slate-300"></div>
         <div class="panel-2 rounded-xl p-3 space-y-2">
             <p class="text-[11px] text-slate-400">حوّل قيمة الباقة عن طريق Vodafone Cash أو InstaPay على رقم:</p>
             <div class="flex items-center justify-between panel rounded-lg px-3 py-2">
                 <span class="font-bold text-slate-100 text-sm" dir="ltr">01279383843</span>
-                <button onclick="copyPlainText('01279383843', this)" class="chip"><i class="fa-solid fa-copy"></i></button>
+                <button onclick="copyPlainText('01279383843', this)" class="chip" aria-label="نسخ الرقم"><i class="fa-solid fa-copy"></i></button>
             </div>
             <p class="text-[10px] text-slate-500">بعد التحويل، املا بياناتك تحت وابعت الطلب — هيتم تفعيل الباقة على حسابك يدوياً خلال ساعات قليلة بعد مراجعة التحويل.</p>
         </div>
@@ -2160,11 +2169,16 @@
         options = options || {};
         const headers = Object.assign({ "Content-Type": "application/json" }, options.headers || {});
         if (adminToken) headers["X-Admin-Token"] = adminToken;
-        const res = await fetch(ADMIN_API_BASE + path, Object.assign({ method: "POST" }, options, { headers }));
-        let data = {};
-        try { data = await res.json(); } catch (e) {}
-        if (!res.ok) throw Object.assign(new Error(data.error || "request_failed"), { data, status: res.status });
-        return data;
+        if (typeof window.showGlobalLoader === "function") window.showGlobalLoader();
+        try {
+            const res = await fetch(ADMIN_API_BASE + path, Object.assign({ method: "POST" }, options, { headers }));
+            let data = {};
+            try { data = await res.json(); } catch (e) {}
+            if (!res.ok) throw Object.assign(new Error(data.error || "request_failed"), { data, status: res.status });
+            return data;
+        } finally {
+            if (typeof window.hideGlobalLoader === "function") window.hideGlobalLoader();
+        }
     }
 
     // ---- Secret entry point: اضغط شعار "يس" أعلى القائمة الجانبية 5 مرات ----

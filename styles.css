@@ -443,3 +443,55 @@
 
 /* ============ إخفاء شارة reCAPTCHA العائمة (تحت يمين الشاشة) ============ */
 .grecaptcha-badge { visibility: hidden !important; opacity: 0 !important; }
+
+/* ============ شريط تحميل عام (global-loading-bar) ============
+   بيظهر أعلى الشاشة أثناء أي طلب شبكة (admin API أو أدوات الذكاء الاصطناعي)
+   عشان يديله إشارة بصرية إن حاجة بتتحمل، بدل ما يحس إن الصفحة "واقفة" وهو
+   على نت موبايل بطيء. مبني بـ CSS بس (شريط متحرك)، مفيهوش أي طلب شبكة إضافي. */
+#global-loading-bar {
+    position: fixed; top: 0; inset-inline-start: 0; inset-inline-end: 0;
+    height: 3px; z-index: 200; overflow: hidden;
+    background: rgba(255,255,255,.08);
+    pointer-events: none;
+}
+#global-loading-bar.hidden { display: none; }
+#global-loading-bar::after {
+    content: ""; position: absolute; top: 0; bottom: 0; width: 40%;
+    background: linear-gradient(90deg, transparent, var(--accent-strong, #38bdf8), transparent);
+    animation: global-loading-sweep 1.1s ease-in-out infinite;
+}
+@keyframes global-loading-sweep {
+    0%   { inset-inline-start: -40%; }
+    100% { inset-inline-start: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+    #global-loading-bar::after { animation: none; inset-inline-start: 0; width: 100%; opacity: .5; }
+}
+
+/* ============ Skeleton loading placeholders (شيمر) ============
+   بتتحط على أي عنصر لسه بياناته بتتحمل من فايربيز/الووركر، بدل ما المستخدم
+   يشوف مكان فاضي تمامًا وهو مش عارف لو فيه حاجة هتظهر ولا لأ. */
+.skeleton {
+    position: relative; overflow: hidden; color: transparent !important;
+    background: var(--panel-2, #1c1f26); border-radius: 8px; pointer-events: none;
+}
+.skeleton::after {
+    content: ""; position: absolute; inset: 0; transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.08), transparent);
+    animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes skeleton-shimmer { 100% { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) {
+    .skeleton::after { animation: none; }
+}
+
+/* ============ حجم مناطق اللمس (tap targets) على الموبايل ============
+   معيار WCAG بيوصي بمساحة لمس 44×44px تقريبًا. زراير الأيقونات الصغيرة
+   (32px زي w-8/h-8) بس هي اللي بتتوسع هنا على الموبايل، عشان نتجنب كسر
+   تصميم بقية الأزرار والـ chips والـ nav-items اللي مقاساتها مقصودة. */
+@media (max-width: 768px) {
+    #theme-toggle-btn,
+    button[onclick^="switchViewByName('support')"] {
+        min-width: 40px; min-height: 40px;
+    }
+}

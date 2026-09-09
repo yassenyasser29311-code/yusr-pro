@@ -2704,7 +2704,9 @@
         recognition.continuous = false;
         recognition.onstart = () => {
             isRecording = true; recordStartTime = Date.now();
-            document.getElementById('mic-btn').classList.add('bg-red-500/20', 'text-red-400', 'recording-pulse');
+            const micBtn = document.getElementById('mic-btn');
+            micBtn.classList.add('bg-red-500/20', 'text-red-400', 'recording-pulse');
+            micBtn.setAttribute('aria-label', 'إيقاف التسجيل');
             document.getElementById('user-chat-input').placeholder = "جاري الاستماع إليك...";
         };
         recognition.onresult = (e) => {
@@ -2730,7 +2732,9 @@
     }
     function stopMic() {
         isRecording = false;
-        document.getElementById('mic-btn').classList.remove('bg-red-500/20', 'text-red-400', 'recording-pulse');
+        const micBtn = document.getElementById('mic-btn');
+        micBtn.classList.remove('bg-red-500/20', 'text-red-400', 'recording-pulse');
+        micBtn.setAttribute('aria-label', 'تحدث بصوتك');
         document.getElementById('user-chat-input').placeholder = "تحدث بالميكروفون أو اكتب هنا...";
     }
 
@@ -2742,6 +2746,7 @@
         if (isTranscribing) {
             isTranscribing = false;
             btn.classList.remove('bg-red-500/20', 'text-red-400', 'recording-pulse');
+            btn.setAttribute('aria-label', 'تسجيل صوتي للتفريغ');
             status.innerText = "جاري تفريغ التسجيل بدقة عالية...";
             if (transcribeMediaRecorder && transcribeMediaRecorder.state !== 'inactive') transcribeMediaRecorder.stop();
             return;
@@ -2792,11 +2797,14 @@
         isTranscribing = true;
         isTranscribeStarting = false;
         btn.classList.add('bg-red-500/20', 'text-red-400', 'recording-pulse');
+        btn.setAttribute('aria-label', 'إيقاف التسجيل');
         status.innerText = "بيسجل دلوقتي بجودة عالية... اضغط تاني عشان توقف ويتفرّغ النص.";
     }
     function stopTranscribeMic() {
         isTranscribing = false;
-        document.getElementById('transcribe-mic-btn').classList.remove('bg-red-500/20', 'text-red-400', 'recording-pulse');
+        const btn = document.getElementById('transcribe-mic-btn');
+        btn.classList.remove('bg-red-500/20', 'text-red-400', 'recording-pulse');
+        btn.setAttribute('aria-label', 'تسجيل صوتي للتفريغ');
         if (transcribeMediaRecorder && transcribeMediaRecorder.state !== 'inactive') transcribeMediaRecorder.stop();
     }
 
@@ -3153,14 +3161,35 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
     // مهلة زمنية لأي طلب شبكة هنا، عشان طلب معلّق ميعلقش الأداة لفترة غير محدودة.
     const NETWORK_TIMEOUT_MS = 20000;
 
+    // ============ شريط التحميل العام (global-loading-bar) ============
+    // عداد بسيط عشان لو أكتر من طلب شبكة شغال في نفس الوقت، الشريط مايختفيش
+    // إلا لما كل الطلبات تخلص، مش أول واحد يخلص منهم.
+    let __activeLoadingRequests = 0;
+    function showGlobalLoader() {
+        __activeLoadingRequests++;
+        const bar = document.getElementById('global-loading-bar');
+        if (bar) bar.classList.remove('hidden');
+    }
+    function hideGlobalLoader() {
+        __activeLoadingRequests = Math.max(0, __activeLoadingRequests - 1);
+        if (__activeLoadingRequests === 0) {
+            const bar = document.getElementById('global-loading-bar');
+            if (bar) bar.classList.add('hidden');
+        }
+    }
+    window.showGlobalLoader = showGlobalLoader;
+    window.hideGlobalLoader = hideGlobalLoader;
+
     // fetch مع مهلة زمنية (AbortController) - حماية من طلبات معلّقة لأي وقت غير محدد
     async function fetchWithTimeout(url, options = {}, timeoutMs = NETWORK_TIMEOUT_MS) {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), timeoutMs);
+        showGlobalLoader();
         try {
             return await fetch(url, { ...options, signal: controller.signal });
         } finally {
             clearTimeout(timer);
+            hideGlobalLoader();
         }
     }
 
