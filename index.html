@@ -2788,7 +2788,14 @@
                     <td class="font-bold text-slate-200">${escapeHtml(a.username)}</td>
                     <td>${a.role === "superadmin" ? "صلاحية كاملة" : "مشاهدة فقط"}</td>
                     <td class="text-slate-500">${escapeHtml(a.createdBy || "-")}</td>
-                    <td><button class="admin-mini-btn hover:bg-red-500/10 hover:text-red-300" onclick="adminDeleteAccount('${a.id}', ${JSON.stringify(a.username)})"><i class="fa-solid fa-trash"></i> حذف</button></td>`;
+                    <td><button class="admin-mini-btn hover:bg-red-500/10 hover:text-red-300" type="button"><i class="fa-solid fa-trash"></i> حذف</button></td>`;
+                // ملحوظة إصلاح: كان الزرار مبني بـ onclick="...${JSON.stringify(a.username)}"
+                // جوه attribute متقفول بعلامة تنصيص مزدوجة " " — وJSON.stringify بترجع
+                // string متقفول هو نفسه بعلامتين تنصيص مزدوجة، فكانت بتقفل الـ attribute
+                // بدري وتكسر الزرار مع أي حساب أدمن تاني (مش بس أسماء فيها رموز خاصة).
+                // الحل: نربط الحدث بـ addEventListener بدل ما نحط القيم جوه نص الـ HTML،
+                // وده أسلم كمان (مفيش أي خطر إدخال كود لو اسم المستخدم فيه علامات تنصيص).
+                tr.querySelector("button").addEventListener("click", () => adminDeleteAccount(a.id, a.username));
                 tbody.appendChild(tr);
             });
         } catch (e) {
