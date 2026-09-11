@@ -636,7 +636,7 @@
                 <p class="sidebar-section-title text-[10px] text-slate-600 font-bold px-2 mb-1.5">الذكاء الاصطناعي</p>
                 <div class="space-y-1">
                     <div class="nav-item" data-view="assistant" onclick="switchView('assistant', this)">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i><span class="sidebar-label">المساعد الذكي</span>
+                        <i class="fa-solid fa-wand-magic-sparkles"></i><span class="sidebar-label">يسر Pro Bot</span>
                     </div>
                 </div>
             </div>
@@ -1106,25 +1106,37 @@
                 </div>
             </section>
 
-            <!-- ================= AI ASSISTANT (المساعد الذكي) ================= -->
+            <!-- ================= AI ASSISTANT (يسر Pro Bot) ================= -->
             <section id="view-assistant" class="view">
                 <div class="assistant-chat-wrap reveal-in">
                     <div class="assistant-chat-header">
                         <div class="assistant-chat-avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
                         <div class="flex-1 min-w-0">
-                            <p class="text-xs sm:text-sm font-bold text-slate-100">المساعد الذكي</p>
-                            <p class="text-[10.5px] text-slate-400">اسأله في أي حاجة عن مقابلات الشغل، سيرتك الذاتية، أو مسارك المهني</p>
+                            <p class="text-xs sm:text-sm font-bold text-slate-100">يسر Pro Bot</p>
+                            <p class="text-[10.5px] text-slate-400">كلّمه بالكتابة أو الصوت، وابعتله صورة لو محتاج يشوفها</p>
                         </div>
+                        <button id="assistant-voice-toggle-btn" onclick="toggleAssistantVoice()" class="chip hover:bg-[var(--panel-2)]" title="تشغيل/إيقاف صوت الردود"><i class="fa-solid fa-volume-high"></i></button>
                         <button onclick="clearAssistantChat()" class="chip hover:bg-[var(--panel-2)]" title="بداية محادثة جديدة"><i class="fa-solid fa-rotate-right"></i></button>
                     </div>
                     <div id="assistant-chat-log" class="assistant-chat-log"></div>
+                    <div id="assistant-image-preview-wrap" class="assistant-image-preview-wrap hidden">
+                        <div class="assistant-image-preview-item">
+                            <img id="assistant-image-preview" src="" alt="الصورة المرفقة">
+                            <button onclick="removeAssistantImage()" class="assistant-image-remove-btn" title="إزالة الصورة"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                    </div>
+                    <div id="assistant-mic-status" class="assistant-mic-status hidden"></div>
                     <div class="assistant-chat-inputbar">
+                        <input type="file" id="assistant-image-input" accept="image/*" class="hidden" onchange="handleAssistantImageSelect(event)">
+                        <button class="assistant-icon-btn" title="إرفاق صورة" onclick="document.getElementById('assistant-image-input').click()"><i class="fa-solid fa-image"></i></button>
+                        <button id="assistant-mic-btn" class="assistant-icon-btn" title="تسجيل صوتي" onclick="toggleAssistantMic()"><i class="fa-solid fa-microphone"></i></button>
                         <textarea id="assistant-chat-input" rows="1" placeholder="اكتب سؤالك هنا..." onkeydown="handleAssistantInputKey(event)"></textarea>
                         <button id="assistant-chat-send-btn" class="assistant-chat-send" onclick="sendAssistantMessage()"><i class="fa-solid fa-paper-plane"></i></button>
                     </div>
                 </div>
                 <p class="assistant-provider-hint">مدعوم بأكتر من مزوّد ذكاء اصطناعي — لو مزوّد مشغول، بيتحول للتاني تلقائيًا من غير ما تحس.</p>
             </section>
+
 
             <!-- ================= SALARY INSIGHTS ================= -->
             <section id="view-salary" class="view">

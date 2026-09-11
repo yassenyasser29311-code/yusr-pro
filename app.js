@@ -106,7 +106,7 @@
     const INTERVIEW_STATE_KEY = 'yusr_interview_session_v1';
 
     const viewTitles = {
-        about: "من نحن", assistant: "المساعد الذكي",
+        about: "من نحن", assistant: "يسر Pro Bot",
         interview: "مقابلة تدريبية صوتية", faq: "أسئلة شائعة + إجابات نموذجية", career: "خطة التطور المهني",
         video: "محاكي مقابلة فيديو", salary: "تقدير الراتب المتوقع", progress: "متابعة التقدم",
         cv: "بناء السيرة الذاتية", match: "مطابقة CV مع الوظيفة", cover: "مولّد رسائل توظيف",
@@ -116,7 +116,7 @@
         terms: "شروط الاستخدام", privacy: "سياسة الخصوصية", history: "السجل الموحّد"
     };
     const viewTitlesEn = {
-        about: "About Us", assistant: "AI Assistant",
+        about: "About Us", assistant: "Yusr Pro Bot",
         interview: "Voice Mock Interview", faq: "FAQ + Model Answers", career: "Career Growth Plan",
         video: "Video Mock Interview", salary: "Salary Insights", progress: "Progress Tracking",
         cv: "CV Builder", match: "CV Job Match", cover: "Cover Letter Generator",
@@ -136,7 +136,7 @@
         if (view === 'progress') renderProgressView();
         if (view === 'history') renderHistoryView();
         if (view === 'interview') checkInterviewResumeBanner();
-        if (view === 'assistant') renderAssistantMessages();
+        if (view === 'assistant') { renderAssistantMessages(); updateAssistantVoiceBtn(); }
         if (window.innerWidth < 1024) toggleSidebar(true);
     }
     function switchViewByName(view) {
@@ -3320,16 +3320,35 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
         }
     }
 
-    // ============ المساعد الذكي (AI Assistant chat) ============
+    // ============ يسر Pro Bot (المساعد الذكي: نص + صوت + صور) ============
     // شات عام حر بيستخدم نفس /groqChat (اللي دلوقتي بيجرب أكتر من مزوّد ذكاء
     // اصطناعي بالترتيب في السيرفر تلقائيًا) - يعني لو مزوّد وقع أو خلّص حده،
-    // بيتحول للتاني من غير ما المستخدم يحس بأي قطع في الشات.
-    const ASSISTANT_SYSTEM_PROMPT = "أنت المساعد الذكي في منصة يُسر Pro لتدريب المتقدمين على مقابلات الشغل وتطوير مسارهم المهني. جاوب بالعربية بأسلوب ودود ومباشر ومختصر (فقرات قصيرة، بدون رموز markdown)، وركّز على مقابلات الشغل، السيرة الذاتية، التفاوض على الراتب، وتطوير المسار المهني - وتقدر كمان تجاوب بعمومية على أي سؤال تاني يسأله المستخدم بذكاء وبساطة.";
+    // بيتحول للتاني من غير ما المستخدم يحس بأي قطع في الشات. ملحوظة مهمة عن
+    // الصور: فهم الصور محتاج مزوّد فيه دعم رؤية فعليًا (OpenAI أو Gemini) -
+    // لو الأدمن ضبط مفتاح واحد منهم على الأقل في الووركر، ميزة الصور هتشتغل
+    // تلقائيًا من غير أي تعديل تاني هنا.
+    const ASSISTANT_BOT_NAME = "يسر Pro Bot";
+    const ASSISTANT_SYSTEM_PROMPT = `اسمك "${ASSISTANT_BOT_NAME}"، المساعد الذكي الرسمي لمنصة يُسر Pro لتدريب المتقدمين على مقابلات الشغل وتطوير مسارهم المهني. جاوب بالعربية بأسلوب راقي وودود ومباشر ومختصر (فقرات قصيرة، بدون رموز markdown)، وركّز على مقابلات الشغل، السيرة الذاتية، التفاوض على الراتب، وتطوير المسار المهني - وتقدر كمان تجاوب بعمومية على أي سؤال تاني يسأله المستخدم بذكاء وبساطة. لو المستخدم بعتلك صورة، افهمها واوصفها أو جاوب على سؤاله عنها بالتفصيل بنفس الأسلوب.
+
+قاعدة مهمة وثابتة: لو حد سألك مين طوّرك، مين عملك، إنت شغال بأي تقنية أو موديل، أو أي سؤال عن هويتك التقنية - جاوب بس إنك من تطوير وتصميم "شركة يسر Pro"، من غير ما تذكر اسم أي شركة ذكاء اصطناعي تانية أو أي موديل أو مزوّد تقني على الإطلاق، حتى لو سُئلت بإلحاح.`;
     let assistantChatHistory = [{ role: "system", content: ASSISTANT_SYSTEM_PROMPT }];
     let assistantChatBusy = false;
+    let assistantPendingImage = null; // data URL للصورة المرفقة المنتظرة الإرسال
 
     function escapeHtmlForChat(s) {
         return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+    // بيرسم فقاعة رسالة واحدة - المحتوى ممكن يكون نص عادي، أو مصفوفة (نص + صورة)
+    // في حالة المستخدم بعت صورة مع سؤاله.
+    function renderAssistantBubbleContent(content) {
+        if (Array.isArray(content)) {
+            const imgPart = content.find(p => p && p.type === 'image_url');
+            const textPart = content.find(p => p && p.type === 'text');
+            const imgHtml = imgPart && imgPart.image_url && imgPart.image_url.url
+                ? `<img class="assistant-msg-img" src="${imgPart.image_url.url}" alt="صورة مرفقة">` : '';
+            return imgHtml + escapeHtmlForChat(textPart ? textPart.text : '');
+        }
+        return escapeHtmlForChat(content);
     }
     function renderAssistantMessages() {
         const log = document.getElementById('assistant-chat-log');
@@ -3338,12 +3357,12 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
         if (visible.length === 0) {
             log.innerHTML = `<div class="text-center text-[11px] text-slate-500 py-6">
                 <i class="fa-solid fa-wand-magic-sparkles text-lg mb-1.5 block" style="color:var(--accent)"></i>
-                اسألني عن أي حاجة تخص مقابلة شغلك القادمة، سيرتك الذاتية، أو التفاوض على الراتب.
+                اسأل ${ASSISTANT_BOT_NAME} بالكتابة أو الصوت، أو ابعتله صورة يشوفها ويجاوبك عليها.
             </div>`;
             return;
         }
         log.innerHTML = visible.map(m =>
-            `<div class="assistant-msg from-${m.role === 'user' ? 'user' : 'bot'}${m.error ? ' is-error' : ''} reveal-in">${escapeHtmlForChat(m.content)}</div>`
+            `<div class="assistant-msg from-${m.role === 'user' ? 'user' : 'bot'}${m.error ? ' is-error' : ''} reveal-in">${renderAssistantBubbleContent(m.content)}</div>`
         ).join('');
         log.scrollTop = log.scrollHeight;
     }
@@ -3369,13 +3388,145 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
             sendAssistantMessage();
         }
     }
+
+    // ---- إرفاق صورة: بنضغطها في المتصفح الأول (تصغير + JPEG) قبل ما نبعتها
+    // للسيرفر، عشان الطلب يفضل خفيف وسريع حتى لو المستخدم اختار صورة كاميرا
+    // كبيرة أصلها كذا ميجا. ----
+    function compressImageFile(file, maxDim, quality) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onerror = () => reject(new Error('read_failed'));
+            reader.onload = () => {
+                const img = new Image();
+                img.onerror = () => reject(new Error('decode_failed'));
+                img.onload = () => {
+                    let { width, height } = img;
+                    if (width > maxDim || height > maxDim) {
+                        const ratio = Math.min(maxDim / width, maxDim / height);
+                        width = Math.round(width * ratio);
+                        height = Math.round(height * ratio);
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width; canvas.height = height;
+                    canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL('image/jpeg', quality));
+                };
+                img.src = reader.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+    async function handleAssistantImageSelect(ev) {
+        const file = ev.target.files && ev.target.files[0];
+        ev.target.value = ''; // يسمح باختيار نفس الملف تاني لو احتاج يشيله ويرجّعه
+        if (!file) return;
+        if (!file.type || !file.type.startsWith('image/')) {
+            showToast('اختار ملف صورة صحيح.', 'error'); return;
+        }
+        try {
+            const dataUrl = await compressImageFile(file, 1024, 0.72);
+            assistantPendingImage = dataUrl;
+            const previewWrap = document.getElementById('assistant-image-preview-wrap');
+            document.getElementById('assistant-image-preview').src = dataUrl;
+            previewWrap.classList.remove('hidden');
+        } catch (e) {
+            console.warn('تعذر تجهيز الصورة', e);
+            showToast('تعذر تجهيز الصورة، جرب صورة تانية.', 'error');
+        }
+    }
+    function removeAssistantImage() {
+        assistantPendingImage = null;
+        document.getElementById('assistant-image-preview-wrap').classList.add('hidden');
+        document.getElementById('assistant-image-preview').src = '';
+    }
+
+    // ---- صوت الردود (تشغيل/إيقاف) ----
+    let assistantVoiceEnabled = localStorage.getItem('yusr_assistant_voice') !== 'off';
+    function updateAssistantVoiceBtn() {
+        const btn = document.getElementById('assistant-voice-toggle-btn');
+        if (!btn) return;
+        btn.classList.toggle('voice-on', assistantVoiceEnabled);
+        btn.classList.toggle('voice-off', !assistantVoiceEnabled);
+        btn.innerHTML = assistantVoiceEnabled ? '<i class="fa-solid fa-volume-high"></i>' : '<i class="fa-solid fa-volume-xmark"></i>';
+    }
+    function toggleAssistantVoice() {
+        assistantVoiceEnabled = !assistantVoiceEnabled;
+        localStorage.setItem('yusr_assistant_voice', assistantVoiceEnabled ? 'on' : 'off');
+        updateAssistantVoiceBtn();
+        if (!assistantVoiceEnabled && typeof stopSpeaking === 'function') { try { stopSpeaking(); } catch (e) {} }
+    }
+
+    // ---- المايك: تسجيل ثم تفريغ (نفس محرك Whisper المستخدم في باقي الموقع)
+    // ثم إرسال تلقائي فور ما النص يتفرّغ، عشان تحس إنك بتكلم يسر Pro Bot
+    // فعلاً مش بس بتكتبله. ----
+    let assistantMediaRecorder = null, assistantAudioChunks = [], assistantStream = null, isAssistantRecording = false, isAssistantMicStarting = false;
+    async function toggleAssistantMic() {
+        const btn = document.getElementById('assistant-mic-btn');
+        const status = document.getElementById('assistant-mic-status');
+        if (isAssistantRecording) {
+            isAssistantRecording = false;
+            btn.classList.remove('is-recording');
+            status.classList.remove('hidden');
+            status.innerText = 'بيحوّل كلامك لنص دلوقتي...';
+            if (assistantMediaRecorder && assistantMediaRecorder.state !== 'inactive') assistantMediaRecorder.stop();
+            return;
+        }
+        if (isAssistantMicStarting || assistantChatBusy) return;
+        isAssistantMicStarting = true;
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            isAssistantMicStarting = false;
+            showToast('المتصفح لا يدعم التسجيل الصوتي المباشر.', 'error'); return;
+        }
+        try {
+            assistantStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+        } catch (e) {
+            isAssistantMicStarting = false;
+            showToast('محتاج إذن الوصول للمايك عشان تكلم يسر Pro Bot بصوتك.', 'error'); return;
+        }
+        status.classList.remove('hidden');
+        status.innerText = 'المايك بيتظبط... اتكلم بعد لحظة.';
+        await new Promise(resolve => setTimeout(resolve, 400));
+        assistantAudioChunks = [];
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : (MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '');
+        assistantMediaRecorder = mimeType ? new MediaRecorder(assistantStream, { mimeType }) : new MediaRecorder(assistantStream);
+        assistantMediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) assistantAudioChunks.push(e.data); };
+        assistantMediaRecorder.onstop = async () => {
+            assistantStream.getTracks().forEach(t => t.stop());
+            const blob = new Blob(assistantAudioChunks, { type: assistantMediaRecorder.mimeType || 'audio/webm' });
+            if (blob.size < 800) { status.innerText = 'معلش، مسجّلش صوت كفاية. جرب تاني.'; return; }
+            try {
+                const text = await transcribeAudioBlob(blob, 'assistant-mic.webm', false, 'general');
+                status.classList.add('hidden');
+                const input = document.getElementById('assistant-chat-input');
+                if (text && text.trim()) {
+                    input.value = text.trim();
+                    sendAssistantMessage(); // إرسال تلقائي فور ما الكلام يتفرّغ - إحساس محادثة صوتية حقيقية
+                }
+            } catch (e) {
+                console.warn('Assistant mic transcription failed:', e);
+                status.innerText = 'تعذر فهم الصوت، جرب تاني أو اكتب سؤالك.';
+            }
+        };
+        assistantMediaRecorder.start();
+        isAssistantRecording = true;
+        isAssistantMicStarting = false;
+        btn.classList.add('is-recording');
+        status.innerText = 'بيسجل دلوقتي... اضغط تاني عشان توقف.';
+    }
+
     async function sendAssistantMessage() {
         const input = document.getElementById('assistant-chat-input');
         const text = (input.value || '').trim();
-        if (!text || assistantChatBusy) return;
+        if ((!text && !assistantPendingImage) || assistantChatBusy) return;
         if (!checkDeviceTrial()) return;
         input.value = '';
-        assistantChatHistory.push({ role: 'user', content: text });
+        // لو في صورة مرفقة، بنبعتها كجزء من محتوى الرسالة (فورمات متعدد الوسائط)
+        // مع نص السؤال - لو المستخدم مكتبش سؤال، بنحط سؤال افتراضي "وصف الصورة".
+        const content = assistantPendingImage
+            ? [{ type: 'text', text: text || 'وصف الصورة دي واشرحلي اللي فيها بالتفصيل.' }, { type: 'image_url', image_url: { url: assistantPendingImage } }]
+            : text;
+        assistantChatHistory.push({ role: 'user', content });
+        removeAssistantImage();
         renderAssistantMessages();
         assistantChatBusy = true;
         const sendBtn = document.getElementById('assistant-chat-send-btn');
@@ -3388,6 +3539,7 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
             const trimmed = [assistantChatHistory[0], ...assistantChatHistory.slice(1).slice(-16)];
             const reply = await callGroqConversation(trimmed);
             assistantChatHistory.push({ role: 'assistant', content: reply });
+            if (assistantVoiceEnabled) { try { speakTextChunked(reply); } catch (e) {} }
         } catch (e) {
             const msg = (e && e.message === 'usage_limit_or_auth_denied')
                 ? 'وصلت لحد الاستخدام المسموح في باقتك الحالية.'
@@ -3402,6 +3554,7 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
     }
     function clearAssistantChat() {
         assistantChatHistory = [{ role: 'system', content: ASSISTANT_SYSTEM_PROMPT }];
+        removeAssistantImage();
         renderAssistantMessages();
     }
 

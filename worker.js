@@ -578,15 +578,54 @@ async function handleGroqChat(request, env, corsHeaders) {
   }
 
   const ALLOWED_ROLES = new Set(["system", "user", "assistant"]);
+  // حد أقصى لطول أي data URL صورة (base64) - كافي لصورة واضحة بعد الضغط اللي
+  // بيعمله المتصفح (canvas + JPEG) قبل الإرسال، وفي نفس الوقت بيمنع حد إنه
+  // يبعت بيانات ضخمة تكلّف فلوس أو تبطّئ الطلب.
+  const MAX_IMAGE_DATA_URL_LEN = 1_800_000;
+  const MAX_IMAGES_PER_REQUEST = 4;
   let totalChars = 0;
+  let imageCount = 0;
   for (const m of messages) {
     if (!m || typeof m !== "object") return json({ error: "invalid_message" }, 400, corsHeaders);
     if (!ALLOWED_ROLES.has(m.role)) return json({ error: "invalid_role" }, 400, corsHeaders);
-    if (typeof m.content !== "string" || m.content.length === 0) {
-      return json({ error: "invalid_content" }, 400, corsHeaders);
+
+    if (typeof m.content === "string") {
+      if (m.content.length === 0) return json({ error: "invalid_content" }, 400, corsHeaders);
+      if (m.content.length > 8000) return json({ error: "message_too_long" }, 400, corsHeaders);
+      totalChars += m.content.length;
+      continue;
     }
-    if (m.content.length > 8000) return json({ error: "message_too_long" }, 400, corsHeaders);
-    totalChars += m.content.length;
+
+    // ---- محتوى متعدد الوسائط (نص + صورة) - المستخدم بعت صورة مع سؤاله ----
+    // بنسمح بيه بس بشكل مقيّد جداً: مصفوفة من أجزاء (نص عادي / صورة data URL
+    // بس - مفيش روابط خارجية عشان نمنع أي محاولة استغلال السيرفر إنه يجيب
+    // محتوى من رابط حد تاني - SSRF).
+    if (Array.isArray(m.content)) {
+      if (m.content.length === 0 || m.content.length > 4) {
+        return json({ error: "invalid_content" }, 400, corsHeaders);
+      }
+      for (const part of m.content) {
+        if (!part || typeof part !== "object") return json({ error: "invalid_content" }, 400, corsHeaders);
+        if (part.type === "text") {
+          if (typeof part.text !== "string" || part.text.length > 8000) {
+            return json({ error: "invalid_content" }, 400, corsHeaders);
+          }
+          totalChars += part.text.length;
+        } else if (part.type === "image_url") {
+          const url = part.image_url && part.image_url.url;
+          if (typeof url !== "string" || !url.startsWith("data:image/") || url.length > MAX_IMAGE_DATA_URL_LEN) {
+            return json({ error: "invalid_image" }, 400, corsHeaders);
+          }
+          imageCount++;
+          if (imageCount > MAX_IMAGES_PER_REQUEST) return json({ error: "too_many_images" }, 400, corsHeaders);
+        } else {
+          return json({ error: "invalid_content" }, 400, corsHeaders);
+        }
+      }
+      continue;
+    }
+
+    return json({ error: "invalid_content" }, 400, corsHeaders);
   }
   if (totalChars > 40000) return json({ error: "conversation_too_long" }, 400, corsHeaders);
 
