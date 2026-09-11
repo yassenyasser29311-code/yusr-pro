@@ -977,6 +977,36 @@
         if (isIosDevice()) showPwaInstallBannerIfEligible();
     }
 
+    // ============ إعلان تطبيق الأندرويد (APK) في الـ sidebar ============
+    // بيتخفي تلقائيًا لو الموقع شغال بالفعل جوه تطبيق الأندرويد (WebView)
+    // عشان معنوش نعرض على حد التطبيق فكرة إنه ينزّل التطبيق!
+    // طريقة الكشف: (1) لو استخدمت أداة تغليف WebView زي Median/GoNative
+    // وضبطت فيها User-Agent مخصص يحتوي على الكلمة "YusrProNativeApp"، هيتلقط
+    // فورًا وبدقة 100%. (2) هيوريستيك احتياطي عام لأي Android WebView عادي.
+    function isRunningInsideApk() {
+        try {
+            if (/YusrProNativeApp/i.test(navigator.userAgent)) return true;
+            if (/; wv\)/i.test(navigator.userAgent)) return true;
+        } catch (e) {}
+        return false;
+    }
+    function showApkPromoIfEligible() {
+        if (isRunningInsideApk()) return;
+        try {
+            const dismissedAt = parseInt(localStorage.getItem('yusr_apk_promo_dismissed_at') || '0', 10);
+            const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+            if (dismissedAt && (Date.now() - dismissedAt) < sevenDaysMs) return;
+        } catch (e) {}
+        const el = document.getElementById('apk-promo-sidebar');
+        if (el) el.classList.remove('hidden');
+    }
+    function dismissApkPromo(e) {
+        if (e) e.stopPropagation();
+        try { localStorage.setItem('yusr_apk_promo_dismissed_at', String(Date.now())); } catch (e) {}
+        const el = document.getElementById('apk-promo-sidebar');
+        if (el) el.classList.add('hidden');
+    }
+
     function getDeviceId() {
         let id = localStorage.getItem('yusr_device_fingerprint');
         if (!id) { id = 'DEV-' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36); localStorage.setItem('yusr_device_fingerprint', id); }
@@ -4633,6 +4663,7 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
 
     initTheme();
     initPwaInstall();
+    showApkPromoIfEligible();
     checkDeviceTrial();
     updateAccountChip();
     applyI18n();

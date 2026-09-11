@@ -750,6 +750,29 @@
                     <i class="fa-solid fa-download"></i> تثبيت التطبيق
                 </button>
             </div>
+
+            <!-- ============ إعلان تطبيق الأندرويد (APK) ============
+                 بيبان في الـ sidebar بس (مش وسط محتوى الأدوات) عشان ميضايقش
+                 المستخدم وهو شغال. بيختفي تلقائيًا لو الموقع شغال جوه تطبيق
+                 الأندرويد نفسه (isRunningInsideApk في app.js)، وبيختفي لو
+                 المستخدم دوس "إخفاء" ولمدة أسبوع بعدين يرجع يبان تاني. -->
+            <div id="apk-promo-sidebar" class="apk-promo-card rounded-xl px-2.5 py-2.5 hidden">
+                <div class="flex items-center gap-2.5">
+                    <div class="apk-promo-icon w-9 h-9 rounded-lg flex items-center justify-center text-[13px] shrink-0">
+                        <i class="fa-solid fa-download"></i>
+                    </div>
+                    <div class="flex-1 min-w-0 sidebar-label">
+                        <p class="text-[11px] font-extrabold">عندنا تطبيق أندرويد كمان 📱</p>
+                        <p class="text-[9.5px] opacity-80">تحميل مباشر (APK)، أسرع وبيتحدث لوحده</p>
+                    </div>
+                    <button type="button" onclick="dismissApkPromo(event)" title="إخفاء" aria-label="إخفاء اقتراح التطبيق" class="apk-promo-close shrink-0 sidebar-label p-1">
+                        <i class="fa-solid fa-xmark text-[11px]"></i>
+                    </button>
+                </div>
+                <a href="/yusr-pro-latest.apk" download class="apk-promo-btn w-full mt-2 text-[11px] font-extrabold py-2 rounded-lg sidebar-label flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-download"></i> نزّل التطبيق دلوقتي
+                </a>
+            </div>
             <div id="account-chip" class="panel-2 rounded-xl px-2.5 py-2 flex items-center gap-2 cursor-pointer" onclick="switchViewByName('profile')">
                 <div id="account-avatar" class="w-7 h-7 rounded-full bg-[#2a2f36] flex items-center justify-center text-[10px] text-slate-400 shrink-0 overflow-hidden">
                     <i class="fa-solid fa-user"></i>
@@ -780,7 +803,7 @@
     <div class="flex-1 flex flex-col min-w-0">
         <header class="sticky top-0 z-20 flex items-center gap-3 px-4 sm:px-6 py-3.5 panel border-b">
             <button onclick="toggleSidebar()" class="lg:hidden text-slate-300 text-lg" aria-label="فتح القائمة"><i class="fa-solid fa-bars"></i></button>
-            <h1 id="view-title" class="flex-1 min-w-0 truncate font-tajawal font-bold text-sm sm:text-base text-slate-100">مقابلة تدريبية صوتية</h1>
+            <h1 id="view-title" class="font-tajawal font-bold text-sm sm:text-base text-slate-100">مقابلة تدريبية صوتية</h1>
             <div class="mr-auto flex items-center gap-2">
                 <button id="header-trial-badge" onclick="openPricingModal()" title="المحاولات المجانية المتبقية الشهر ده" class="header-trial-badge trial-ok flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold shrink-0">
                     <i class="fa-solid fa-bolt"></i><span id="header-trial-count">5</span>
@@ -807,20 +830,6 @@
         </header>
 
         <main class="flex-1 p-4 sm:p-6 max-w-4xl w-full mx-auto space-y-4">
-
-            <!-- ============ APK DOWNLOAD PROMO BANNER ============ -->
-            <div class="apk-promo-banner rounded-2xl p-4 flex items-center gap-3 justify-between">
-                <div class="flex items-center gap-3">
-                    <div class="apk-promo-icon shrink-0"><i class="fa-solid fa-mobile-screen-button"></i></div>
-                    <div>
-                        <p class="font-tajawal font-extrabold text-sm sm:text-base">جرّب يُسْر بشكل أسرع من التطبيق 📱</p>
-                        <p class="text-[11px] sm:text-xs opacity-80">تحميل مباشر، من غير متجر، وبيتحدث لوحده أول بأول.</p>
-                    </div>
-                </div>
-                <a href="/yusr-pro-latest.apk" download class="apk-promo-btn shrink-0 rounded-xl px-3.5 py-2 text-[12px] sm:text-sm font-extrabold whitespace-nowrap flex items-center gap-1.5">
-                    <i class="fa-solid fa-download"></i> نزّل التطبيق الآن
-                </a>
-            </div>
 
             <!-- ============ EMAIL VERIFICATION BANNER ============
                  بيبان بس لحساب إيميل/باسورد لسه ما أكّدش إيميله (حسابات جوجل مستثناة
