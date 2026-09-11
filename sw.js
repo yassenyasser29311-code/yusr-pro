@@ -34,7 +34,7 @@
 // بس مش شرط تتظبط يدويًا بنفس الدقة زي الأول.
 // ================================================================
 
-const CACHE_VERSION = "v9";
+const CACHE_VERSION = "v10";
 const CACHE_NAME = `yusr-pro-shell-${CACHE_VERSION}`;
 
 // ملفات "هيكل" الموقع بتاعتك (نفس الدومين) — لو غيّرت اسم أو رقم نسخة
@@ -48,6 +48,14 @@ const SAME_ORIGIN_FILES = [
   "/index.html",
   "/app.js?v=12",
   "/styles.css?v=7",
+  "/site.webmanifest",
+  "/favicon.ico",
+  "/favicon-16x16.png",
+  "/favicon-32x32.png",
+  "/apple-touch-icon.png",
+  "/android-chrome-192x192.png",
+  "/android-chrome-512x512.png",
+  "/og-image.png",
 ];
 
 // مكتبات خارجية (CDN) لازمة عشان الموقع يبان صح أوفلاين. دي روابط
@@ -119,14 +127,19 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  const isOwnFile = SAME_ORIGIN_FILES.some(
-    (f) => url.pathname === f.split("?")[0] || (f === "/" && url.pathname === "/")
-  );
+  // أي ملف على نفس الدومين بتاعك (HTML/JS/CSS/صور/أيقونات/manifest...) —
+  // مش بس اللي في القايمة فوق. القايمة فوق دلوقتي بتستخدم للـ pre-cache وقت
+  // "install" بس (عشان تشتغل أوفلاين من أول زيارة)، أما التحديث نفسه بقى
+  // Network-first لأي حاجة same-origin تلقائيًا، فمحتاجش تحدّث الملف ده أو
+  // تزوّد رقم نسخة يدويًا كل مرة عشان صورة أو أيقونة جديدة تظهر — بمجرد
+  // الرفع (deploy)، أي زيارة جديدة هتجيب النسخة الجديدة على طول.
+  const isOwnFile = url.origin === self.location.origin;
 
   if (isOwnFile) {
-    // Network-first لملفات الموقع بتاعتنا (index.html / app.js / styles.css):
-    // بنجيب من النت الحقيقي كل مرة أول حاجة، عشان أي تحديث بترفعه يوصل
-    // فورًا لأي حد بيفتح الموقع. الكاش هنا مجرد خطة بديلة لو النت واقع بس.
+    // Network-first لأي ملف same-origin (index.html / app.js / styles.css /
+    // الصور / الأيقونات / site.webmanifest): بنجيب من النت الحقيقي كل مرة
+    // أول حاجة، عشان أي تحديث بترفعه يوصل فورًا لأي حد بيفتح الموقع.
+    // الكاش هنا مجرد خطة بديلة لو النت واقع بس.
     event.respondWith(
       fetch(req, { cache: "no-store" })
         .then((networkRes) => {
