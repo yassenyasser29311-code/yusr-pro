@@ -1,8 +1,0 @@
-[{
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "app.vercel.yusr_pro.twa",
-        "sha256_cert_fingerprints": ["B2:74:55:61:EF:34:B7:7C:02:73:B7:CD:00:8A:33:DC:A7:3C:C9:14:26:07:38:7A:0B:C0:00:2C:05:B3:2E:D9"]
-      }
-    }]
