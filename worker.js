@@ -593,43 +593,65 @@ async function handleGroqChat(request, env, corsHeaders) {
   // بنبعت بس role و content لـ Groq (منمنعش أي حقول زيادة تتهرّب مع الطلب)
   const cleanMessages = messages.map(m => ({ role: m.role, content: m.content }));
 
-  // ---- المزوّد الأساسي: Groq ----
-  const primary = await tryChatProvider(
-    "https://api.groq.com/openai/v1/chat/completions",
-    env.GROQ_API_KEY,
-    "openai/gpt-oss-120b",
-    cleanMessages
-  );
-  if (primary.ok) {
-    return json({ content: primary.content, provider: "groq" }, 200, corsHeaders);
-  }
-  console.warn("Groq فشل:", primary.reason);
-
-  // ---- المزوّد البديل (fallback): بيتفعّل تلقائيًا بس لو متظبط في env ----
-  // عشان ده يبقى فيه فايدة حقيقية (مش مجرد Groq تاني)، لازم يكون مزوّد
-  // مختلف فعليًا زي Cerebras أو Together AI أو OpenAI أو OpenRouter —
-  // أي حد منهم بيوفّر endpoint متوافق مع شكل OpenAI Chat Completions.
-  // للتفعيل: ضيف الـ 3 secrets دي في الووركر (wrangler secret put):
-  //   FALLBACK_API_KEY   = مفتاح الحساب بتاعك عند المزوّد التاني
-  //   FALLBACK_BASE_URL  = مثلاً https://api.cerebras.ai/v1/chat/completions
-  //   FALLBACK_MODEL     = اسم الموديل عند المزوّد ده (مثلاً "llama3.1-70b")
-  // لو الـ 3 دول مش متظبطين، الووركر هيرجع نفس رسالة الخطأ القديمة زي الأول
-  // بالظبط (يعني مفيش أي تغيير في السلوك لحد ما تفعّل الفولباك بنفسك).
-  if (env.FALLBACK_API_KEY && env.FALLBACK_BASE_URL && env.FALLBACK_MODEL) {
-    const fallback = await tryChatProvider(
-      env.FALLBACK_BASE_URL,
-      env.FALLBACK_API_KEY,
-      env.FALLBACK_MODEL,
-      cleanMessages
-    );
-    if (fallback.ok) {
-      console.warn("تم استخدام المزوّد البديل بعد فشل Groq");
-      return json({ content: fallback.content, provider: "fallback" }, 200, corsHeaders);
+  // ==============================================================
+  // سلسلة مزوّدين ذكاء اصطناعي بالترتيب: Groq → OpenAI (ChatGPT) → Gemini
+  // → أي فولباك عام تاني (اختياري). كل مزوّد بيتجرب واحد ورا التاني
+  // تلقائيًا وبنفس الشكل تمامًا اللي المستخدم شايفه (نفس الشات، نفس
+  // الفورمات) — من غير ما يحس إن في تبديل حصل. لو مزوّد مش متظبط مفتاحه
+  // (secret مش موجود)، بيتخطّى تلقائيًا لللي بعده من غير أي تأخير أو خطأ.
+  //
+  // مفاتيح كل مزوّد (wrangler secret put <الاسم>):
+  //   GROQ_API_KEY    → المزوّد الأساسي (موجود بالفعل)
+  //   OPENAI_API_KEY  → مفتاح OpenAI العادي (sk-...)
+  //   GEMINI_API_KEY  → مفتاح Google AI Studio (Gemini) — بنستخدم نفس
+  //                     شكل OpenAI عن طريق endpoint التوافق الرسمي من
+  //                     جوجل، فمحتاجينش SDK مختلف خالص.
+  // أي واحد منهم لو مش متظبط، بيتخطّى بهدوء والسلسلة تكمل عادي.
+  // ==============================================================
+  const providerChain = [
+    {
+      name: "groq",
+      baseUrl: "https://api.groq.com/openai/v1/chat/completions",
+      apiKey: env.GROQ_API_KEY,
+      model: "openai/gpt-oss-120b"
+    },
+    {
+      name: "openai",
+      baseUrl: "https://api.openai.com/v1/chat/completions",
+      apiKey: env.OPENAI_API_KEY,
+      model: env.OPENAI_MODEL || "gpt-4o-mini"
+    },
+    {
+      name: "gemini",
+      baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+      apiKey: env.GEMINI_API_KEY,
+      model: env.GEMINI_MODEL || "gemini-2.0-flash"
+    },
+    // فولباك عام إضافي (Cerebras/Together/OpenRouter/أي حد متوافق) —
+    // اختياري وبيتفعّل بس لو الـ 3 secrets دول متظبطين سوا.
+    {
+      name: "fallback",
+      baseUrl: env.FALLBACK_BASE_URL,
+      apiKey: env.FALLBACK_API_KEY,
+      model: env.FALLBACK_MODEL
     }
-    console.warn("المزوّد البديل فشل برضه:", fallback.reason);
+  ];
+
+  let lastReason = "no_provider_configured";
+  for (const provider of providerChain) {
+    if (!provider.apiKey || !provider.baseUrl || !provider.model) continue; // مش متظبط، اتخطاه
+    const attempt = await tryChatProvider(provider.baseUrl, provider.apiKey, provider.model, cleanMessages);
+    if (attempt.ok) {
+      if (provider.name !== "groq") {
+        console.warn(`تم الرد عن طريق مزوّد بديل (${provider.name}) بعد فشل اللي قبله`);
+      }
+      return json({ content: attempt.content, provider: provider.name }, 200, corsHeaders);
+    }
+    lastReason = attempt.reason;
+    console.warn(`مزوّد ${provider.name} فشل:`, attempt.reason);
   }
 
-  return json({ error: "groq_error" }, 502, corsHeaders);
+  return json({ error: "groq_error", detail: lastReason }, 502, corsHeaders);
 }
 
 // محاولة واحدة لأي مزوّد متوافق مع شكل OpenAI Chat Completions (Groq،

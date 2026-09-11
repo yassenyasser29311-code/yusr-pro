@@ -106,7 +106,7 @@
     const INTERVIEW_STATE_KEY = 'yusr_interview_session_v1';
 
     const viewTitles = {
-        about: "من نحن",
+        about: "من نحن", assistant: "المساعد الذكي",
         interview: "مقابلة تدريبية صوتية", faq: "أسئلة شائعة + إجابات نموذجية", career: "خطة التطور المهني",
         video: "محاكي مقابلة فيديو", salary: "تقدير الراتب المتوقع", progress: "متابعة التقدم",
         cv: "بناء السيرة الذاتية", match: "مطابقة CV مع الوظيفة", cover: "مولّد رسائل توظيف",
@@ -116,7 +116,7 @@
         terms: "شروط الاستخدام", privacy: "سياسة الخصوصية", history: "السجل الموحّد"
     };
     const viewTitlesEn = {
-        about: "About Us",
+        about: "About Us", assistant: "AI Assistant",
         interview: "Voice Mock Interview", faq: "FAQ + Model Answers", career: "Career Growth Plan",
         video: "Video Mock Interview", salary: "Salary Insights", progress: "Progress Tracking",
         cv: "CV Builder", match: "CV Job Match", cover: "Cover Letter Generator",
@@ -136,6 +136,7 @@
         if (view === 'progress') renderProgressView();
         if (view === 'history') renderHistoryView();
         if (view === 'interview') checkInterviewResumeBanner();
+        if (view === 'assistant') renderAssistantMessages();
         if (window.innerWidth < 1024) toggleSidebar(true);
     }
     function switchViewByName(view) {
@@ -1101,6 +1102,45 @@
         if (cloudUsageCache && cloudUsageCache.month === monthKey) return cloudUsageCache.count;
         return getLocalUsageCache().count; // لحد ما يوصل رد السيرفر أول مرة
     }
+
+    // ============ تفعيل فوري للباقة (Realtime plan listener) ============
+    // المشكلة اللي كانت موجودة: باقة المستخدم (users/{uid}/plan) كانت بتتقرا مرة
+    // واحدة بس عند فتح الحساب (loadProfileFromCloud -> once('value'))، فلو الأدمن
+    // فعّل/غيّر باقة المستخدم وهو فاتح المنصة فعليًا، مكانتش تتحدث عنده إلا لما يعمل
+    // حاجة تانية تعيد القراءة (أو يقفل ويفتح من جديد). الحل: نفس أسلوب عداد
+    // الاستخدام بالظبط (on('value') بدل once) بس على حقل الباقة نفسه — أي تغيير
+    // في الباقة من لوحة الأدمن بيوصل للمستخدم لحظيًا بمجرد ما فايربيز يبعته، من غير
+    // ريفريش ومن غير ما يستخدم أي أداة الأول.
+    let cloudPlanRef = null;
+    function attachCloudPlanListener(uid) {
+        if (cloudPlanRef) cloudPlanRef.off();
+        // متغيّر محلي (مش عام) بيتصفّر مع كل تسجيل دخول - أول قراءة لحظة فتح الصفحة
+        // هي مجرد مزامنة أولية مش "تفعيل جديد"، فمنعرضش توست عليها. أي تغيير حقيقي
+        // بعد كده (الأدمن فعّل/غيّر الباقة وهو فاتح المنصة فعليًا) بيعرض التوست.
+        let firstSnapshot = true;
+        cloudPlanRef = db.ref('users/' + uid + '/plan');
+        cloudPlanRef.on('value', snap => {
+            const isFirst = firstSnapshot;
+            firstSnapshot = false;
+            const newPlan = (snap.val() || '').trim();
+            const p = getProfile();
+            const oldPlan = (p.plan || '').trim();
+            if (!newPlan || newPlan === oldPlan) return;
+            p.plan = newPlan;
+            saveProfile(p);
+            checkDeviceTrial();
+            refreshProfileView();
+            if (typeof updatePricingModalActivePlan === 'function') {
+                try { updatePricingModalActivePlan(); } catch (e) {}
+            }
+            if (!isFirst) {
+                const msg = (currentUiLang === 'en')
+                    ? `🎉 Your subscription is now active: ${newPlan}. Enjoy!`
+                    : `🎉 تم تفعيل باقتك بنجاح: ${newPlan}! اتمتع بمميزاتها دلوقتي.`;
+                showToast(msg, 'success');
+            }
+        }, err => console.warn('تعذر متابعة الباقة من السيرفر', err));
+    }
     // ============ نقطة 7: تنبيه استباقي لحد الاستخدام ============
     // بدل ما المستخدم يتفاجئ بمودال الأسعار فجأة لما يستخدم أداة ومحاولاته خلصت،
     // بنوريله باستمرار "المتبقي / الإجمالي" + شريط تقدم ملوّن (أخضر عادي، برتقالي
@@ -1350,6 +1390,7 @@
             hideAuthGate();
             loadProfileFromCloud(user.uid);
             attachCloudUsageListener(user.uid);
+            attachCloudPlanListener(user.uid);
             attachSuspensionListener(user.uid);
             startOnlinePing();
             showSupportChatFab();
@@ -2571,6 +2612,7 @@
     function renderResult(box, text, filename) {
         box.dataset.raw = text;
         box.classList.remove('hidden');
+        box.classList.remove('reveal-in'); void box.offsetWidth; box.classList.add('reveal-in'); // حركة دخول ناعمة لكل نتيجة جديدة
         box.innerHTML = `<div class="flex justify-end gap-2 mb-2">
             <button onclick="copyResult(this)" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-copy"></i> <span>${I18N[currentUiLang].copy}</span></button>
             <button onclick="downloadResult(this, '${filename}')" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-download"></i> <span>${I18N[currentUiLang].download}</span></button>
@@ -3276,6 +3318,91 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
             }
             throw new Error("فشل الاتصال بالذكاء الاصطناعي، حاول تاني بعد شوية.");
         }
+    }
+
+    // ============ المساعد الذكي (AI Assistant chat) ============
+    // شات عام حر بيستخدم نفس /groqChat (اللي دلوقتي بيجرب أكتر من مزوّد ذكاء
+    // اصطناعي بالترتيب في السيرفر تلقائيًا) - يعني لو مزوّد وقع أو خلّص حده،
+    // بيتحول للتاني من غير ما المستخدم يحس بأي قطع في الشات.
+    const ASSISTANT_SYSTEM_PROMPT = "أنت المساعد الذكي في منصة يُسر Pro لتدريب المتقدمين على مقابلات الشغل وتطوير مسارهم المهني. جاوب بالعربية بأسلوب ودود ومباشر ومختصر (فقرات قصيرة، بدون رموز markdown)، وركّز على مقابلات الشغل، السيرة الذاتية، التفاوض على الراتب، وتطوير المسار المهني - وتقدر كمان تجاوب بعمومية على أي سؤال تاني يسأله المستخدم بذكاء وبساطة.";
+    let assistantChatHistory = [{ role: "system", content: ASSISTANT_SYSTEM_PROMPT }];
+    let assistantChatBusy = false;
+
+    function escapeHtmlForChat(s) {
+        return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+    function renderAssistantMessages() {
+        const log = document.getElementById('assistant-chat-log');
+        if (!log) return;
+        const visible = assistantChatHistory.filter(m => m.role !== 'system');
+        if (visible.length === 0) {
+            log.innerHTML = `<div class="text-center text-[11px] text-slate-500 py-6">
+                <i class="fa-solid fa-wand-magic-sparkles text-lg mb-1.5 block" style="color:var(--accent)"></i>
+                اسألني عن أي حاجة تخص مقابلة شغلك القادمة، سيرتك الذاتية، أو التفاوض على الراتب.
+            </div>`;
+            return;
+        }
+        log.innerHTML = visible.map(m =>
+            `<div class="assistant-msg from-${m.role === 'user' ? 'user' : 'bot'}${m.error ? ' is-error' : ''} reveal-in">${escapeHtmlForChat(m.content)}</div>`
+        ).join('');
+        log.scrollTop = log.scrollHeight;
+    }
+    function setAssistantTyping(show) {
+        const log = document.getElementById('assistant-chat-log');
+        if (!log) return;
+        let el = document.getElementById('assistant-typing-indicator');
+        if (show) {
+            if (el) return;
+            el = document.createElement('div');
+            el.id = 'assistant-typing-indicator';
+            el.className = 'assistant-typing';
+            el.innerHTML = '<span></span><span></span><span></span>';
+            log.appendChild(el);
+            log.scrollTop = log.scrollHeight;
+        } else if (el) {
+            el.remove();
+        }
+    }
+    function handleAssistantInputKey(ev) {
+        if (ev.key === 'Enter' && !ev.shiftKey) {
+            ev.preventDefault();
+            sendAssistantMessage();
+        }
+    }
+    async function sendAssistantMessage() {
+        const input = document.getElementById('assistant-chat-input');
+        const text = (input.value || '').trim();
+        if (!text || assistantChatBusy) return;
+        if (!checkDeviceTrial()) return;
+        input.value = '';
+        assistantChatHistory.push({ role: 'user', content: text });
+        renderAssistantMessages();
+        assistantChatBusy = true;
+        const sendBtn = document.getElementById('assistant-chat-send-btn');
+        if (sendBtn) sendBtn.disabled = true;
+        setAssistantTyping(true);
+        incrementDeviceUsage();
+        try {
+            // بنبعت آخر 16 رسالة بس (+ الـ system) عشان نفضل جوه حدود السيرفر
+            // ونخلي الرد سريع، من غير ما نحتاج للتاريخ الكامل من أول المحادثة.
+            const trimmed = [assistantChatHistory[0], ...assistantChatHistory.slice(1).slice(-16)];
+            const reply = await callGroqConversation(trimmed);
+            assistantChatHistory.push({ role: 'assistant', content: reply });
+        } catch (e) {
+            const msg = (e && e.message === 'usage_limit_or_auth_denied')
+                ? 'وصلت لحد الاستخدام المسموح في باقتك الحالية.'
+                : 'تعذر الرد دلوقتي، جرب تاني بعد شوية.';
+            assistantChatHistory.push({ role: 'assistant', content: msg, error: true });
+        } finally {
+            setAssistantTyping(false);
+            assistantChatBusy = false;
+            if (sendBtn) sendBtn.disabled = false;
+            renderAssistantMessages();
+        }
+    }
+    function clearAssistantChat() {
+        assistantChatHistory = [{ role: 'system', content: ASSISTANT_SYSTEM_PROMPT }];
+        renderAssistantMessages();
     }
 
     // ============ Performance report ============
@@ -4209,11 +4336,24 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
         const liveContext = await fetchLiveSalaryContext(role, exp, region);
         box.innerHTML = spinnerHTML("جاري تقدير الراتب المناسب...");
         const userMsg = `الوظيفة: ${role}\nسنوات الخبرة: ${exp || 'غير محدد'}\nالمنطقة: ${region}`;
+        // برومبت غني بيخلي الإجابة توضّح "الصورة الكاملة" مش رقم جاف: المفروض نظريًا
+        // إيه، وواقع السوق المحلي إيه، وإزاي بيختلف من مكان لمكان جوه نفس البلد/المنطقة،
+        // وإن فيه ناس بتقبض فوق أو تحت المتوسط ده ولسه طبيعي وليه. ده بالظبط اللي
+        // بيخلي التقدير حسّه "حقيقي" مش رقم واحد جامد من غير سياق.
+        const richInstructions = `أنت مستشار رواتب خبير وعملي، بيتكلم بأسلوب واضح وصريح زي حد فاهم السوق فعلاً مش بيقرا من كتاب. جاوب بالشكل ده بالظبط (بدون رموز markdown، فقرات قصيرة مفصولة بسطر فاضي):
+
+1) "نظريًا/عالميًا": إيه الراتب المتوقع لنفس الوظيفة والخبرة دي كمعيار عام (لو كانت من شركة عالمية أو حسب المسمى الوظيفي نفسه).
+2) "في الواقع بمنطقة ${region}": وضّح إن الرقم النظري ده غالبًا مختلف عن اللي بيحصل فعليًا في السوق المحلي، وقدّر نطاق واقعي (من - إلى) بعملة المنطقة.
+3) "الفرق حسب المكان بالظبط": لو المنطقة دي فيها تفاوت معروف بين المدن/المحافظات الكبيرة والصغيرة (مثلاً العاصمة/المدن الكبرى مقابل باقي المناطق)، وضّح الفرق ده بالتحديد بأرقام تقريبية لكل جزء، مش تعميم.
+4) "أعلى من كده وأقل من كده": اذكر إن في ناس بتقبض أعلى بكتير من النطاق ده (وليه: شركات أجنبية/عملاء أجانب/شركة كبيرة/مهارة نادرة) وناس بتقبض أقل بكتير (وليه: شركة ناشئة صغيرة/بداية مسار/سوق محلي ضعيف)، بشكل واقعي مش نظري.
+5) "وقت وطريقة الطرح": وقت مناسب لطرح موضوع الراتب في المقابلة، ونصيحة تفاوض عملية واحدة تتقال بالظبط.
+
+خلّي كل قسم بعنوان قصير واضح زي ما فوق، وخلّي الأرقام تقريبية موضّحة إنها مش رسمية 100%.`;
         const messages = liveContext ? [
-            { role: "system", content: `أنت مستشار رواتب. معاك تحت نتائج بحث حية اتجابت دلوقتي (${lookupTime.toLocaleString('ar-EG')}) عن سوق العمل للوظيفة المطلوبة. اعتمد عليها بالدرجة الأولى في تقديرك، واستخدم معرفتك العامة بس لسد أي فجوة فيها. قدّر: 1) نطاق راتب معقول (من - إلى) بعملة المنطقة 2) مقارنة سريعة مع متوسط السوق 3) وقت مناسب لطرح موضوع الراتب في المقابلة 4) نصيحة تفاوض عملية واحدة. بدون رموز markdown.\n\nنتائج البحث الحية:\n${liveContext}` },
+            { role: "system", content: `${richInstructions}\n\nمعاك تحت نتائج بحث حية اتجابت دلوقتي (${lookupTime.toLocaleString('ar-EG')}) عن سوق العمل لنفس الوظيفة — اعتمد عليها بالدرجة الأولى في الأرقام، واستخدم معرفتك العامة لسد أي فجوة أو لشرح فروق المحافظات/المدن اللي مش موجودة في نتائج البحث.\n\nنتائج البحث الحية:\n${liveContext}` },
             { role: "user", content: userMsg }
         ] : [
-            { role: "system", content: `أنت مستشار رواتب مطّلع على سوق العمل. تعذر الوصول لبيانات حية دلوقتي، فاعتمد على معرفتك العامة (مش بيانات لحظية دقيقة) وقدّر: 1) نطاق راتب تقريبي معقول (من - إلى) بعملة المنطقة المذكورة 2) مقارنة سريعة مع متوسط السوق لنفس الوظيفة تقريباً 3) وقت مناسب في عملية التوظيف لطرح موضوع الراتب 4) نصيحة تفاوض واحدة عملية. وضّح إنه تقدير تقريبي مش رقم رسمي دقيق. بدون رموز markdown.` },
+            { role: "system", content: `${richInstructions}\n\nتعذر الوصول لبيانات بحث حية دلوقتي، فاعتمد بالكامل على معرفتك العامة بسوق العمل (مش بيانات لحظية دقيقة).` },
             { role: "user", content: userMsg }
         ];
         try {

@@ -1,17 +1,34 @@
     :root{
-        --bg: #000000; --panel: #131314; --panel-2: #1e1f20; --border: #2d2e30;
-        --text: #ffffff; --muted: #b8bcc4; --accent: #8ab4f8; --accent-strong:#aecbfa;
-        --grad1:#4285f4; --grad2:#ff6fb0; --grad3:#22d3c9; --grad4:#ffb84d;
+        /* ============ باليتة عصرية جديدة (2026 refresh) ============
+           خلفية غامقة جدًا بس مش أسود فلات — فيها توهج بنفسجي/تركواز خفيف
+           زي الإحساس في التصاميم الحديثة (شبه الصورة اللي اتبعتت: خلفية غامقة
+           + إضاءة بنفسجي/وردي ناعمة + لمسة ذهبية للتفاصيل المميزة). */
+        --bg: #07070b; --panel: #131319; --panel-2: #1c1c25; --border: #2c2c3a;
+        --text: #ffffff; --muted: #b7b9c9; --accent: #a78bfa; --accent-strong:#22d3c9;
+        --accent-gold: #f5b942;
+        --grad1:#8b5cf6; --grad2:#ec4899; --grad3:#22d3c9; --grad4:#f5b942;
     }
-    /* ---- Gemini-style black/white overrides (colors only) ---- */
+    /* ---- توهج خلفية عصري خفيف (ثابت، مش بيتحرك، مش بيأثر على القراءة) ---- */
+    body {
+        background:
+            radial-gradient(60% 45% at 85% -8%, rgba(139,92,246,.16), transparent 60%),
+            radial-gradient(55% 40% at -10% 15%, rgba(34,211,201,.10), transparent 60%),
+            radial-gradient(40% 35% at 50% 105%, rgba(236,72,153,.08), transparent 60%),
+            var(--bg) !important;
+        background-attachment: fixed;
+    }
     body, #sidebar, .input-field, .avatar-upload, .signedin-avatar,
     .app-toast, .modal-backdrop { color-scheme: dark; }
-    #sidebar { background: #0a0a0a !important; }
-    .input-field, .avatar-upload, .signedin-avatar { background: #1a1a1a !important; }
-    .nav-item.active { background: #262626 !important; color: #ffffff !important; box-shadow: inset 0 0 0 1px #3a3a3a !important; }
-    .modal-backdrop { background: rgba(0,0,0,.82) !important; }
-    .app-toast { background: #161616 !important; }
-    .profile-cover { background: linear-gradient(120deg,#1a1a1a,#000000 60%,#0d0d0d) !important; }
+    #sidebar { background: rgba(10,10,15,.92) !important; backdrop-filter: blur(14px); border-inline-start: 1px solid var(--border); }
+    .input-field, .avatar-upload, .signedin-avatar { background: #17171f !important; }
+    .nav-item.active {
+        background: linear-gradient(135deg, rgba(167,139,250,.22), rgba(34,211,201,.14)) !important;
+        color: #ffffff !important;
+        box-shadow: inset 0 0 0 1px rgba(167,139,250,.45) !important;
+    }
+    .modal-backdrop { background: rgba(4,4,8,.84) !important; backdrop-filter: blur(3px); }
+    .app-toast { background: #17171f !important; border-color: rgba(167,139,250,.25) !important; }
+    .profile-cover { background: linear-gradient(120deg,#1c1424,#08070b 60%,#07100f) !important; }
     .profile-avatar-lg { background: #1a1a1a !important; }
     .text-slate-100 { color: #ffffff !important; }
     .text-slate-200 { color: #f5f5f5 !important; }
@@ -20,6 +37,13 @@
     .text-slate-500 { color: #ababab !important; }
     .text-slate-600 { color: #8a8a8a !important; }
     .bg-\[\#2a2f36\], .bg-\[\#20252c\], .bg-\[\#262b32\] { background-color: #1a1a1a !important; }
+
+    /* ============ حركات دخول عصرية (Reveal animations) ============
+       تُستخدم عن طريق كلاس .reveal-in اللي بيتضاف بـ JS على أي عنصر جديد بيظهر
+       (نتيجة أداة، رسالة شات، كارت...) عشان يدخل بحركة ناعمة بدل ما يظهر فجأة. */
+    @keyframes revealInUp { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    .reveal-in { animation: revealInUp .38s cubic-bezier(.22,.9,.32,1) both; }
+    @keyframes softGlow { 0%,100% { box-shadow: 0 0 0 0 rgba(167,139,250,.0); } 50% { box-shadow: 0 0 22px 2px rgba(167,139,250,.18); } }
 
     /* ============ نقطة 8: وضع فاتح (Light Mode) ============
        بيتفعّل بإضافة كلاس light-mode على <html> — شوف initTheme()/toggleTheme()
@@ -501,3 +525,58 @@
         min-width: 40px; min-height: 40px;
     }
 }
+
+/* ============ المساعد الذكي (AI Assistant Chat) — تصميم عصري ============
+   شات حديث بفقاعات متدرجة، مؤشر كتابة نابض، وحدود ناعمة متوهجة بلون
+   العلامة الجديد. */
+.assistant-chat-wrap {
+    display: flex; flex-direction: column; height: min(72vh, 640px);
+    background: linear-gradient(180deg, rgba(167,139,250,.05), rgba(0,0,0,0) 18%), var(--panel);
+    border: 1px solid var(--border); border-radius: 1.1rem; overflow: hidden;
+    box-shadow: 0 10px 40px -18px rgba(139,92,246,.35);
+}
+.assistant-chat-header {
+    display: flex; align-items: center; gap: .6rem; padding: .85rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(90deg, rgba(139,92,246,.14), rgba(34,211,201,.08));
+}
+.assistant-chat-avatar {
+    width: 34px; height: 34px; border-radius: 999px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--grad1), var(--grad3));
+    display: flex; align-items: center; justify-content: center; color: #fff; font-size: .85rem;
+    box-shadow: 0 0 0 3px rgba(167,139,250,.15);
+}
+.assistant-chat-log {
+    flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; gap: .7rem;
+}
+.assistant-msg { max-width: 84%; padding: .6rem .9rem; border-radius: 1rem; font-size: .82rem; line-height: 1.65; white-space: pre-wrap; word-break: break-word; }
+.assistant-msg.from-user {
+    align-self: flex-end; color: #0b0b12; font-weight: 600;
+    background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+    border-bottom-right-radius: .3rem;
+}
+.assistant-msg.from-bot {
+    align-self: flex-start; color: var(--text); background: var(--panel-2);
+    border: 1px solid var(--border); border-bottom-left-radius: .3rem;
+}
+.assistant-msg.from-bot.is-error { border-color: rgba(248,113,113,.4); color: #fca5a5; }
+.assistant-typing { align-self: flex-start; display: flex; gap: 4px; padding: .7rem .9rem; background: var(--panel-2); border: 1px solid var(--border); border-radius: 1rem; border-bottom-left-radius: .3rem; }
+.assistant-typing span { width: 6px; height: 6px; border-radius: 999px; background: var(--accent); animation: typingBounce 1.1s infinite ease-in-out; }
+.assistant-typing span:nth-child(2) { animation-delay: .15s; }
+.assistant-typing span:nth-child(3) { animation-delay: .3s; }
+@keyframes typingBounce { 0%,60%,100% { transform: translateY(0); opacity: .5; } 30% { transform: translateY(-4px); opacity: 1; } }
+.assistant-chat-inputbar { display: flex; gap: .5rem; padding: .75rem; border-top: 1px solid var(--border); background: var(--panel); }
+.assistant-chat-inputbar textarea {
+    flex: 1; resize: none; max-height: 110px; background: #17171f; border: 1px solid var(--border);
+    color: var(--text); border-radius: .85rem; padding: .65rem .85rem; font-size: .82rem; line-height: 1.5;
+    font-family: inherit;
+}
+.assistant-chat-inputbar textarea:focus { outline: none; border-color: var(--accent); }
+.assistant-chat-send {
+    flex-shrink: 0; width: 44px; height: 44px; border-radius: .85rem; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--grad1), var(--grad3)); color: #fff; font-size: 1rem;
+    transition: transform .12s ease, opacity .12s ease;
+}
+.assistant-chat-send:active { transform: scale(.92); }
+.assistant-chat-send:disabled { opacity: .5; }
+.assistant-provider-hint { font-size: 10px; color: var(--muted); text-align: center; padding: .3rem 0 0; }

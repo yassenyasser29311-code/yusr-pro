@@ -633,6 +633,15 @@
                 <p id="sidebar-search-empty" class="sidebar-search-empty hidden" data-i18n="nav.searchEmpty">مفيش نتايج مطابقة</p>
             </div>
             <div>
+                <p class="sidebar-section-title text-[10px] text-slate-600 font-bold px-2 mb-1.5">الذكاء الاصطناعي</p>
+                <div class="space-y-1">
+                    <div class="nav-item" data-view="assistant" onclick="switchView('assistant', this)">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i><span class="sidebar-label">المساعد الذكي</span>
+                    </div>
+                </div>
+            </div>
+
+            <div>
                 <p class="sidebar-section-title text-[10px] text-slate-600 font-bold px-2 mb-1.5" data-i18n="nav.section.interviews">المقابلات والتوظيف</p>
                 <div class="space-y-1">
                     <div class="nav-item active" data-view="interview" onclick="switchView('interview', this)">
@@ -1095,6 +1104,26 @@
                         <div id="video-dress-result" class="hidden panel rounded-xl p-3 text-xs sm:text-sm leading-relaxed"></div>
                     </div>
                 </div>
+            </section>
+
+            <!-- ================= AI ASSISTANT (المساعد الذكي) ================= -->
+            <section id="view-assistant" class="view">
+                <div class="assistant-chat-wrap reveal-in">
+                    <div class="assistant-chat-header">
+                        <div class="assistant-chat-avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs sm:text-sm font-bold text-slate-100">المساعد الذكي</p>
+                            <p class="text-[10.5px] text-slate-400">اسأله في أي حاجة عن مقابلات الشغل، سيرتك الذاتية، أو مسارك المهني</p>
+                        </div>
+                        <button onclick="clearAssistantChat()" class="chip hover:bg-[var(--panel-2)]" title="بداية محادثة جديدة"><i class="fa-solid fa-rotate-right"></i></button>
+                    </div>
+                    <div id="assistant-chat-log" class="assistant-chat-log"></div>
+                    <div class="assistant-chat-inputbar">
+                        <textarea id="assistant-chat-input" rows="1" placeholder="اكتب سؤالك هنا..." onkeydown="handleAssistantInputKey(event)"></textarea>
+                        <button id="assistant-chat-send-btn" class="assistant-chat-send" onclick="sendAssistantMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
+                </div>
+                <p class="assistant-provider-hint">مدعوم بأكتر من مزوّد ذكاء اصطناعي — لو مزوّد مشغول، بيتحول للتاني تلقائيًا من غير ما تحس.</p>
             </section>
 
             <!-- ================= SALARY INSIGHTS ================= -->
