@@ -781,10 +781,7 @@
         <header class="sticky top-0 z-20 flex items-center gap-3 px-4 sm:px-6 py-3.5 panel border-b">
             <button onclick="toggleSidebar()" class="lg:hidden text-slate-300 text-lg" aria-label="فتح القائمة"><i class="fa-solid fa-bars"></i></button>
             <h1 id="view-title" class="flex-1 min-w-0 truncate font-tajawal font-bold text-sm sm:text-base text-slate-100">مقابلة تدريبية صوتية</h1>
-            <div class="mr-auto flex items-center gap-2 shrink-0">
-                <a href="/yusr-pro-latest.apk" download title="تثبيت التطبيق (أحدث نسخة)" aria-label="تثبيت التطبيق" class="btn-install-apk flex items-center gap-1 rounded-full pl-2.5 pr-2 py-1.5 text-[11px] font-extrabold shrink-0">
-                    <i class="fa-solid fa-download"></i><span class="hidden sm:inline">تثبيت</span>
-                </a>
+            <div class="mr-auto flex items-center gap-2">
                 <button id="header-trial-badge" onclick="openPricingModal()" title="المحاولات المجانية المتبقية الشهر ده" class="header-trial-badge trial-ok flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold shrink-0">
                     <i class="fa-solid fa-bolt"></i><span id="header-trial-count">5</span>
                 </button>
@@ -810,6 +807,20 @@
         </header>
 
         <main class="flex-1 p-4 sm:p-6 max-w-4xl w-full mx-auto space-y-4">
+
+            <!-- ============ APK DOWNLOAD PROMO BANNER ============ -->
+            <div class="apk-promo-banner rounded-2xl p-4 flex items-center gap-3 justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="apk-promo-icon shrink-0"><i class="fa-solid fa-mobile-screen-button"></i></div>
+                    <div>
+                        <p class="font-tajawal font-extrabold text-sm sm:text-base">جرّب يُسْر بشكل أسرع من التطبيق 📱</p>
+                        <p class="text-[11px] sm:text-xs opacity-80">تحميل مباشر، من غير متجر، وبيتحدث لوحده أول بأول.</p>
+                    </div>
+                </div>
+                <a href="/yusr-pro-latest.apk" download class="apk-promo-btn shrink-0 rounded-xl px-3.5 py-2 text-[12px] sm:text-sm font-extrabold whitespace-nowrap flex items-center gap-1.5">
+                    <i class="fa-solid fa-download"></i> نزّل التطبيق الآن
+                </a>
+            </div>
 
             <!-- ============ EMAIL VERIFICATION BANNER ============
                  بيبان بس لحساب إيميل/باسورد لسه ما أكّدش إيميله (حسابات جوجل مستثناة
