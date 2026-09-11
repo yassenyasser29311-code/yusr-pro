@@ -255,6 +255,10 @@ export default {
       return handleOnlinePing(request, env, corsHeaders);
     }
 
+    if (url.pathname === "/logClientError") {
+      return handleLogClientError(request, env, corsHeaders);
+    }
+
     // ---- تحديد الأداة المطلوبة من المسار ----
     let toolName;
     if (url.pathname === "/groqChat") toolName = "groqChat";
@@ -2355,4 +2359,71 @@ async function handleOnlinePing(request, env, corsHeaders) {
     console.warn("handleOnlinePing فشل:", e);
   }
   return json({ ok: true }, 200, corsHeaders);
+}
+
+// ============ رصد أخطاء الواجهة (Client-side Error Monitoring) ============
+// الواجهة (app.js) بتمسك أي خطأ JS مش متوقع أو Promise rejection وتبعته هنا.
+// من غير تسجيل دخول عمدًا — أخطاء ممكن تحصل حتى قبل ما المستخدم يسجّل دخول
+// (مثلاً في شاشة اللوجين نفسها). بنبعت إشعار فوري على نفس الـ webhook بتاع
+// تنبيهات الأدمن (ADMIN_NOTIFY_WEBHOOK) إلا لو ضبطت واحد مخصص للأخطاء
+// (ERROR_NOTIFY_WEBHOOK) — مفيد لو عايز تفصل قناة الأخطاء عن قناة تنبيهات
+// الأمان في Discord/Slack. لو مفيش أي حد منهم متظبط، الطلب برضه بيرجع "ok"
+// عادي (عشان مايكسرش تجربة المستخدم) لكن من غير ما يبعت حاجة لحد.
+//
+// حماية بسيطة من إساءة الاستخدام: أي حد يقدر يبعت POST هنا نظريًا، فبنعمل
+// قصّ (truncate) صارم لطول كل حقل عشان محدش يقدر يبعت جسم ضخم أو يفجّر رسائل
+// الـ webhook بمحتوى طويل. الحماية الأساسية من الإغراق (نفس الخطأ بيتكرر
+// آلاف المرات) موجودة في الواجهة نفسها (app.js) اللي بتوقف بعد أول 8 تقارير
+// في نفس الجلسة.
+function truncateField(v, max) {
+  if (v === undefined || v === null) return "";
+  const s = String(v);
+  return s.length > max ? s.slice(0, max) + "…" : s;
+}
+async function handleLogClientError(request, env, corsHeaders) {
+  if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405, corsHeaders);
+
+  let body;
+  try {
+    body = await request.json();
+  } catch (e) {
+    return json({ error: "invalid_json" }, 400, corsHeaders);
+  }
+
+  const webhook = env.ERROR_NOTIFY_WEBHOOK || env.ADMIN_NOTIFY_WEBHOOK;
+  if (!webhook) return json({ ok: true, delivered: false }, 200, corsHeaders); // مفيش webhook متظبط، مش مشكلة تكسر بيها تجربة المستخدم
+
+  const message = truncateField(body.message, 300) || "(بدون رسالة)";
+  const stack = truncateField(body.stack, 700);
+  const source = truncateField(body.source, 200);
+  const pageUrl = truncateField(body.pageUrl, 200);
+  const view = truncateField(body.view, 60);
+  const lang = truncateField(body.lang, 20);
+  const appVersion = truncateField(body.appVersion, 20);
+  const line = Number.isFinite(body.line) ? body.line : 0;
+  const col = Number.isFinite(body.col) ? body.col : 0;
+  const ip = getClientIp(request);
+
+  const lines = [
+    `🐞 خطأ جديد في الواجهة — يُسْر Pro`,
+    `الرسالة: ${message}`,
+    source ? `المصدر: ${source}:${line}:${col}` : null,
+    view ? `الصفحة/الأداة: ${view}` : null,
+    pageUrl ? `الرابط: ${pageUrl}` : null,
+    `اللغة: ${lang || "-"}  |  نسخة الموقع: ${appVersion || "-"}  |  IP: ${ip}`,
+    `الوقت: ${new Date().toISOString()}`,
+    stack ? `\nStack:\n${stack}` : null
+  ].filter(Boolean);
+  const text = lines.join("\n");
+
+  try {
+    await fetch(webhook, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: text, text })
+    });
+  } catch (e) {
+    console.warn("handleLogClientError: تعذر إرسال الإشعار:", e);
+  }
+  return json({ ok: true, delivered: true }, 200, corsHeaders);
 }

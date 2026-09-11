@@ -19,6 +19,57 @@
     // ⚠️ لو غيّرتي اسم مشروع Firebase أو الـ region، لازم تظبطي الرابط ده تبعًا لذلك.
     const CLOUD_FUNCTIONS_BASE = "https://yusr-worker.yassen-yasser29311.workers.dev";
 
+    // ============ رصد أخطاء الواجهة (Client-side Error Monitoring) ============
+    // بيمسك أي خطأ JS غير متوقع أو Promise rejection وبيبعته لمسار /logClientError
+    // في الووركر، اللي بيوديه بدوره كإشعار فوري على webhook (Discord/Slack) عندك.
+    // حد أقصى 8 تقارير في نفس الجلسة (وبدون تكرار نفس الخطأ) عشان لو حصل خطأ في
+    // loop مايغرقش القناة برسائل. الفشل هنا صامت تمامًا (ماينفعش خطأ في رصد
+    // الأخطاء نفسه يوقف الموقع أو يبان للمستخدم).
+    let clientErrorReportCount = 0;
+    const CLIENT_ERROR_REPORT_MAX = 8;
+    const reportedErrorSignatures = new Set();
+    function reportClientError(payload) {
+        try {
+            if (clientErrorReportCount >= CLIENT_ERROR_REPORT_MAX) return;
+            const signature = `${payload.message || ''}|${payload.source || ''}:${payload.line || 0}`;
+            if (reportedErrorSignatures.has(signature)) return;
+            reportedErrorSignatures.add(signature);
+            clientErrorReportCount++;
+            const activeView = document.querySelector('.view.active');
+            fetch(`${CLOUD_FUNCTIONS_BASE}/logClientError`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: payload.message,
+                    stack: payload.stack,
+                    source: payload.source,
+                    line: payload.line || 0,
+                    col: payload.col || 0,
+                    pageUrl: location.href,
+                    view: activeView ? activeView.id : '',
+                    lang: typeof currentUiLang !== 'undefined' ? currentUiLang : navigator.language,
+                    appVersion: 'v10'
+                })
+            }).catch(() => {});
+        } catch (e) { /* صامت عمدًا */ }
+    }
+    window.addEventListener('error', function (e) {
+        reportClientError({
+            message: e.message,
+            source: e.filename,
+            line: e.lineno,
+            col: e.colno,
+            stack: e.error && e.error.stack
+        });
+    });
+    window.addEventListener('unhandledrejection', function (e) {
+        const reason = e.reason;
+        reportClientError({
+            message: 'Unhandled Promise Rejection: ' + (reason && reason.message ? reason.message : String(reason)),
+            stack: reason && reason.stack
+        });
+    });
+
     let isVoiceEnabled = true;
     let interviewRole = "", selectedNationality = "", chatHistory = [], cvContent = "";
     let currentInterviewerName = "أحمد"; // بيتغيّر لـ"مريم" تلقائياً لو المستخدم اختار صوت الست
@@ -975,36 +1026,6 @@
     function initPwaInstall() {
         if (isRunningAsStandaloneApp()) { hidePwaInstallBanner(); return; }
         if (isIosDevice()) showPwaInstallBannerIfEligible();
-    }
-
-    // ============ إعلان تطبيق الأندرويد (APK) في الـ sidebar ============
-    // بيتخفي تلقائيًا لو الموقع شغال بالفعل جوه تطبيق الأندرويد (WebView)
-    // عشان معنوش نعرض على حد التطبيق فكرة إنه ينزّل التطبيق!
-    // طريقة الكشف: (1) لو استخدمت أداة تغليف WebView زي Median/GoNative
-    // وضبطت فيها User-Agent مخصص يحتوي على الكلمة "YusrProNativeApp"، هيتلقط
-    // فورًا وبدقة 100%. (2) هيوريستيك احتياطي عام لأي Android WebView عادي.
-    function isRunningInsideApk() {
-        try {
-            if (/YusrProNativeApp/i.test(navigator.userAgent)) return true;
-            if (/; wv\)/i.test(navigator.userAgent)) return true;
-        } catch (e) {}
-        return false;
-    }
-    function showApkPromoIfEligible() {
-        if (isRunningInsideApk()) return;
-        try {
-            const dismissedAt = parseInt(localStorage.getItem('yusr_apk_promo_dismissed_at') || '0', 10);
-            const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
-            if (dismissedAt && (Date.now() - dismissedAt) < sevenDaysMs) return;
-        } catch (e) {}
-        const el = document.getElementById('apk-promo-sidebar');
-        if (el) el.classList.remove('hidden');
-    }
-    function dismissApkPromo(e) {
-        if (e) e.stopPropagation();
-        try { localStorage.setItem('yusr_apk_promo_dismissed_at', String(Date.now())); } catch (e) {}
-        const el = document.getElementById('apk-promo-sidebar');
-        if (el) el.classList.add('hidden');
     }
 
     function getDeviceId() {
@@ -4663,7 +4684,6 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
 
     initTheme();
     initPwaInstall();
-    showApkPromoIfEligible();
     checkDeviceTrial();
     updateAccountChip();
     applyI18n();
