@@ -3151,7 +3151,7 @@
         if (!saved) return;
         interviewRole = saved.interviewRole; selectedNationality = saved.selectedNationality;
         chatHistory = saved.chatHistory; speakingStats = saved.speakingStats || [];
-        currentInterviewerName = saved.currentInterviewerName || (voiceGenderPref === 'female' ? 'مريم' : 'أحمد');
+        currentInterviewerName = saved.currentInterviewerName || (voiceGenderPref === 'female' ? 'ريناد' : 'أحمد');
         document.getElementById('interview-resume-banner').classList.add('hidden');
         document.getElementById('interview-setup-box').classList.add('hidden');
         document.getElementById('chat-interface').classList.remove('hidden');
@@ -3173,7 +3173,7 @@
         selectedNationality = document.getElementById('interviewer-nationality').value;
         if (!interviewRole) return showToast("يرجى كتابة اسم الوظيفة أولاً.", 'error');
 
-        currentInterviewerName = voiceGenderPref === 'female' ? 'مريم' : 'أحمد';
+        currentInterviewerName = voiceGenderPref === 'female' ? 'ريناد' : 'أحمد';
         document.getElementById('interview-setup-box').classList.add('hidden');
         document.getElementById('interview-resume-banner').classList.add('hidden');
         document.getElementById('chat-interface').classList.remove('hidden');
