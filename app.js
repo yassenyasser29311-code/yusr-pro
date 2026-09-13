@@ -105,33 +105,43 @@
     }
     const INTERVIEW_STATE_KEY = 'yusr_interview_session_v1';
 
-    const viewTitles = {
-        about: "من نحن", assistant: "يسر Pro Bot",
-        interview: "مقابلة تدريبية صوتية", faq: "أسئلة شائعة + إجابات نموذجية", career: "خطة التطور المهني",
-        video: "محاكي مقابلة فيديو", salary: "تقدير الراتب المتوقع", progress: "متابعة التقدم",
-        cv: "بناء السيرة الذاتية", match: "مطابقة CV مع الوظيفة", cover: "مولّد رسائل توظيف",
-        portfolio: "بورتفوليو شخصي", writing: "تدقيق وتنسيق أكاديمي",
-        summarizer: "تلخيص المستندات", transcribe: "تفريغ الصوت إلى نص", pitch: "قدّم نفسك في 30 ثانية",
-        profile: "الملف الشخصي", subscriptions: "الاشتراكات", donations: "التبرعات", support: "الدعم والتواصل",
-        terms: "شروط الاستخدام", privacy: "سياسة الخصوصية", history: "السجل الموحّد"
+    // ✅ نفس المفتاح ده بقى بيدّي عنوان الصفحة بكل الـ9 لغات المدعومة في الموقع، مش بس عربي/إنجليزي.
+    const VIEW_TITLES = {
+        about: { ar:"من نحن", en:"About Us", fr:"À propos de nous", es:"Sobre nosotros", tr:"Hakkımızda", de:"Über uns", hi:"हमारे बारे में", ur:"ہمارے بارے میں", fa:"درباره ما" },
+        assistant: { ar:"يسر Pro Bot", en:"Yusr Pro Bot", fr:"Yusr Pro Bot", es:"Yusr Pro Bot", tr:"Yusr Pro Bot", de:"Yusr Pro Bot", hi:"यूसर प्रो बॉट", ur:"یسر پرو بوٹ", fa:"یسر پرو بات" },
+        interview: { ar:"مقابلة تدريبية صوتية", en:"Voice Mock Interview", fr:"Entretien d'entraînement vocal", es:"Entrevista de práctica por voz", tr:"Sesli Deneme Mülakatı", de:"Sprachbasiertes Übungsvorstellungsgespräch", hi:"वॉयस मॉक इंटरव्यू", ur:"صوتی مشقی انٹرویو", fa:"مصاحبه تمرینی صوتی" },
+        faq: { ar:"أسئلة شائعة + إجابات نموذجية", en:"FAQ + Model Answers", fr:"FAQ + Réponses types", es:"Preguntas frecuentes + Respuestas modelo", tr:"SSS + Örnek Cevaplar", de:"FAQ + Musterantworten", hi:"सामान्य प्रश्न + मॉडल उत्तर", ur:"عمومی سوالات + نمونہ جوابات", fa:"سوالات متداول + پاسخ‌های نمونه" },
+        career: { ar:"خطة التطور المهني", en:"Career Growth Plan", fr:"Plan de progression de carrière", es:"Plan de desarrollo profesional", tr:"Kariyer Gelişim Planı", de:"Karriereentwicklungsplan", hi:"करियर विकास योजना", ur:"کیریئر گروتھ پلان", fa:"برنامه رشد شغلی" },
+        video: { ar:"محاكي مقابلة فيديو", en:"Video Mock Interview", fr:"Entretien simulé vidéo", es:"Entrevista simulada en video", tr:"Video Mülakat Simülasyonu", de:"Video-Vorstellungsgespräch-Simulator", hi:"वीडियो मॉक इंटरव्यू", ur:"ویڈیو موک انٹرویو", fa:"مصاحبه شبیه‌سازی‌شده ویدیویی" },
+        salary: { ar:"تقدير الراتب المتوقع", en:"Salary Insights", fr:"Estimation du salaire", es:"Estimación salarial", tr:"Maaş Tahmini", de:"Gehaltseinschätzung", hi:"वेतन अनुमान", ur:"تنخواہ کا تخمینہ", fa:"برآورد حقوق" },
+        progress: { ar:"متابعة التقدم", en:"Progress Tracking", fr:"Suivi de la progression", es:"Seguimiento del progreso", tr:"İlerleme Takibi", de:"Fortschrittsverfolgung", hi:"प्रगति ट्रैकिंग", ur:"پیش رفت کی نگرانی", fa:"پیگیری پیشرفت" },
+        cv: { ar:"بناء السيرة الذاتية", en:"CV Builder", fr:"Créateur de CV", es:"Creador de CV", tr:"CV Oluşturucu", de:"Lebenslauf-Ersteller", hi:"सीवी बिल्डर", ur:"سی وی بلڈر", fa:"سازنده رزومه" },
+        match: { ar:"مطابقة CV مع الوظيفة", en:"CV Job Match", fr:"Correspondance CV-emploi", es:"Coincidencia CV-empleo", tr:"CV-İş Eşleştirme", de:"Lebenslauf-Job-Abgleich", hi:"सीवी-जॉब मिलान", ur:"سی وی جاب میچ", fa:"تطابق رزومه با شغل" },
+        cover: { ar:"مولّد رسائل توظيف", en:"Cover Letter Generator", fr:"Générateur de lettre de motivation", es:"Generador de carta de presentación", tr:"Ön Yazı Oluşturucu", de:"Anschreiben-Generator", hi:"कवर लेटर जनरेटर", ur:"کور لیٹر جنریٹر", fa:"تولیدکننده نامه معرفی" },
+        portfolio: { ar:"بورتفوليو شخصي", en:"Personal Portfolio", fr:"Portfolio personnel", es:"Portafolio personal", tr:"Kişisel Portfolyo", de:"Persönliches Portfolio", hi:"व्यक्तिगत पोर्टफोलियो", ur:"ذاتی پورٹ فولیو", fa:"نمونه‌کار شخصی" },
+        writing: { ar:"تدقيق وتنسيق أكاديمي", en:"Academic Writing Review", fr:"Relecture académique", es:"Revisión de escritura académica", tr:"Akademik Yazı İncelemesi", de:"Akademische Schreibprüfung", hi:"शैक्षणिक लेखन समीक्षा", ur:"علمی تحریر کا جائزہ", fa:"بررسی نگارش دانشگاهی" },
+        summarizer: { ar:"تلخيص المستندات", en:"Document Summarizer", fr:"Résumé de documents", es:"Resumidor de documentos", tr:"Belge Özetleyici", de:"Dokumenten-Zusammenfasser", hi:"दस्तावेज़ सारांशक", ur:"دستاویز خلاصہ کار", fa:"خلاصه‌ساز اسناد" },
+        transcribe: { ar:"تفريغ الصوت إلى نص", en:"Speech to Text", fr:"Transcription audio en texte", es:"Voz a texto", tr:"Sesten Metne", de:"Sprache zu Text", hi:"स्पीच टू टेक्स्ट", ur:"اسپیچ ٹو ٹیکسٹ", fa:"تبدیل گفتار به متن" },
+        pitch: { ar:"قدّم نفسك في 30 ثانية", en:"30-Second Self Pitch", fr:"Présentation en 30 secondes", es:"Presentación de 30 segundos", tr:"30 Saniyelik Kendini Tanıtım", de:"30-Sekunden-Selbstvorstellung", hi:"30-सेकंड सेल्फ पिच", ur:"30 سیکنڈ سیلف پچ", fa:"معرفی ۳۰ ثانیه‌ای" },
+        profile: { ar:"الملف الشخصي", en:"Profile", fr:"Profil", es:"Perfil", tr:"Profil", de:"Profil", hi:"प्रोफ़ाइल", ur:"پروفائل", fa:"پروفایل" },
+        subscriptions: { ar:"الاشتراكات", en:"Subscriptions", fr:"Abonnements", es:"Suscripciones", tr:"Abonelikler", de:"Abonnements", hi:"सदस्यताएं", ur:"سبسکرپشنز", fa:"اشتراک‌ها" },
+        donations: { ar:"التبرعات", en:"Donations", fr:"Dons", es:"Donaciones", tr:"Bağışlar", de:"Spenden", hi:"दान", ur:"عطیات", fa:"کمک‌های مالی" },
+        support: { ar:"الدعم والتواصل", en:"Support", fr:"Assistance", es:"Soporte", tr:"Destek", de:"Support", hi:"सहायता", ur:"معاونت", fa:"پشتیبانی" },
+        terms: { ar:"شروط الاستخدام", en:"Terms of Use", fr:"Conditions d'utilisation", es:"Términos de uso", tr:"Kullanım Koşulları", de:"Nutzungsbedingungen", hi:"उपयोग की शर्तें", ur:"استعمال کی شرائط", fa:"شرایط استفاده" },
+        privacy: { ar:"سياسة الخصوصية", en:"Privacy Policy", fr:"Politique de confidentialité", es:"Política de privacidad", tr:"Gizlilik Politikası", de:"Datenschutzrichtlinie", hi:"गोपनीयता नीति", ur:"پرائیویسی پالیسی", fa:"سیاست حفظ حریم خصوصی" },
+        history: { ar:"السجل الموحّد", en:"Unified History", fr:"Historique unifié", es:"Historial unificado", tr:"Birleşik Geçmiş", de:"Einheitlicher Verlauf", hi:"एकीकृत इतिहास", ur:"متحدہ ہسٹری", fa:"تاریخچه یکپارچه" }
     };
-    const viewTitlesEn = {
-        about: "About Us", assistant: "Yusr Pro Bot",
-        interview: "Voice Mock Interview", faq: "FAQ + Model Answers", career: "Career Growth Plan",
-        video: "Video Mock Interview", salary: "Salary Insights", progress: "Progress Tracking",
-        cv: "CV Builder", match: "CV Job Match", cover: "Cover Letter Generator",
-        portfolio: "Personal Portfolio", writing: "Academic Writing Review",
-        summarizer: "Document Summarizer", transcribe: "Speech to Text", pitch: "30-Second Self Pitch",
-        profile: "Profile", subscriptions: "Subscriptions", donations: "Donations", support: "Support",
-        terms: "Terms of Use", privacy: "Privacy Policy", history: "Unified History"
-    };
+    function viewTitle(view) {
+        const entry = VIEW_TITLES[view];
+        return (entry && (entry[currentUiLang] || entry.ar)) || '';
+    }
 
     function switchView(view, el) {
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
         document.getElementById('view-' + view).classList.add('active');
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         if (el) el.classList.add('active');
-        document.getElementById('view-title').innerText = (currentUiLang === 'en' ? viewTitlesEn[view] : viewTitles[view]) || '';
+        document.getElementById('view-title').innerText = viewTitle(view);
         if (view === 'profile') refreshProfileView();
         if (view === 'progress') renderProgressView();
         if (view === 'history') renderHistoryView();
@@ -310,7 +320,7 @@
             "profile.googleHint":"Signing in saves your name, photo and points on this device — free trials are counted per device, not per account.","profile.save":"Save Info",
             "profile.connected":"Connected with Google","profile.logoutBtn":"Log out",
             "profile.statUsage":"Tool uses","profile.statDevice":"Device ID","profile.statPlan":"Current plan","profile.planFree":"Free",
-            "subs.individualTitle":"Individual Plans","subs.individualDesc":"For anyone preparing for an interview or building their own career.","subs.basicName":"Basic","subs.perMonth":"/ month","subs.proName":"Professional","subs.popular":"Most Popular",
+            "subs.individualTitle":"Individual Plans","subs.individualDesc":"For anyone preparing for an interview or building their own career.","subs.basicName":"Basic","subs.perMonth":"/ month","subs.proName":"Professional","subs.eliteName":"Elite","subs.popular":"Most Popular","subs.bestValue":"Best Value",
             "subs.yearlyName":"Yearly","subs.perYear":"/ year","subs.subscribe":"Subscribe Now","subs.teamTitle":"Team & University Plans","subs.teamDesc":"For colleges, universities, and hiring centers training a group together at a better per-seat price.",
             "subs.teamSmallName":"Small Team","subs.teamSmallRange":"Up to 10 people","subs.perSeat":"/ per seat / month","subs.recommended":"Recommended for universities","subs.teamMedName":"Batch / College","subs.teamMedRange":"11 to 100 people",
             "subs.uniName":"University / Large Org","subs.uniRange":"Over 100 people","subs.customPrice":"Custom pricing","subs.contactUs":"Contact Us",
@@ -363,7 +373,7 @@
         fr: {
             "nav.searchPh":"Rechercher un outil...","nav.searchEmpty":"Aucun outil trouvé","nav.section.interviews":"Entretiens et embauche","nav.interview":"Entretien d'entraînement vocal","nav.faq":"FAQ + réponses modèles","nav.career":"Plan de développement de carrière",
             "nav.section.documents":"Documents","nav.cv":"Créateur de CV","nav.portfolio":"Portfolio personnel","nav.writing":"Relecture académique","nav.summarizer":"Résumé de documents",
-            "nav.section.audio":"Audio et vidéo","nav.transcribe":"Transcription audio en texte",
+            "nav.section.audio":"Audio et vidéo","nav.transcribe":"Transcription audio en texte","nav.pitch":"Présentation de 30 secondes",
             "nav.section.account":"Compte et assistance","nav.about":"À propos de nous","nav.history":"Historique unifié","nav.profile":"Profil","nav.subscriptions":"Abonnements","nav.donations":"Dons","nav.support":"Assistance et contact",
             "nav.section.legal":"Mentions légales","nav.terms":"Conditions d'utilisation","nav.privacy":"Politique de confidentialité",
             "account.guest":"Invité (cet appareil)","account.signinHint":"Connectez-vous avec Google pour enregistrer votre photo et vos points",
@@ -386,12 +396,13 @@
             "sum.desc":"Résumez n'importe quel rapport, article ou cours en quelques secondes.","sum.inputPh":"Collez le texte ici...","sum.run":"Résumer maintenant",
             "tr.notice":"Vous pouvez importer un fichier audio pour une transcription automatique par IA, enregistrer directement au micro, ou coller un texte déjà prêt.","tr.uploadBtn":"Importer un fichier audio et le transcrire","tr.uploadHint":"Aucun fichier importé pour l'instant",
             "tr.sourceLangLabel":"Langue source de la parole","tr.targetLangLabel":"Traduire le texte final vers (facultatif)","tr.micHint":"Appuyez pour enregistrer, importez un fichier ci-dessus, ou collez un texte ci-dessous.","tr.rawPh":"Le texte brut apparaîtra ici...","tr.run":"Nettoyer et mettre en forme",
-            
+            "pitch.notice":"Préparez une présentation personnelle professionnelle d'environ 30 secondes, liée à votre CV et profil enregistrés.","pitch.purposeLabel":"Où allez-vous l'utiliser ?","pitch.toneLabel":"Ton de la voix",
+            "pitch.rolePh":"Poste ou domaine visé","pitch.highlightPh":"Un ou deux points forts à mettre en avant - facultatif","pitch.run":"Générer la présentation de 30 secondes",
             "profile.points":"points","profile.namePh":"Votre nom complet","profile.titlePh":"Intitulé du poste","profile.googleBtn":"Se connecter avec Google",
             "profile.googleHint":"La connexion enregistre votre nom, votre photo et vos points sur cet appareil — les essais gratuits sont comptés par appareil, pas par compte.","profile.save":"Enregistrer les informations",
             "profile.connected":"Connecté avec Google","profile.logoutBtn":"Se déconnecter",
             "profile.statUsage":"Utilisations des outils","profile.statDevice":"Identifiant de l'appareil","profile.statPlan":"Votre offre actuelle","profile.planFree":"Gratuit",
-            "subs.individualTitle":"Offres individuelles","subs.individualDesc":"Pour toute personne qui se prépare à un entretien ou construit sa propre carrière.","subs.basicName":"Basique","subs.perMonth":"/ mois","subs.proName":"Professionnelle","subs.popular":"La plus demandée",
+            "subs.individualTitle":"Offres individuelles","subs.individualDesc":"Pour toute personne qui se prépare à un entretien ou construit sa propre carrière.","subs.basicName":"Basique","subs.perMonth":"/ mois","subs.proName":"Professionnelle","subs.eliteName":"Élite","subs.popular":"La plus demandée","subs.bestValue":"Meilleur rapport qualité-prix",
             "subs.yearlyName":"Annuelle","subs.perYear":"/ an","subs.subscribe":"S'abonner maintenant","subs.teamTitle":"Offres pour équipes et universités","subs.teamDesc":"Pour les facultés, universités et centres de recrutement qui veulent former un groupe ensemble à un meilleur prix.",
             "subs.teamSmallName":"Petite équipe","subs.teamSmallRange":"Jusqu'à 10 personnes","subs.perSeat":"/ par personne / mois","subs.recommended":"Recommandé pour les universités","subs.teamMedName":"Promotion / faculté","subs.teamMedRange":"De 11 à 100 personnes",
             "subs.uniName":"Université / grande organisation","subs.uniRange":"Plus de 100 personnes","subs.customPrice":"Tarif sur mesure","subs.contactUs":"Nous contacter",
@@ -443,7 +454,7 @@
         es: {
             "nav.searchPh":"Buscar herramientas...","nav.searchEmpty":"No se encontraron herramientas","nav.section.interviews":"Entrevistas y contratación","nav.interview":"Entrevista de práctica por voz","nav.faq":"Preguntas frecuentes + respuestas modelo","nav.career":"Plan de desarrollo profesional",
             "nav.section.documents":"Documentos","nav.cv":"Creador de CV","nav.portfolio":"Portafolio personal","nav.writing":"Revisión académica","nav.summarizer":"Resumen de documentos",
-            "nav.section.audio":"Audio y video","nav.transcribe":"Transcripción de audio a texto",
+            "nav.section.audio":"Audio y video","nav.transcribe":"Transcripción de audio a texto","nav.pitch":"Presentación de 30 segundos",
             "nav.section.account":"Cuenta y soporte","nav.about":"Sobre nosotros","nav.history":"Historial unificado","nav.profile":"Perfil","nav.subscriptions":"Suscripciones","nav.donations":"Donaciones","nav.support":"Soporte y contacto",
             "nav.section.legal":"Legal","nav.terms":"Términos de uso","nav.privacy":"Política de privacidad",
             "account.guest":"Invitado (este dispositivo)","account.signinHint":"Inicia sesión con Google para guardar tu foto y puntos",
@@ -466,12 +477,13 @@
             "sum.desc":"Resume cualquier informe, artículo o clase en segundos.","sum.inputPh":"Pega el texto aquí...","sum.run":"Resumir ahora",
             "tr.notice":"Puedes subir un archivo de audio listo para transcribirlo automáticamente con IA, grabar directamente con el micrófono, o pegar un texto ya listo.","tr.uploadBtn":"Subir archivo de audio y transcribir","tr.uploadHint":"Aún no se ha subido ningún archivo",
             "tr.sourceLangLabel":"Idioma original del habla","tr.targetLangLabel":"Traducir el texto final a (opcional)","tr.micHint":"Pulsa para grabar, sube un archivo arriba, o pega un texto abajo.","tr.rawPh":"El texto en bruto aparecerá aquí...","tr.run":"Limpiar y dar formato",
-            
+            "pitch.notice":"Prepara una presentación personal profesional de unos 30 segundos, vinculada a tu CV y perfil guardados.","pitch.purposeLabel":"¿Dónde la vas a usar?","pitch.toneLabel":"Tono de voz",
+            "pitch.rolePh":"Puesto o área objetivo","pitch.highlightPh":"Uno o dos puntos destacados - opcional","pitch.run":"Generar presentación de 30 segundos",
             "profile.points":"puntos","profile.namePh":"Tu nombre completo","profile.titlePh":"Puesto de trabajo","profile.googleBtn":"Iniciar sesión con Google",
             "profile.googleHint":"Iniciar sesión guarda tu nombre, foto y puntos en este dispositivo — los intentos gratuitos se cuentan por dispositivo, no por cuenta.","profile.save":"Guardar información",
             "profile.connected":"Conectado con Google","profile.logoutBtn":"Cerrar sesión",
             "profile.statUsage":"Usos de herramientas","profile.statDevice":"ID del dispositivo","profile.statPlan":"Tu plan actual","profile.planFree":"Gratis",
-            "subs.individualTitle":"Planes individuales","subs.individualDesc":"Para cualquiera que se esté preparando para una entrevista o construyendo su propia carrera.","subs.basicName":"Básico","subs.perMonth":"/ mes","subs.proName":"Profesional","subs.popular":"Más popular",
+            "subs.individualTitle":"Planes individuales","subs.individualDesc":"Para cualquiera que se esté preparando para una entrevista o construyendo su propia carrera.","subs.basicName":"Básico","subs.perMonth":"/ mes","subs.proName":"Profesional","subs.eliteName":"Élite","subs.popular":"Más popular","subs.bestValue":"Mejor valor",
             "subs.yearlyName":"Anual","subs.perYear":"/ año","subs.subscribe":"Suscribirse ahora","subs.teamTitle":"Planes para equipos y universidades","subs.teamDesc":"Para facultades, universidades y centros de contratación que quieren capacitar a un grupo junto a un mejor precio.",
             "subs.teamSmallName":"Equipo pequeño","subs.teamSmallRange":"Hasta 10 personas","subs.perSeat":"/ por persona / mes","subs.recommended":"Recomendado para universidades","subs.teamMedName":"Grupo / facultad","subs.teamMedRange":"De 11 a 100 personas",
             "subs.uniName":"Universidad / gran organización","subs.uniRange":"Más de 100 personas","subs.customPrice":"Precio personalizado","subs.contactUs":"Contáctanos",
@@ -523,7 +535,7 @@
         tr: {
             "nav.searchPh":"Araç ara...","nav.searchEmpty":"Eşleşen araç yok","nav.section.interviews":"Mülakatlar ve İşe Alım","nav.interview":"Sesli Deneme Mülakatı","nav.faq":"SSS + Örnek Cevaplar","nav.career":"Kariyer Gelişim Planı",
             "nav.section.documents":"Belgeler","nav.cv":"CV Oluşturucu","nav.portfolio":"Kişisel Portfolyo","nav.writing":"Akademik Yazı Denetimi","nav.summarizer":"Belge Özetleyici",
-            "nav.section.audio":"Ses ve Video","nav.transcribe":"Sesi Metne Dönüştürme",
+            "nav.section.audio":"Ses ve Video","nav.transcribe":"Sesi Metne Dönüştürme","nav.pitch":"30 Saniyelik Tanıtım",
             "nav.section.account":"Hesap ve Destek","nav.about":"Hakkımızda","nav.history":"Birleşik Geçmiş","nav.profile":"Profil","nav.subscriptions":"Abonelikler","nav.donations":"Bağışlar","nav.support":"Destek ve İletişim",
             "nav.section.legal":"Yasal","nav.terms":"Kullanım Şartları","nav.privacy":"Gizlilik Politikası",
             "account.guest":"Misafir (bu cihaz)","account.signinHint":"Fotoğrafını ve puanlarını kaydetmek için Google ile giriş yap",
@@ -546,12 +558,13 @@
             "sum.desc":"Herhangi bir raporu, makaleyi veya dersi saniyeler içinde özetle.","sum.inputPh":"Metni buraya yapıştır...","sum.run":"Şimdi Özetle",
             "tr.notice":"Yapay zekayla otomatik olarak yazıya dökülmesi için hazır bir ses dosyası yükleyebilir, doğrudan mikrofonla kayıt yapabilir veya hazır bir metni yapıştırabilirsin.","tr.uploadBtn":"Ses dosyası yükle ve otomatik yazıya dök","tr.uploadHint":"Henüz dosya yüklenmedi",
             "tr.sourceLangLabel":"Kaynak konuşma dili","tr.targetLangLabel":"Son metni şu dile çevir (isteğe bağlı)","tr.micHint":"Kayıt için bas, yukarıdan dosya yükle veya aşağıya hazır metin yapıştır.","tr.rawPh":"Ham metin burada görünecek...","tr.run":"Temizle ve Biçimlendir",
-            
+            "pitch.notice":"Kayıtlı CV ve profilinize bağlı, yaklaşık 30 saniyelik profesyonel bir kendini tanıtma metni hazırlayın.","pitch.purposeLabel":"Nerede kullanacaksın?","pitch.toneLabel":"Konuşma tarzı",
+            "pitch.rolePh":"Hedef pozisyon veya alan","pitch.highlightPh":"Öne çıkarmak istediğin bir iki nokta - isteğe bağlı","pitch.run":"30 Saniyelik Tanıtımı Oluştur",
             "profile.points":"puan","profile.namePh":"Ad Soyad","profile.titlePh":"Meslek unvanı","profile.googleBtn":"Google ile Giriş Yap",
             "profile.googleHint":"Giriş yapmak, adını, fotoğrafını ve puanlarını bu cihazda kaydeder — ücretsiz denemeler hesaba göre değil cihaza göre sayılır.","profile.save":"Bilgileri Kaydet",
             "profile.connected":"Google ile Bağlı","profile.logoutBtn":"Çıkış Yap",
             "profile.statUsage":"Araç kullanım sayısı","profile.statDevice":"Cihaz Kimliği","profile.statPlan":"Mevcut paketin","profile.planFree":"Ücretsiz",
-            "subs.individualTitle":"Bireysel Paketler","subs.individualDesc":"Mülakata hazırlanan veya kendi kariyerini inşa eden herkes için.","subs.basicName":"Temel","subs.perMonth":"/ ay","subs.proName":"Profesyonel","subs.popular":"En Çok Tercih Edilen",
+            "subs.individualTitle":"Bireysel Paketler","subs.individualDesc":"Mülakata hazırlanan veya kendi kariyerini inşa eden herkes için.","subs.basicName":"Temel","subs.perMonth":"/ ay","subs.proName":"Profesyonel","subs.eliteName":"Elit","subs.popular":"En Çok Tercih Edilen","subs.bestValue":"En İyi Değer",
             "subs.yearlyName":"Yıllık","subs.perYear":"/ yıl","subs.subscribe":"Şimdi Abone Ol","subs.teamTitle":"Ekip ve Üniversite Paketleri","subs.teamDesc":"Bir grubu daha uygun fiyata birlikte eğitmek isteyen fakülteler, üniversiteler ve işe alım merkezleri için.",
             "subs.teamSmallName":"Küçük Ekip","subs.teamSmallRange":"10 kişiye kadar","subs.perSeat":"/ kişi başı / ay","subs.recommended":"Üniversiteler için önerilir","subs.teamMedName":"Grup / Fakülte","subs.teamMedRange":"11 ila 100 kişi",
             "subs.uniName":"Üniversite / Büyük Kurum","subs.uniRange":"100 kişiden fazla","subs.customPrice":"Özel fiyatlandırma","subs.contactUs":"Bize Ulaşın",
@@ -603,7 +616,7 @@
         de: {
             "nav.searchPh":"Werkzeuge suchen...","nav.searchEmpty":"Keine passenden Werkzeuge","nav.section.interviews":"Vorstellungsgespräche & Bewerbung","nav.interview":"Sprachbasiertes Übungsinterview","nav.faq":"FAQ + Musterantworten","nav.career":"Karriereentwicklungsplan",
             "nav.section.documents":"Dokumente","nav.cv":"Lebenslauf-Generator","nav.portfolio":"Persönliches Portfolio","nav.writing":"Akademisches Lektorat","nav.summarizer":"Dokumentenzusammenfassung",
-            "nav.section.audio":"Audio & Video","nav.transcribe":"Sprache-zu-Text",
+            "nav.section.audio":"Audio & Video","nav.transcribe":"Sprache-zu-Text","nav.pitch":"30-Sekunden-Selbstvorstellung",
             "nav.section.account":"Konto & Support","nav.about":"Über uns","nav.history":"Einheitlicher Verlauf","nav.profile":"Profil","nav.subscriptions":"Abonnements","nav.donations":"Spenden","nav.support":"Support & Kontakt",
             "nav.section.legal":"Rechtliches","nav.terms":"Nutzungsbedingungen","nav.privacy":"Datenschutzerklärung",
             "account.guest":"Gast (dieses Gerät)","account.signinHint":"Melde dich mit Google an, um dein Foto und deine Punkte zu speichern",
@@ -626,12 +639,13 @@
             "sum.desc":"Fasse jeden Bericht, Artikel oder jede Vorlesung in Sekunden zusammen.","sum.inputPh":"Text hier einfügen...","sum.run":"Jetzt zusammenfassen",
             "tr.notice":"Du kannst eine fertige Audiodatei hochladen, die automatisch von der KI transkribiert wird, direkt mit dem Mikrofon aufnehmen oder einen fertigen Text einfügen.","tr.uploadBtn":"Audiodatei hochladen und automatisch transkribieren","tr.uploadHint":"Noch keine Datei hochgeladen",
             "tr.sourceLangLabel":"Ausgangssprache der Sprache","tr.targetLangLabel":"Endtext übersetzen nach (optional)","tr.micHint":"Zum Aufnehmen drücken, oben eine Datei hochladen oder unten einen fertigen Text einfügen.","tr.rawPh":"Der Rohtext erscheint hier...","tr.run":"Bereinigen & Formatieren",
-            
+            "pitch.notice":"Bereite eine professionelle, etwa 30-sekündige Selbstvorstellung vor, verknüpft mit deinem gespeicherten Lebenslauf und Profil.","pitch.purposeLabel":"Wo wirst du sie verwenden?","pitch.toneLabel":"Sprechstil",
+            "pitch.rolePh":"Zielposition oder -bereich","pitch.highlightPh":"Ein oder zwei Highlights, die du hervorheben möchtest - optional","pitch.run":"30-Sekunden-Vorstellung erstellen",
             "profile.points":"Punkte","profile.namePh":"Dein vollständiger Name","profile.titlePh":"Berufsbezeichnung","profile.googleBtn":"Mit Google anmelden",
             "profile.googleHint":"Die Anmeldung speichert deinen Namen, dein Foto und deine Punkte auf diesem Gerät — kostenlose Versuche werden pro Gerät gezählt, nicht pro Konto.","profile.save":"Angaben speichern",
             "profile.connected":"Mit Google verbunden","profile.logoutBtn":"Abmelden",
             "profile.statUsage":"Tool-Nutzungen","profile.statDevice":"Geräte-ID","profile.statPlan":"Dein aktueller Plan","profile.planFree":"Kostenlos",
-            "subs.individualTitle":"Einzelpläne","subs.individualDesc":"Für alle, die sich auf ein Vorstellungsgespräch vorbereiten oder ihre eigene Karriere aufbauen.","subs.basicName":"Basis","subs.perMonth":"/ Monat","subs.proName":"Professionell","subs.popular":"Am beliebtesten",
+            "subs.individualTitle":"Einzelpläne","subs.individualDesc":"Für alle, die sich auf ein Vorstellungsgespräch vorbereiten oder ihre eigene Karriere aufbauen.","subs.basicName":"Basis","subs.perMonth":"/ Monat","subs.proName":"Professionell","subs.eliteName":"Elite","subs.popular":"Am beliebtesten","subs.bestValue":"Bestes Preis-Leistungs-Verhältnis",
             "subs.yearlyName":"Jährlich","subs.perYear":"/ Jahr","subs.subscribe":"Jetzt abonnieren","subs.teamTitle":"Team- & Universitätspläne","subs.teamDesc":"Für Fakultäten, Universitäten und Rekrutierungszentren, die eine Gruppe gemeinsam zu einem besseren Preis pro Platz schulen möchten.",
             "subs.teamSmallName":"Kleines Team","subs.teamSmallRange":"Bis zu 10 Personen","subs.perSeat":"/ pro Person / Monat","subs.recommended":"Empfohlen für Universitäten","subs.teamMedName":"Jahrgang / Fakultät","subs.teamMedRange":"11 bis 100 Personen",
             "subs.uniName":"Universität / Große Organisation","subs.uniRange":"Über 100 Personen","subs.customPrice":"Individueller Preis","subs.contactUs":"Kontaktiere uns",
@@ -683,10 +697,11 @@
         hi: {
             "nav.searchPh":"टूल खोजें...","nav.searchEmpty":"कोई मेल खाता टूल नहीं","nav.section.interviews":"इंटरव्यू और नौकरी","nav.interview":"वॉइस मॉक इंटरव्यू","nav.faq":"सामान्य प्रश्न + नमूना उत्तर","nav.career":"करियर विकास योजना",
             "nav.section.documents":"दस्तावेज़","nav.cv":"सीवी बिल्डर","nav.portfolio":"व्यक्तिगत पोर्टफोलियो","nav.writing":"अकादमिक लेखन समीक्षा","nav.summarizer":"दस्तावेज़ सारांश",
-            "nav.section.audio":"ऑडियो और वीडियो","nav.transcribe":"ऑडियो से टेक्स्ट",
+            "nav.section.audio":"ऑडियो और वीडियो","nav.transcribe":"ऑडियो से टेक्स्ट","nav.pitch":"30-सेकंड सेल्फ पिच",
             "nav.section.account":"खाता और सहायता","nav.about":"हमारे बारे में","nav.history":"एकीकृत इतिहास","nav.profile":"प्रोफ़ाइल","nav.subscriptions":"सदस्यताएँ","nav.donations":"दान","nav.support":"सहायता और संपर्क",
             "nav.section.legal":"कानूनी","nav.terms":"उपयोग की शर्तें","nav.privacy":"गोपनीयता नीति",
             "account.guest":"अतिथि (यह डिवाइस)","account.signinHint":"अपनी फ़ोटो और पॉइंट्स सेव करने के लिए Google से साइन इन करें",
+            "authgate.title":"साइन इन करें","authgate.subtitle":"साइट इस्तेमाल करने के लिए आपको Google या अपने ईमेल से साइन इन करना होगा।","authgate.googleBtn":"Google से साइन इन करें","authgate.orEmail":"या ईमेल से","authgate.tabLogin":"लॉग इन करें","authgate.tabSignup":"खाता बनाएं","authgate.namePh":"आपका पूरा नाम","authgate.emailPh":"ईमेल","authgate.passwordPh":"पासवर्ड","authgate.confirmPh":"पासवर्ड की पुष्टि करें","authgate.submitLogin":"लॉग इन करें","authgate.submitSignup":"खाता बनाएं","authgate.privacyNote":"आपका डेटा सुरक्षित रूप से सेव किया जाता है, और आपका पासवर्ड एन्क्रिप्टेड है — यहां तक कि हम भी इसे नहीं देख सकते।","authgate.recaptchaNote":"यह साइट reCAPTCHA से सुरक्षित है, और <a href=\\\"https://policies.google.com/privacy\\\" target=\\\"_blank\\\" rel=\\\"noopener\\\" style=\\\"color:inherit;text-decoration:underline;\\\">गोपनीयता नीति</a> और <a href=\\\"https://policies.google.com/terms\\\" target=\\\"_blank\\\" rel=\\\"noopener\\\" style=\\\"color:inherit;text-decoration:underline;\\\">सेवा की शर्तें</a> Google पर लागू होती हैं।",
             "trial.left":"बचे हुए प्रयास","trial.upgrade":"पूर्ण पैकेज में अपग्रेड करें",
             "trial.warningLow":"इस महीने केवल {n} मुफ़्त प्रयास बचे हैं!","trial.warningLast":"यह इस महीने आपका आखिरी मुफ़्त प्रयास है!",
             "copy":"कॉपी करें","download":"डाउनलोड करें",
@@ -705,12 +720,13 @@
             "sum.desc":"किसी भी रिपोर्ट, लेख या व्याख्यान का सेकंडों में सारांश बनाएं।","sum.inputPh":"टेक्स्ट यहाँ पेस्ट करें...","sum.run":"अभी सारांश बनाएं",
             "tr.notice":"आप AI से अपने-आप ट्रांसक्राइब होने के लिए तैयार ऑडियो फ़ाइल अपलोड कर सकते हैं, सीधे माइक से रिकॉर्ड कर सकते हैं, या तैयार टेक्स्ट पेस्ट कर सकते हैं।","tr.uploadBtn":"ऑडियो फ़ाइल अपलोड करें और ट्रांसक्राइब करें","tr.uploadHint":"अभी तक कोई फ़ाइल अपलोड नहीं हुई",
             "tr.sourceLangLabel":"मूल भाषण की भाषा","tr.targetLangLabel":"अंतिम टेक्स्ट का अनुवाद करें (वैकल्पिक)","tr.micHint":"रिकॉर्ड करने के लिए दबाएं, ऊपर फ़ाइल अपलोड करें, या नीचे तैयार टेक्स्ट पेस्ट करें।","tr.rawPh":"कच्चा टेक्स्ट यहाँ दिखाई देगा...","tr.run":"साफ़ करें और फ़ॉर्मेट करें",
-            
+            "pitch.notice":"अपने सेव किए गए CV और प्रोफ़ाइल से जुड़ा, लगभग 30 सेकंड का एक पेशेवर आत्म-परिचय तैयार करें।","pitch.purposeLabel":"आप इसे कहाँ इस्तेमाल करेंगे?","pitch.toneLabel":"बोलने का लहजा",
+            "pitch.rolePh":"लक्षित पद या क्षेत्र","pitch.highlightPh":"उजागर करने के लिए एक या दो मुख्य बिंदु - वैकल्पिक","pitch.run":"30-सेकंड पिच तैयार करें",
             "profile.points":"पॉइंट्स","profile.namePh":"आपका पूरा नाम","profile.titlePh":"पद का नाम","profile.googleBtn":"Google से साइन इन करें",
             "profile.googleHint":"साइन इन करने पर आपका नाम, फ़ोटो और पॉइंट्स इस डिवाइस पर सेव हो जाते हैं — मुफ़्त प्रयास खाते के अनुसार नहीं, डिवाइस के अनुसार गिने जाते हैं।","profile.save":"जानकारी सेव करें",
             "profile.connected":"Google से जुड़ा हुआ","profile.logoutBtn":"लॉग आउट करें",
             "profile.statUsage":"टूल इस्तेमाल की संख्या","profile.statDevice":"डिवाइस आईडी","profile.statPlan":"आपका वर्तमान पैकेज","profile.planFree":"मुफ़्त",
-            "subs.individualTitle":"व्यक्तिगत पैकेज","subs.individualDesc":"इंटरव्यू की तैयारी करने वाले या अपना करियर बनाने वाले हर किसी के लिए।","subs.basicName":"बेसिक","subs.perMonth":"/ माह","subs.proName":"प्रोफेशनल","subs.popular":"सबसे लोकप्रिय",
+            "subs.individualTitle":"व्यक्तिगत पैकेज","subs.individualDesc":"इंटरव्यू की तैयारी करने वाले या अपना करियर बनाने वाले हर किसी के लिए।","subs.basicName":"बेसिक","subs.perMonth":"/ माह","subs.proName":"प्रोफेशनल","subs.eliteName":"एलीट","subs.popular":"सबसे लोकप्रिय","subs.bestValue":"सर्वश्रेष्ठ मूल्य",
             "subs.yearlyName":"वार्षिक","subs.perYear":"/ वर्ष","subs.subscribe":"अभी सब्सक्राइब करें","subs.teamTitle":"टीम और यूनिवर्सिटी पैकेज","subs.teamDesc":"कॉलेजों, यूनिवर्सिटीज़ और हायरिंग सेंटरों के लिए जो एक ग्रुप को बेहतर कीमत पर एक साथ प्रशिक्षित करना चाहते हैं।",
             "subs.teamSmallName":"छोटी टीम","subs.teamSmallRange":"10 लोगों तक","subs.perSeat":"/ प्रति व्यक्ति / माह","subs.recommended":"यूनिवर्सिटीज़ के लिए अनुशंसित","subs.teamMedName":"बैच / कॉलेज","subs.teamMedRange":"11 से 100 लोग",
             "subs.uniName":"यूनिवर्सिटी / बड़ा संगठन","subs.uniRange":"100 से अधिक लोग","subs.customPrice":"कस्टम मूल्य","subs.contactUs":"हमसे संपर्क करें",
@@ -762,10 +778,11 @@
         ur: {
             "nav.searchPh":"ٹولز تلاش کریں...","nav.searchEmpty":"کوئی مماثل ٹول نہیں","nav.section.interviews":"انٹرویوز اور ملازمت","nav.interview":"صوتی مشقی انٹرویو","nav.faq":"عمومی سوالات + نمونہ جوابات","nav.career":"کیریئر ترقی کا منصوبہ",
             "nav.section.documents":"دستاویزات","nav.cv":"سی وی بنانے کا آلہ","nav.portfolio":"ذاتی پورٹ فولیو","nav.writing":"تعلیمی تحریر کا جائزہ","nav.summarizer":"دستاویز کا خلاصہ",
-            "nav.section.audio":"آڈیو اور ویڈیو","nav.transcribe":"آواز کو تحریر میں بدلنا",
+            "nav.section.audio":"آڈیو اور ویڈیو","nav.transcribe":"آواز کو تحریر میں بدلنا","nav.pitch":"30 سیکنڈ سیلف پچ",
             "nav.section.account":"اکاؤنٹ اور معاونت","nav.about":"ہمارے بارے میں","nav.history":"متحدہ ہسٹری","nav.profile":"پروفائل","nav.subscriptions":"سبسکرپشنز","nav.donations":"عطیات","nav.support":"معاونت اور رابطہ",
             "nav.section.legal":"قانونی","nav.terms":"استعمال کی شرائط","nav.privacy":"رازداری کی پالیسی",
             "account.guest":"مہمان (یہ ڈیوائس)","account.signinHint":"اپنی تصویر اور پوائنٹس محفوظ کرنے کے لیے گوگل سے سائن ان کریں",
+            "authgate.title":"سائن ان کریں","authgate.subtitle":"سائٹ استعمال کرنے کے لیے آپ کو گوگل یا اپنی ای میل سے سائن ان کرنا ہوگا۔","authgate.googleBtn":"گوگل سے سائن ان کریں","authgate.orEmail":"یا ای میل سے","authgate.tabLogin":"لاگ ان کریں","authgate.tabSignup":"اکاؤنٹ بنائیں","authgate.namePh":"آپ کا مکمل نام","authgate.emailPh":"ای میل","authgate.passwordPh":"پاس ورڈ","authgate.confirmPh":"پاس ورڈ کی تصدیق کریں","authgate.submitLogin":"لاگ ان کریں","authgate.submitSignup":"اکاؤنٹ بنائیں","authgate.privacyNote":"آپ کا ڈیٹا محفوظ طریقے سے سیو کیا جاتا ہے، اور آپ کا پاس ورڈ خفیہ ہے — یہاں تک کہ ہم بھی اسے نہیں دیکھ سکتے۔","authgate.recaptchaNote":"یہ سائٹ reCAPTCHA سے محفوظ ہے، اور گوگل کی <a href=\\\"https://policies.google.com/privacy\\\" target=\\\"_blank\\\" rel=\\\"noopener\\\" style=\\\"color:inherit;text-decoration:underline;\\\">پرائیویسی پالیسی</a> اور <a href=\\\"https://policies.google.com/terms\\\" target=\\\"_blank\\\" rel=\\\"noopener\\\" style=\\\"color:inherit;text-decoration:underline;\\\">سروس کی شرائط</a> لاگو ہوتی ہیں۔",
             "trial.left":"باقی ماندہ کوششیں","trial.upgrade":"مکمل پیکیج میں اپ گریڈ کریں",
             "trial.warningLow":"اس مہینے صرف {n} مفت کوششیں باقی ہیں!","trial.warningLast":"یہ اس مہینے آپ کی آخری مفت کوشش ہے!",
             "copy":"کاپی کریں","download":"ڈاؤن لوڈ کریں",
@@ -784,12 +801,13 @@
             "sum.desc":"کسی بھی رپورٹ، مضمون یا لیکچر کا سیکنڈوں میں خلاصہ بنائیں۔","sum.inputPh":"متن یہاں چسپاں کریں...","sum.run":"ابھی خلاصہ بنائیں",
             "tr.notice":"آپ AI سے خودکار طور پر تحریر میں بدلنے کے لیے تیار آڈیو فائل اپ لوڈ کر سکتے ہیں، براہ راست مائیک سے ریکارڈ کر سکتے ہیں، یا تیار متن چسپاں کر سکتے ہیں۔","tr.uploadBtn":"آڈیو فائل اپ لوڈ کریں اور خودکار تحریر بنائیں","tr.uploadHint":"ابھی تک کوئی فائل اپ لوڈ نہیں ہوئی",
             "tr.sourceLangLabel":"اصل بولی جانے والی زبان","tr.targetLangLabel":"حتمی متن کا ترجمہ کریں (اختیاری)","tr.micHint":"ریکارڈ کرنے کے لیے دبائیں، اوپر فائل اپ لوڈ کریں، یا نیچے تیار متن چسپاں کریں۔","tr.rawPh":"خام متن یہاں ظاہر ہوگا...","tr.run":"صاف کریں اور فارمیٹ کریں",
-            
+            "pitch.notice":"اپنی محفوظ شدہ CV اور پروفائل سے منسلک، تقریباً 30 سیکنڈ کا پیشہ ورانہ خود تعارف تیار کریں۔","pitch.purposeLabel":"آپ اسے کہاں استعمال کریں گے؟","pitch.toneLabel":"بات کرنے کا انداز",
+            "pitch.rolePh":"مطلوبہ عہدہ یا شعبہ","pitch.highlightPh":"نمایاں کرنے کے لیے ایک یا دو اہم نکات - اختیاری","pitch.run":"30 سیکنڈ پچ تیار کریں",
             "profile.points":"پوائنٹس","profile.namePh":"آپ کا مکمل نام","profile.titlePh":"عہدے کا نام","profile.googleBtn":"گوگل سے سائن ان کریں",
             "profile.googleHint":"سائن ان کرنے سے آپ کا نام، تصویر اور پوائنٹس اس ڈیوائس پر محفوظ ہو جاتے ہیں — مفت کوششیں اکاؤنٹ کے بجائے ڈیوائس کے حساب سے شمار ہوتی ہیں۔","profile.save":"معلومات محفوظ کریں",
             "profile.connected":"گوگل سے منسلک","profile.logoutBtn":"لاگ آؤٹ کریں",
             "profile.statUsage":"آلات کے استعمال کی تعداد","profile.statDevice":"ڈیوائس آئی ڈی","profile.statPlan":"آپ کا موجودہ پیکیج","profile.planFree":"مفت",
-            "subs.individualTitle":"انفرادی پیکیجز","subs.individualDesc":"ہر اس شخص کے لیے جو انٹرویو کی تیاری کر رہا ہے یا اپنا کیریئر خود بنا رہا ہے۔","subs.basicName":"بنیادی","subs.perMonth":"/ ماہانہ","subs.proName":"پیشہ ورانہ","subs.popular":"سب سے زیادہ مقبول",
+            "subs.individualTitle":"انفرادی پیکیجز","subs.individualDesc":"ہر اس شخص کے لیے جو انٹرویو کی تیاری کر رہا ہے یا اپنا کیریئر خود بنا رہا ہے۔","subs.basicName":"بنیادی","subs.perMonth":"/ ماہانہ","subs.proName":"پیشہ ورانہ","subs.eliteName":"ایلیٹ","subs.popular":"سب سے زیادہ مقبول","subs.bestValue":"بہترین قیمت",
             "subs.yearlyName":"سالانہ","subs.perYear":"/ سالانہ","subs.subscribe":"ابھی سبسکرائب کریں","subs.teamTitle":"ٹیم اور یونیورسٹی پیکیجز","subs.teamDesc":"کالجوں، یونیورسٹیوں اور بھرتی مراکز کے لیے جو ایک گروپ کو بہتر قیمت پر ایک ساتھ تربیت دینا چاہتے ہیں۔",
             "subs.teamSmallName":"چھوٹی ٹیم","subs.teamSmallRange":"10 افراد تک","subs.perSeat":"/ فی فرد / ماہانہ","subs.recommended":"یونیورسٹیوں کے لیے تجویز کردہ","subs.teamMedName":"بیچ / کالج","subs.teamMedRange":"11 سے 100 افراد",
             "subs.uniName":"یونیورسٹی / بڑا ادارہ","subs.uniRange":"100 سے زیادہ افراد","subs.customPrice":"حسبِ ضرورت قیمت","subs.contactUs":"ہم سے رابطہ کریں",
@@ -841,10 +859,11 @@
         fa: {
             "nav.searchPh":"جستجوی ابزارها...","nav.searchEmpty":"ابزاری یافت نشد","nav.section.interviews":"مصاحبه‌ها و استخدام","nav.interview":"مصاحبه آزمایشی صوتی","nav.faq":"سوالات متداول + پاسخ‌های نمونه","nav.career":"برنامه رشد شغلی",
             "nav.section.documents":"مدارک","nav.cv":"سازنده رزومه","nav.portfolio":"نمونه‌کار شخصی","nav.writing":"بازبینی نگارش آکادمیک","nav.summarizer":"خلاصه‌سازی مدارک",
-            "nav.section.audio":"صدا و ویدیو","nav.transcribe":"تبدیل صدا به متن",
+            "nav.section.audio":"صدا و ویدیو","nav.transcribe":"تبدیل صدا به متن","nav.pitch":"معرفی ۳۰ ثانیه‌ای",
             "nav.section.account":"حساب کاربری و پشتیبانی","nav.about":"درباره ما","nav.history":"تاریخچه یکپارچه","nav.profile":"پروفایل","nav.subscriptions":"اشتراک‌ها","nav.donations":"کمک مالی","nav.support":"پشتیبانی و ارتباط",
             "nav.section.legal":"حقوقی","nav.terms":"شرایط استفاده","nav.privacy":"سیاست حریم خصوصی",
             "account.guest":"مهمان (این دستگاه)","account.signinHint":"برای ذخیره عکس و امتیازهایتان با گوگل وارد شوید",
+            "authgate.title":"وارد شوید","authgate.subtitle":"برای استفاده از سایت باید با گوگل یا ایمیل خود وارد شوید.","authgate.googleBtn":"ورود با گوگل","authgate.orEmail":"یا با ایمیل","authgate.tabLogin":"ورود","authgate.tabSignup":"ساخت حساب","authgate.namePh":"نام کامل شما","authgate.emailPh":"ایمیل","authgate.passwordPh":"رمز عبور","authgate.confirmPh":"تأیید رمز عبور","authgate.submitLogin":"ورود","authgate.submitSignup":"ساخت حساب","authgate.privacyNote":"اطلاعات شما به‌صورت امن ذخیره می‌شود و رمز عبورتان رمزگذاری شده است — حتی خود ما هم نمی‌توانیم آن را ببینیم.","authgate.recaptchaNote":"این سایت توسط reCAPTCHA محافظت می‌شود و <a href=\\\"https://policies.google.com/privacy\\\" target=\\\"_blank\\\" rel=\\\"noopener\\\" style=\\\"color:inherit;text-decoration:underline;\\\">حریم خصوصی</a> و <a href=\\\"https://policies.google.com/terms\\\" target=\\\"_blank\\\" rel=\\\"noopener\\\" style=\\\"color:inherit;text-decoration:underline;\\\">شرایط خدمات</a> گوگل اعمال می‌شود.",
             "trial.left":"تلاش‌های باقی‌مانده","trial.upgrade":"ارتقا به بسته کامل",
             "trial.warningLow":"این ماه فقط {n} تلاش رایگان برایتان باقی مانده است!","trial.warningLast":"این آخرین تلاش رایگان شما در این ماه است!",
             "copy":"کپی","download":"دانلود",
@@ -863,12 +882,13 @@
             "sum.desc":"هر گزارش، مقاله یا سخنرانی را در چند ثانیه خلاصه کنید.","sum.inputPh":"متن را اینجا بچسبانید...","sum.run":"خلاصه‌سازی همین حالا",
             "tr.notice":"می‌توانید یک فایل صوتی آماده برای رونویسی خودکار با هوش مصنوعی بارگذاری کنید، مستقیماً با میکروفون ضبط کنید، یا متن آماده بچسبانید.","tr.uploadBtn":"بارگذاری فایل صوتی و رونویسی خودکار","tr.uploadHint":"هنوز فایلی بارگذاری نشده",
             "tr.sourceLangLabel":"زبان اصلی گفتار","tr.targetLangLabel":"ترجمه متن نهایی به (اختیاری)","tr.micHint":"برای ضبط فشار دهید، فایلی در بالا بارگذاری کنید، یا متنی آماده در پایین بچسبانید.","tr.rawPh":"متن خام اینجا نمایش داده می‌شود...","tr.run":"پاک‌سازی و قالب‌بندی",
-            
+            "pitch.notice":"یک معرفی شخصی حرفه‌ای حدود ۳۰ ثانیه‌ای، متصل به رزومه و پروفایل ذخیره‌شده‌تان آماده کنید.","pitch.purposeLabel":"کجا از آن استفاده می‌کنید؟","pitch.toneLabel":"لحن صحبت",
+            "pitch.rolePh":"شغل یا حوزه هدف","pitch.highlightPh":"یک یا دو نکته مهم برای برجسته کردن - اختیاری","pitch.run":"ساخت معرفی ۳۰ ثانیه‌ای",
             "profile.points":"امتیاز","profile.namePh":"نام کامل شما","profile.titlePh":"عنوان شغلی","profile.googleBtn":"ورود با گوگل",
             "profile.googleHint":"ورود، نام، عکس و امتیازهای شما را روی این دستگاه ذخیره می‌کند — تلاش‌های رایگان بر اساس دستگاه شمارش می‌شوند، نه حساب کاربری.","profile.save":"ذخیره اطلاعات",
             "profile.connected":"متصل به گوگل","profile.logoutBtn":"خروج از حساب",
             "profile.statUsage":"تعداد استفاده از ابزارها","profile.statDevice":"شناسه دستگاه","profile.statPlan":"بسته فعلی شما","profile.planFree":"رایگان",
-            "subs.individualTitle":"بسته‌های فردی","subs.individualDesc":"برای هر کسی که برای مصاحبه آماده می‌شود یا مسیر شغلی خود را می‌سازد.","subs.basicName":"پایه","subs.perMonth":"/ ماهانه","subs.proName":"حرفه‌ای","subs.popular":"پرطرفدارترین",
+            "subs.individualTitle":"بسته‌های فردی","subs.individualDesc":"برای هر کسی که برای مصاحبه آماده می‌شود یا مسیر شغلی خود را می‌سازد.","subs.basicName":"پایه","subs.perMonth":"/ ماهانه","subs.proName":"حرفه‌ای","subs.eliteName":"الیت","subs.popular":"پرطرفدارترین","subs.bestValue":"بهترین ارزش",
             "subs.yearlyName":"سالانه","subs.perYear":"/ سالانه","subs.subscribe":"همین حالا مشترک شوید","subs.teamTitle":"بسته‌های تیمی و دانشگاهی","subs.teamDesc":"برای دانشکده‌ها، دانشگاه‌ها و مراکز استخدام که می‌خواهند یک گروه را با هم و با قیمت بهتر آموزش دهند.",
             "subs.teamSmallName":"تیم کوچک","subs.teamSmallRange":"تا ۱۰ نفر","subs.perSeat":"/ به‌ازای هر نفر / ماهانه","subs.recommended":"توصیه‌شده برای دانشگاه‌ها","subs.teamMedName":"دسته / دانشکده","subs.teamMedRange":"۱۱ تا ۱۰۰ نفر",
             "subs.uniName":"دانشگاه / سازمان بزرگ","subs.uniRange":"بیش از ۱۰۰ نفر","subs.customPrice":"قیمت‌گذاری اختصاصی","subs.contactUs":"تماس با ما",
@@ -918,6 +938,64 @@
             "assistant.botName":"یسر پرو بات","assistant.subtitle":"با نوشتن یا صدا باهاش صحبت کن، و اگه لازم بود چیزی رو ببینه یه عکس براش بفرست","assistant.inputPh":"سوالت رو اینجا بنویس...","assistant.attachImageTitle":"پیوست کردن عکس","assistant.micTitle":"ضبط صدا","assistant.voiceToggleTitle":"روشن/خاموش کردن صدای پاسخ‌ها","assistant.newChatTitle":"شروع گفتگوی جدید","assistant.removeImageTitle":"حذف عکس","assistant.imageAlt":"عکس پیوست‌شده","assistant.providerHint":"توسط چند ارائه‌دهنده هوش مصنوعی پشتیبانی می‌شود — اگه یکی مشغول باشه، بدون اینکه متوجه بشی به‌طور خودکار به دیگری تغییر می‌کند.","assistant.emptyHint":"از {bot} با نوشتن یا صدا سوال بپرس، یا عکسی براش بفرست تا ببینه و دربارش جواب بده.","assistant.defaultImageQuestion":"این عکس رو توصیف کن و با جزئیات توضیح بده توش چی هست."
         }
     };
+    // ✅ نقطة إصلاح لغة: كل النصوص دي كانت متكتوبة يدوي كـ (currentUiLang === 'en' ? كذا : كذا)
+    // يعني كانت بتشتغل عربي/إنجليزي بس، وبقت كلها بتنادي على uiStr()/I18N وبتغطي كل الـ9 لغات.
+    // في أماكن متفرقة في الكود، فلو المستخدم مختار أي لغة غير العربي أو الإنجليزي (فرنساوي،
+    // إسباني، تركي، ألماني، هندي، أوردو، فارسي) كان بيشوف عربي فجأة وسط لغته. دلوقتي كل
+    // النصوص دي بقت جدول ترجمة كامل بالتسع لغات، وبتتقرا بدالة uiStr() بدل الشرط الثنائي.
+    const UI_STR = {
+        pwaInstallHint: { ar:'افتح قائمة المتصفح (⋮ أو ⋯) واختار "تثبيت التطبيق" أو "إضافة إلى الشاشة الرئيسية".', en:'Open your browser menu and choose "Install app" or "Add to Home screen".', fr:'Ouvrez le menu de votre navigateur et choisissez « Installer l\'application » ou « Ajouter à l\'écran d\'accueil ».', es:'Abre el menú de tu navegador y elige "Instalar aplicación" o "Añadir a la pantalla de inicio".', tr:'Tarayıcı menünüzü açın ve "Uygulamayı yükle" veya "Ana ekrana ekle" seçeneğini seçin.', de:'Öffne dein Browser-Menü und wähle „App installieren" oder „Zum Startbildschirm hinzufügen".', hi:'अपने ब्राउज़र का मेन्यू खोलें और "ऐप इंस्टॉल करें" या "होम स्क्रीन पर जोड़ें" चुनें।', ur:'اپنے براؤزر کا مینو کھولیں اور "ایپ انسٹال کریں" یا "ہوم اسکرین پر شامل کریں" منتخب کریں۔', fa:'منوی مرورگر خود را باز کنید و «نصب برنامه» یا «افزودن به صفحه اصلی» را انتخاب کنید.' },
+        pwaInstalled: { ar:'اتثبّت التطبيق بنجاح! دلوقتي تقدر تفتحه من شاشتك الرئيسية زي أي تطبيق.', en:'App installed! Open it from your home screen from now on.', fr:'Application installée ! Ouvrez-la désormais depuis votre écran d\'accueil.', es:'¡Aplicación instalada! Ábrela desde tu pantalla de inicio a partir de ahora.', tr:'Uygulama yüklendi! Artık ana ekranınızdan açabilirsiniz.', de:'App installiert! Öffne sie ab jetzt über deinen Startbildschirm.', hi:'ऐप इंस्टॉल हो गई! अब से इसे अपनी होम स्क्रीन से खोलें।', ur:'ایپ انسٹال ہو گئی! اب سے اسے اپنی ہوم اسکرین سے کھولیں۔', fa:'برنامه نصب شد! از این پس آن را از صفحه اصلی خود باز کنید.' },
+        subscriptionActivated: { ar:'🎉 تم تفعيل باقتك بنجاح: {plan}! اتمتع بمميزاتها دلوقتي.', en:'🎉 Your subscription is now active: {plan}. Enjoy!', fr:'🎉 Votre abonnement est maintenant actif : {plan}. Profitez-en !', es:'🎉 Tu suscripción ya está activa: {plan}. ¡Disfrútala!', tr:'🎉 Aboneliğiniz artık aktif: {plan}. Keyfini çıkarın!', de:'🎉 Dein Abo ist jetzt aktiv: {plan}. Viel Freude damit!', hi:'🎉 आपकी सदस्यता अब सक्रिय है: {plan}। आनंद लें!', ur:'🎉 آپ کی سبسکرپشن اب فعال ہے: {plan}۔ لطف اٹھائیں!', fa:'🎉 اشتراک شما اکنون فعال است: {plan}. لذت ببرید!' },
+        verifyEmailFirst: { ar:'لازم تأكّد إيميلك الأول قبل ما تشترك في باقة مدفوعة.', en:'Please verify your email first before subscribing to a paid plan.', fr:'Veuillez d\'abord vérifier votre e-mail avant de vous abonner à un plan payant.', es:'Verifica tu correo primero antes de suscribirte a un plan de pago.', tr:'Ücretli bir pakete abone olmadan önce lütfen önce e-postanızı doğrulayın.', de:'Bitte bestätige zuerst deine E-Mail-Adresse, bevor du ein kostenpflichtiges Abo abschließt.', hi:'भुगतान वाले प्लान की सदस्यता लेने से पहले कृपया अपना ईमेल सत्यापित करें।', ur:'ادا شدہ پیکج سبسکرائب کرنے سے پہلے براہ کرم اپنی ای میل کی تصدیق کریں۔', fa:'لطفاً قبل از اشتراک در یک بسته پولی، ابتدا ایمیل خود را تأیید کنید.' },
+        autoRenewalStopped: { ar:'تم إيقاف التجديد التلقائي. هتفضل مستفيد من باقتك الحالية لحد آخر يوم في الفترة دي.', en:'Auto-renewal stopped. You keep your current plan until the end of this period.', fr:'Renouvellement automatique arrêté. Vous conservez votre plan actuel jusqu\'à la fin de cette période.', es:'Renovación automática detenida. Conservarás tu plan actual hasta el final de este periodo.', tr:'Otomatik yenileme durduruldu. Bu dönemin sonuna kadar mevcut paketinizi kullanmaya devam edeceksiniz.', de:'Automatische Verlängerung gestoppt. Du behältst dein aktuelles Abo bis zum Ende dieses Zeitraums.', hi:'ऑटो-रिन्यूअल रोक दिया गया है। इस अवधि के अंत तक आप अपने मौजूदा प्लान का लाभ लेते रहेंगे।', ur:'خودکار تجدید روک دی گئی۔ آپ اس مدت کے اختتام تک اپنے موجودہ پیکج سے مستفید ہوتے رہیں گے۔', fa:'تمدید خودکار متوقف شد. تا پایان این دوره از بسته فعلی خود بهره‌مند خواهید بود.' },
+        genericProcessError: { ar:'تعذّر تنفيذ الطلب، جرب تاني.', en:'Could not process this, please try again.', fr:'Impossible de traiter cette demande, veuillez réessayer.', es:'No se pudo procesar esto, inténtalo de nuevo.', tr:'Bu işlem gerçekleştirilemedi, lütfen tekrar deneyin.', de:'Dies konnte nicht verarbeitet werden, bitte versuche es erneut.', hi:'यह प्रोसेस नहीं हो सका, कृपया दोबारा कोशिश करें।', ur:'یہ عمل مکمل نہیں ہو سکا، براہ کرم دوبارہ کوشش کریں۔', fa:'این درخواست پردازش نشد، لطفاً دوباره تلاش کنید.' },
+        subRenewNormally: { ar:'اشتراكك هيتجدّد عادي زي ما كان.', en:'Your subscription will renew as usual.', fr:'Votre abonnement se renouvellera normalement.', es:'Tu suscripción se renovará con normalidad.', tr:'Aboneliğiniz her zamanki gibi yenilenecek.', de:'Dein Abo wird wie gewohnt verlängert.', hi:'आपकी सदस्यता हमेशा की तरह रिन्यू होगी।', ur:'آپ کی سبسکرپشن معمول کے مطابق تجدید ہو جائے گی۔', fa:'اشتراک شما طبق روال تمدید خواهد شد.' },
+        undoError: { ar:'تعذّر التراجع، جرب تاني.', en:'Could not undo, please try again.', fr:'Impossible d\'annuler, veuillez réessayer.', es:'No se pudo deshacer, inténtalo de nuevo.', tr:'Geri alınamadı, lütfen tekrar deneyin.', de:'Rückgängig machen fehlgeschlagen, bitte versuche es erneut.', hi:'पूर्ववत नहीं किया जा सका, कृपया दोबारा कोशिश करें।', ur:'کالعدم نہیں ہو سکا، براہ کرم دوبارہ کوشش کریں۔', fa:'امکان لغو وجود نداشت، لطفاً دوباره تلاش کنید.' },
+        currentlySubscribedLabel: { ar:'مشترك حاليًا', en:'Currently subscribed', fr:'Actuellement abonné', es:'Actualmente suscrito', tr:'Şu anda abone', de:'Derzeit abonniert', hi:'वर्तमान में सदस्यता प्राप्त', ur:'فی الحال سبسکرائب شدہ', fa:'در حال حاضر مشترک' },
+        logoutConfirm: { ar:'تسجيل الخروج من حسابك على الجهاز ده؟', en:'Log out of your account on this device?', fr:'Se déconnecter de votre compte sur cet appareil ?', es:'¿Cerrar sesión de tu cuenta en este dispositivo?', tr:'Bu cihazdaki hesabınızdan çıkış yapılsın mı?', de:'Von deinem Konto auf diesem Gerät abmelden?', hi:'इस डिवाइस पर अपने खाते से लॉग आउट करें?', ur:'اس ڈیوائس پر اپنے اکاؤنٹ سے لاگ آؤٹ کریں؟', fa:'از حساب کاربری خود در این دستگاه خارج شوید؟' },
+        loggedOut: { ar:'تم تسجيل الخروج. تقدر تسجل دخول تاني في أي وقت.', en:'Logged out. You can sign in again anytime.', fr:'Déconnecté. Vous pouvez vous reconnecter à tout moment.', es:'Sesión cerrada. Puedes volver a iniciar sesión cuando quieras.', tr:'Çıkış yapıldı. İstediğiniz zaman tekrar giriş yapabilirsiniz.', de:'Abgemeldet. Du kannst dich jederzeit wieder anmelden.', hi:'लॉग आउट हो गया। आप कभी भी दोबारा साइन इन कर सकते हैं।', ur:'لاگ آؤٹ ہو گیا۔ آپ کسی بھی وقت دوبارہ سائن ان کر سکتے ہیں۔', fa:'خارج شدید. هر زمان می‌توانید دوباره وارد شوید.' },
+        chooseImageFile: { ar:'من فضلك اختر ملف صورة (jpg, png...).', en:'Please choose an image file.', fr:'Veuillez choisir un fichier image.', es:'Por favor, elige un archivo de imagen.', tr:'Lütfen bir resim dosyası seçin.', de:'Bitte wähle eine Bilddatei aus.', hi:'कृपया एक इमेज फ़ाइल चुनें।', ur:'براہ کرم ایک تصویری فائل منتخب کریں۔', fa:'لطفاً یک فایل تصویری انتخاب کنید.' },
+        imageTooLarge: { ar:'حجم الصورة كبير جداً (الحد الأقصى 12 ميجا).', en:'Image is too large (max 12MB).', fr:'L\'image est trop volumineuse (max 12 Mo).', es:'La imagen es demasiado grande (máx. 12 MB).', tr:'Görsel çok büyük (maksimum 12 MB).', de:'Das Bild ist zu groß (max. 12 MB).', hi:'इमेज बहुत बड़ी है (अधिकतम 12MB)।', ur:'تصویر بہت بڑی ہے (زیادہ سے زیادہ 12MB)۔', fa:'تصویر خیلی بزرگ است (حداکثر ۱۲ مگابایت).' },
+        profilePhotoUpdated: { ar:'تم تحديث صورة الملف الشخصي.', en:'Profile photo updated.', fr:'Photo de profil mise à jour.', es:'Foto de perfil actualizada.', tr:'Profil fotoğrafı güncellendi.', de:'Profilbild aktualisiert.', hi:'प्रोफ़ाइल फ़ोटो अपडेट हो गई।', ur:'پروفائل تصویر اپ ڈیٹ ہو گئی۔', fa:'عکس پروفایل به‌روزرسانی شد.' },
+        imageProcessError: { ar:'حصلت مشكلة في معالجة الصورة.', en:'Could not process this image.', fr:'Impossible de traiter cette image.', es:'No se pudo procesar esta imagen.', tr:'Bu görsel işlenemedi.', de:'Dieses Bild konnte nicht verarbeitet werden.', hi:'यह इमेज प्रोसेस नहीं हो सकी।', ur:'یہ تصویر پروسیس نہیں ہو سکی۔', fa:'پردازش این تصویر ممکن نشد.' },
+        clearLocalDataConfirm: { ar:'هيتم حذف بياناتك المحفوظة على الجهاز ده نهائياً (البروفايل، سجل التقدم، أي بيانات محلية) — ده إجراء نهائي ومش هيرجع. متأكد؟', en:'This will permanently delete your profile, progress history, and locally-saved data on this device/browser. This cannot be undone. Continue?', fr:'Cela supprimera définitivement votre profil, votre historique de progression et les données enregistrées localement sur cet appareil/navigateur. Cette action est irréversible. Continuer ?', es:'Esto eliminará permanentemente tu perfil, historial de progreso y datos guardados localmente en este dispositivo/navegador. Esta acción no se puede deshacer. ¿Continuar?', tr:'Bu işlem profilinizi, ilerleme geçmişinizi ve bu cihazda/tarayıcıda yerel olarak kaydedilmiş verileri kalıcı olarak silecektir. Bu işlem geri alınamaz. Devam edilsin mi?', de:'Dadurch werden dein Profil, dein Fortschrittsverlauf und lokal auf diesem Gerät/Browser gespeicherte Daten dauerhaft gelöscht. Dies kann nicht rückgängig gemacht werden. Fortfahren?', hi:'इससे आपकी प्रोफ़ाइल, प्रगति इतिहास और इस डिवाइस/ब्राउज़र पर स्थानीय रूप से सेव किया गया डेटा स्थायी रूप से हटा दिया जाएगा। इसे पूर्ववत नहीं किया जा सकता। जारी रखें?', ur:'اس سے آپ کی پروفائل، پیشرفت کی ہسٹری اور اس ڈیوائس/براؤزر پر مقامی طور پر محفوظ ڈیٹا مستقل طور پر حذف ہو جائے گا۔ یہ عمل واپس نہیں ہو سکتا۔ جاری رکھیں؟', fa:'این کار پروفایل، تاریخچه پیشرفت و داده‌های ذخیره‌شده محلی روی این دستگاه/مرورگر را برای همیشه حذف می‌کند. این کار قابل بازگشت نیست. ادامه می‌دهید؟' },
+        localDataCleared: { ar:'تم مسح بياناتك المحلية.', en:'Local data cleared.', fr:'Données locales effacées.', es:'Datos locales borrados.', tr:'Yerel veriler temizlendi.', de:'Lokale Daten gelöscht.', hi:'स्थानीय डेटा हटा दिया गया।', ur:'مقامی ڈیٹا صاف کر دیا گیا۔', fa:'داده‌های محلی پاک شد.' },
+        localDataClearError: { ar:'تعذر مسح البيانات، حاول تاني.', en:'Could not clear local data.', fr:'Impossible d\'effacer les données locales.', es:'No se pudieron borrar los datos locales.', tr:'Yerel veriler temizlenemedi.', de:'Lokale Daten konnten nicht gelöscht werden.', hi:'स्थानीय डेटा साफ़ नहीं हो सका।', ur:'مقامی ڈیٹا صاف نہیں ہو سکا۔', fa:'پاک کردن داده‌های محلی ممکن نشد.' },
+        reauthGoogleNotice: { ar:'لأسباب أمنية، أكّد هويتك بتسجيل الدخول بجوجل تاني — الحذف هيكمّل تلقائي بعد كده.', en:'For your security, please confirm by signing in with Google again — deletion will continue automatically.', fr:'Pour votre sécurité, veuillez confirmer en vous reconnectant avec Google — la suppression se poursuivra automatiquement.', es:'Por tu seguridad, confirma volviendo a iniciar sesión con Google — la eliminación continuará automáticamente.', tr:'Güvenliğiniz için lütfen Google ile tekrar giriş yaparak onaylayın — silme işlemi otomatik olarak devam edecektir.', de:'Bitte bestätige zu deiner Sicherheit, indem du dich erneut mit Google anmeldest — die Löschung wird automatisch fortgesetzt.', hi:'आपकी सुरक्षा के लिए, कृपया Google से दोबारा साइन इन करके पुष्टि करें — डिलीशन अपने आप जारी रहेगा।', ur:'آپ کی سیکیورٹی کے لیے، براہ کرم گوگل سے دوبارہ سائن ان کر کے تصدیق کریں — حذف خودکار طور پر جاری رہے گا۔', fa:'برای امنیت شما، لطفاً با ورود مجدد از طریق گوگل تأیید کنید — حذف به‌طور خودکار ادامه خواهد یافت.' },
+        reauthPasswordPrompt: { ar:'اكتب كلمة المرور الحالية لحساب {email} عشان تأكد إنك فعلاً صاحب الحساب قبل الحذف النهائي:', en:'Please re-enter the password for {email} to confirm permanent account deletion:', fr:'Veuillez ressaisir le mot de passe de {email} pour confirmer la suppression définitive du compte :', es:'Vuelve a introducir la contraseña de {email} para confirmar la eliminación permanente de la cuenta:', tr:'Hesabın kalıcı olarak silinmesini onaylamak için lütfen {email} şifresini tekrar girin:', de:'Bitte gib das Passwort für {email} erneut ein, um die endgültige Kontolöschung zu bestätigen:', hi:'खाते के स्थायी विलोपन की पुष्टि के लिए कृपया {email} का पासवर्ड दोबारा दर्ज करें:', ur:'اکاؤنٹ کے مستقل حذف کی تصدیق کے لیے براہ کرم {email} کا پاس ورڈ دوبارہ درج کریں:', fa:'برای تأیید حذف دائمی حساب، لطفاً رمز عبور {email} را دوباره وارد کنید:' },
+        accountDeleted: { ar:'تم حذف حسابك نهائياً من عندنا.', en:'Your account has been permanently deleted.', fr:'Votre compte a été définitivement supprimé.', es:'Tu cuenta ha sido eliminada permanentemente.', tr:'Hesabınız kalıcı olarak silindi.', de:'Dein Konto wurde dauerhaft gelöscht.', hi:'आपका खाता स्थायी रूप से हटा दिया गया है।', ur:'آپ کا اکاؤنٹ مستقل طور پر حذف کر دیا گیا ہے۔', fa:'حساب شما برای همیشه حذف شد.' },
+        noSignedInAccount: { ar:'مفيش حساب مسجّل دخول حالياً.', en:'No signed-in account found.', fr:'Aucun compte connecté trouvé.', es:'No se encontró ninguna cuenta con sesión iniciada.', tr:'Oturum açmış bir hesap bulunamadı.', de:'Kein angemeldetes Konto gefunden.', hi:'कोई साइन-इन खाता नहीं मिला।', ur:'کوئی سائن اِن اکاؤنٹ نہیں ملا۔', fa:'هیچ حساب واردشده‌ای یافت نشد.' },
+        deleteWord: { ar:'حذف', en:'DELETE', fr:'SUPPRIMER', es:'ELIMINAR', tr:'SİL', de:'LÖSCHEN', hi:'हटाएं', ur:'حذف کریں', fa:'حذف' },
+        deleteAccountPrompt: { ar:'الإجراء ده هيمسح حسابك نهائياً من عندنا: بياناتك، اشتراكاتك، وسجل استخدامك على السيرفر - ده نهائي ومش هيرجع خالص تاني.\\n\\nاكتب كلمة "{word}" بالظبط عشان تأكد.', en:'This will PERMANENTLY delete your account, subscriptions, and all your data from our servers. This cannot be undone.\\n\\nType "{word}" to confirm.', fr:'Cela supprimera DÉFINITIVEMENT votre compte, vos abonnements et toutes vos données de nos serveurs. Cette action est irréversible.\\n\\nTapez « {word} » pour confirmer.', es:'Esto eliminará PERMANENTEMENTE tu cuenta, suscripciones y todos tus datos de nuestros servidores. Esta acción no se puede deshacer.\\n\\nEscribe "{word}" para confirmar.', tr:'Bu işlem hesabınızı, aboneliklerinizi ve tüm verilerinizi sunucularımızdan KALICI olarak silecektir. Bu işlem geri alınamaz.\\n\\nOnaylamak için "{word}" yazın.', de:'Dies löscht dein Konto, deine Abos und alle deine Daten DAUERHAFT von unseren Servern. Dies kann nicht rückgängig gemacht werden.\\n\\nGib "{word}" ein, um zu bestätigen.', hi:'इससे आपका खाता, सदस्यताएं और आपका सारा डेटा हमारे सर्वर से स्थायी रूप से हटा दिया जाएगा। इसे पूर्ववत नहीं किया जा सकता।\\n\\nपुष्टि के लिए "{word}" टाइप करें।', ur:'اس سے آپ کا اکاؤنٹ، سبسکرپشنز اور آپ کا تمام ڈیٹا ہمارے سرورز سے مستقل طور پر حذف ہو جائے گا۔ یہ واپس نہیں ہو سکتا۔\\n\\nتصدیق کے لیے "{word}" ٹائپ کریں۔', fa:'این کار حساب، اشتراک‌ها و تمام داده‌های شما را برای همیشه از سرورهای ما حذف می‌کند. این کار قابل بازگشت نیست.\\n\\nبرای تأیید عبارت «{word}» را تایپ کنید.' },
+        deleteConfirmMismatch: { ar:'الكلمة اللي كتبتها مش مطابقة، فمتمسحش أي حاجة.', en:'Confirmation text did not match. Nothing was deleted.', fr:'Le texte de confirmation ne correspond pas. Rien n\'a été supprimé.', es:'El texto de confirmación no coincide. No se eliminó nada.', tr:'Onay metni eşleşmedi. Hiçbir şey silinmedi.', de:'Der Bestätigungstext stimmt nicht überein. Es wurde nichts gelöscht.', hi:'पुष्टिकरण टेक्स्ट मेल नहीं खाया। कुछ भी नहीं हटाया गया।', ur:'تصدیقی متن مماثل نہیں تھا۔ کچھ بھی حذف نہیں ہوا۔', fa:'متن تأیید مطابقت نداشت. چیزی حذف نشد.' },
+        reauthFailedPassword: { ar:'تعذّر تأكيد هويتك - يمكن كلمة المرور غلط.', en:'Could not verify your identity. Password may be wrong.', fr:'Impossible de vérifier votre identité. Le mot de passe est peut-être incorrect.', es:'No se pudo verificar tu identidad. La contraseña puede ser incorrecta.', tr:'Kimliğiniz doğrulanamadı. Şifre yanlış olabilir.', de:'Deine Identität konnte nicht bestätigt werden. Das Passwort ist möglicherweise falsch.', hi:'आपकी पहचान सत्यापित नहीं हो सकी। पासवर्ड गलत हो सकता है।', ur:'آپ کی شناخت کی تصدیق نہیں ہو سکی۔ پاس ورڈ غلط ہو سکتا ہے۔', fa:'هویت شما تأیید نشد. ممکن است رمز عبور اشتباه باشد.' },
+        deleteAccountError: { ar:'تعذّر حذف الحساب، جرب تاني.', en:'Could not delete your account, please try again.', fr:'Impossible de supprimer votre compte, veuillez réessayer.', es:'No se pudo eliminar tu cuenta, inténtalo de nuevo.', tr:'Hesabınız silinemedi, lütfen tekrar deneyin.', de:'Dein Konto konnte nicht gelöscht werden, bitte versuche es erneut.', hi:'आपका खाता हटाया नहीं जा सका, कृपया दोबारा कोशिश करें।', ur:'آپ کا اکاؤنٹ حذف نہیں ہو سکا، براہ کرم دوبارہ کوشش کریں۔', fa:'حذف حساب شما ممکن نشد، لطفاً دوباره تلاش کنید.' },
+        enterNameFirst: { ar:'من فضلك اكتب اسمك الكامل الأول.', en:'Please enter your name first.', fr:'Veuillez d\'abord saisir votre nom.', es:'Por favor, introduce tu nombre primero.', tr:'Lütfen önce adınızı girin.', de:'Bitte gib zuerst deinen Namen ein.', hi:'कृपया पहले अपना नाम दर्ज करें।', ur:'براہ کرم پہلے اپنا نام درج کریں۔', fa:'لطفاً ابتدا نام خود را وارد کنید.' },
+        savedToast: { ar:'تم الحفظ!', en:'Saved!', fr:'Enregistré !', es:'¡Guardado!', tr:'Kaydedildi!', de:'Gespeichert!', hi:'सेव हो गया!', ur:'محفوظ ہو گیا!', fa:'ذخیره شد!' },
+        googleClientIdMissing: { ar:'تسجيل الدخول بجوجل الحقيقي محتاج Client ID من Google Cloud يتحط في الكود (GOOGLE_CLIENT_ID) من صاحب الموقع. لحد ما يتحط، الزرار ده هيفضل تجريبي.', en:'Google Sign-In needs a real Google OAuth Client ID configured by the site owner in the code (GOOGLE_CLIENT_ID). Once set, this button will open the real Google sign-in popup.', fr:'La connexion Google nécessite un véritable identifiant client OAuth Google configuré par le propriétaire du site dans le code (GOOGLE_CLIENT_ID). Une fois configuré, ce bouton ouvrira la véritable fenêtre de connexion Google.', es:'El inicio de sesión con Google necesita un ID de cliente OAuth de Google real configurado por el propietario del sitio en el código (GOOGLE_CLIENT_ID). Una vez configurado, este botón abrirá la ventana real de inicio de sesión de Google.', tr:'Google ile Giriş için site sahibinin kodda (GOOGLE_CLIENT_ID) gerçek bir Google OAuth İstemci Kimliği tanımlaması gerekir. Ayarlandığında bu buton gerçek Google giriş penceresini açacaktır.', de:'Für die Google-Anmeldung wird eine echte Google-OAuth-Client-ID benötigt, die vom Website-Betreiber im Code (GOOGLE_CLIENT_ID) hinterlegt werden muss. Sobald sie eingerichtet ist, öffnet dieser Button das echte Google-Anmeldefenster.', hi:'Google साइन-इन के लिए साइट के मालिक द्वारा कोड में (GOOGLE_CLIENT_ID) एक असली Google OAuth क्लाइंट ID सेट करना ज़रूरी है। सेट होने के बाद, यह बटन असली Google साइन-इन पॉपअप खोलेगा।', ur:'Google سائن ان کے لیے سائٹ کے مالک کی طرف سے کوڈ میں (GOOGLE_CLIENT_ID) ایک حقیقی Google OAuth کلائنٹ ID ترتیب دینا ضروری ہے۔ سیٹ ہونے کے بعد، یہ بٹن اصل Google سائن ان پاپ اپ کھولے گا۔', fa:'ورود با گوگل به یک شناسه کلاینت واقعی OAuth گوگل نیاز دارد که باید توسط مالک سایت در کد (GOOGLE_CLIENT_ID) تنظیم شود. پس از تنظیم، این دکمه پنجره واقعی ورود گوگل را باز خواهد کرد.' },
+        googleSigninLoading: { ar:'تسجيل الدخول بجوجل لسه بيتحمّل، جرب تدوس تاني بعد لحظة.', en:'Google sign-in is still loading, please try again in a second.', fr:'La connexion Google est encore en cours de chargement, veuillez réessayer dans un instant.', es:'El inicio de sesión con Google todavía se está cargando, inténtalo de nuevo en un momento.', tr:'Google girişi hâlâ yükleniyor, lütfen bir saniye sonra tekrar deneyin.', de:'Die Google-Anmeldung wird noch geladen, bitte versuche es in einem Moment erneut.', hi:'Google साइन-इन अभी भी लोड हो रहा है, कृपया एक पल में फिर कोशिश करें।', ur:'Google سائن ان ابھی لوڈ ہو رہا ہے، براہ کرم ایک لمحے میں دوبارہ کوشش کریں۔', fa:'ورود با گوگل هنوز در حال بارگذاری است، لطفاً کمی بعد دوباره تلاش کنید.' },
+        copiedBtnLabel: { ar:'تم النسخ', en:'Copied', fr:'Copié', es:'Copiado', tr:'Kopyalandı', de:'Kopiert', hi:'कॉपी हो गया', ur:'کاپی ہو گیا', fa:'کپی شد' },
+        conversationCopied: { ar:'تم نسخ المحادثة!', en:'Conversation copied!', fr:'Conversation copiée !', es:'¡Conversación copiada!', tr:'Konuşma kopyalandı!', de:'Unterhaltung kopiert!', hi:'बातचीत कॉपी हो गई!', ur:'گفتگو کاپی ہو گئی!', fa:'گفتگو کپی شد!' },
+        copiedToast: { ar:'تم النسخ!', en:'Copied!', fr:'Copié !', es:'¡Copiado!', tr:'Kopyalandı!', de:'Kopiert!', hi:'कॉपी हो गया!', ur:'کاپی ہو گیا!', fa:'کپی شد!' },
+        fileTooLarge50mb: { ar:'حجم الملف كبير جداً (أقصى حجم 50MB)، جرب مقطع أقصر.', en:'File too large (max 50MB). Try a shorter clip.', fr:'Fichier trop volumineux (max 50 Mo). Essayez un extrait plus court.', es:'El archivo es demasiado grande (máx. 50 MB). Prueba con un clip más corto.', tr:'Dosya çok büyük (maksimum 50MB). Daha kısa bir klip deneyin.', de:'Die Datei ist zu groß (max. 50 MB). Versuche es mit einem kürzeren Clip.', hi:'फ़ाइल बहुत बड़ी है (अधिकतम 50MB)। एक छोटा क्लिप आज़माएं।', ur:'فائل بہت بڑی ہے (زیادہ سے زیادہ 50MB)۔ ایک چھوٹا کلپ آزمائیں۔', fa:'فایل خیلی بزرگ است (حداکثر ۵۰ مگابایت). یک کلیپ کوتاه‌تر امتحان کنید.' },
+        uploadingTranscribing: { ar:'جاري رفع وتفريغ بدقة عالية:', en:'Uploading & transcribing:', fr:'Envoi et transcription en cours :', es:'Subiendo y transcribiendo:', tr:'Yükleniyor ve deşifre ediliyor:', de:'Wird hochgeladen & transkribiert:', hi:'अपलोड और ट्रांसक्राइब हो रहा है:', ur:'اپ لوڈ اور ٹرانسکرائب ہو رہا ہے:', fa:'در حال بارگذاری و پیاده‌سازی متن:' },
+        transcribedSuccess: { ar:'✓ اتفرّغ بنجاح. راجع النص تحت واضغط "نظّف وحسّن التنسيق".', en:'✓ Transcribed successfully. Review below, then click Clean Up.', fr:'✓ Transcription réussie. Vérifiez ci-dessous, puis cliquez sur Nettoyer.', es:'✓ Transcrito correctamente. Revisa abajo y luego haz clic en Limpiar.', tr:'✓ Başarıyla deşifre edildi. Aşağıda gözden geçirin, ardından Temizle\'ye tıklayın.', de:'✓ Erfolgreich transkribiert. Prüfe den Text unten und klicke dann auf Bereinigen.', hi:'✓ सफलतापूर्वक ट्रांसक्राइब हो गया। नीचे रिव्यू करें, फिर क्लीन अप पर क्लिक करें।', ur:'✓ کامیابی سے ٹرانسکرائب ہو گیا۔ نیچے جائزہ لیں، پھر صاف کریں پر کلک کریں۔', fa:'✓ با موفقیت پیاده‌سازی شد. متن زیر را بررسی کنید، سپس روی پاک‌سازی کلیک کنید.' },
+        transcriptionFailed: { ar:'تعذر التفريغ التلقائي. جرب تاني أو الصق النص يدوياً.', en:'Auto-transcription failed. Please paste the text manually or try again.', fr:'La transcription automatique a échoué. Veuillez coller le texte manuellement ou réessayer.', es:'Falló la transcripción automática. Pega el texto manualmente o inténtalo de nuevo.', tr:'Otomatik deşifre başarısız oldu. Lütfen metni manuel olarak yapıştırın veya tekrar deneyin.', de:'Die automatische Transkription ist fehlgeschlagen. Bitte füge den Text manuell ein oder versuche es erneut.', hi:'ऑटो-ट्रांसक्रिप्शन विफल रहा। कृपया टेक्स्ट मैन्युअल रूप से पेस्ट करें या दोबारा कोशिश करें।', ur:'خودکار ٹرانسکرپشن ناکام ہو گئی۔ براہ کرم متن دستی طور پر پیسٹ کریں یا دوبارہ کوشش کریں۔', fa:'پیاده‌سازی خودکار ناموفق بود. لطفاً متن را به‌صورت دستی جای‌گذاری کنید یا دوباره تلاش کنید.' },
+        resendWait: { ar:'استنى {n} ثانية قبل ما تطلب إرسال تاني.', en:'Please wait {n}s before resending.', fr:'Veuillez attendre {n}s avant de renvoyer.', es:'Espera {n}s antes de reenviar.', tr:'Yeniden göndermeden önce lütfen {n}sn bekleyin.', de:'Bitte warte {n}s, bevor du erneut sendest.', hi:'दोबारा भेजने से पहले कृपया {n} सेकंड प्रतीक्षा करें।', ur:'دوبارہ بھیجنے سے پہلے براہ کرم {n} سیکنڈ انتظار کریں۔', fa:'لطفاً قبل از ارسال مجدد {n} ثانیه صبر کنید.' },
+        verificationEmailSent: { ar:'اتبعت رابط التأكيد على إيميلك — راجع صندوق الوارد (والسبام).', en:'Verification email sent — check your inbox (and spam).', fr:'E-mail de vérification envoyé — vérifiez votre boîte de réception (et vos spams).', es:'Correo de verificación enviado — revisa tu bandeja de entrada (y el spam).', tr:'Doğrulama e-postası gönderildi — gelen kutunuzu (ve spam\'i) kontrol edin.', de:'Bestätigungs-E-Mail gesendet — überprüfe dein Postfach (und den Spam-Ordner).', hi:'सत्यापन ईमेल भेज दिया गया — अपना इनबॉक्स (और स्पैम) देखें।', ur:'تصدیقی ای میل بھیج دی گئی — اپنا ان باکس (اور اسپیم) چیک کریں۔', fa:'ایمیل تأیید ارسال شد — صندوق ورودی (و اسپم) خود را بررسی کنید.' },
+        tooManyRequests: { ar:'محاولات كتير، جرب تاني بعد شوية.', en:'Too many requests, please try again later.', fr:'Trop de tentatives, veuillez réessayer plus tard.', es:'Demasiados intentos, inténtalo de nuevo más tarde.', tr:'Çok fazla deneme yapıldı, lütfen daha sonra tekrar deneyin.', de:'Zu viele Versuche, bitte versuche es später erneut.', hi:'बहुत अधिक प्रयास, कृपया बाद में फिर कोशिश करें।', ur:'بہت زیادہ کوششیں، براہ کرم بعد میں دوبارہ کوشش کریں۔', fa:'تعداد تلاش‌ها زیاد بود، لطفاً بعداً دوباره تلاش کنید.' },
+        verificationSendError: { ar:'تعذّر إرسال إيميل التأكيد، جرب تاني.', en:'Could not send the verification email, try again.', fr:'Impossible d\'envoyer l\'e-mail de vérification, réessayez.', es:'No se pudo enviar el correo de verificación, inténtalo de nuevo.', tr:'Doğrulama e-postası gönderilemedi, tekrar deneyin.', de:'Bestätigungs-E-Mail konnte nicht gesendet werden, versuche es erneut.', hi:'सत्यापन ईमेल नहीं भेजा जा सका, दोबारा कोशिश करें।', ur:'تصدیقی ای میل نہیں بھیجی جا سکی، دوبارہ کوشش کریں۔', fa:'ارسال ایمیل تأیید ممکن نشد، دوباره تلاش کنید.' },
+        emailVerifiedThanks: { ar:'تم تأكيد إيميلك، شكرًا!', en:'Email verified, thank you!', fr:'E-mail vérifié, merci !', es:'Correo verificado, ¡gracias!', tr:'E-posta doğrulandı, teşekkürler!', de:'E-Mail bestätigt, danke!', hi:'ईमेल सत्यापित हो गया, धन्यवाद!', ur:'ای میل کی تصدیق ہو گئی، شکریہ!', fa:'ایمیل تأیید شد، متشکریم!' },
+        notVerifiedYet: { ar:'لسه مش متأكد — افتح الرابط اللي في الإيميل الأول.', en:'Not verified yet — open the link in the email first.', fr:'Pas encore vérifié — ouvrez d\'abord le lien dans l\'e-mail.', es:'Aún no verificado — abre primero el enlace del correo.', tr:'Henüz doğrulanmadı — önce e-postadaki bağlantıyı açın.', de:'Noch nicht bestätigt — öffne zuerst den Link in der E-Mail.', hi:'अभी तक सत्यापित नहीं — पहले ईमेल में दिया गया लिंक खोलें।', ur:'ابھی تصدیق نہیں ہوئی — پہلے ای میل میں دیا گیا لنک کھولیں۔', fa:'هنوز تأیید نشده — ابتدا لینک داخل ایمیل را باز کنید.' }
+    };
+    const UI_LOCALE = { ar:'ar-EG', en:'en-US', fr:'fr-FR', es:'es-ES', tr:'tr-TR', de:'de-DE', hi:'hi-IN', ur:'ur-PK', fa:'fa-IR' };
+    function uiStr(key, vars) {
+        const entry = UI_STR[key];
+        let s = (entry && (entry[currentUiLang] || entry.ar)) || key;
+        if (vars) Object.keys(vars).forEach(k => { s = s.split('{' + k + '}').join(vars[k]); });
+        return s;
+    }
     function applyI18n() {
         const dict = I18N[currentUiLang] || I18N.ar;
         document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -946,7 +1024,7 @@
         });
         const activeNav = document.querySelector('.nav-item.active');
         if (activeNav) {
-            document.getElementById('view-title').innerText = (currentUiLang === 'en' ? viewTitlesEn : viewTitles)[activeNav.dataset.view] || '';
+            document.getElementById('view-title').innerText = viewTitle(activeNav.dataset.view);
         }
         // applyI18n بيدّي القيمة الافتراضية "اشترك الآن" تاني لكل الأزرار (لأنها
         // بتاخد data-i18n) - فلازم نرجّع نطبّق حالة "مشترك حاليًا" بعده على طول
@@ -1033,9 +1111,7 @@
         }
         if (isIosDevice()) { openIosInstallModal(); return; }
         // متصفحات ديسكتوب بعض الأحيان بتشيل الحدث بعد أول ظهور - تعليمات عامة بدل ما نسيب الزرار من غير رد فعل
-        showToast(currentUiLang === 'en'
-            ? 'Open your browser menu and choose "Install app" or "Add to Home screen".'
-            : 'افتح قائمة المتصفح (⋮ أو ⋯) واختار "تثبيت التطبيق" أو "إضافة إلى الشاشة الرئيسية".', 'info');
+        showToast(uiStr('pwaInstallHint'), 'info');
     }
     function openIosInstallModal() { const m = document.getElementById('ios-install-modal'); if (m) m.classList.remove('hidden'); }
     function closeIosInstallModal() { const m = document.getElementById('ios-install-modal'); if (m) m.classList.add('hidden'); }
@@ -1076,7 +1152,7 @@
     window.addEventListener('appinstalled', function () {
         deferredPwaInstallPrompt = null;
         hidePwaInstallBanner();
-        showToast(currentUiLang === 'en' ? 'App installed! Open it from your home screen from now on.' : 'اتثبّت التطبيق بنجاح! دلوقتي تقدر تفتحه من شاشتك الرئيسية زي أي تطبيق.', 'success');
+        showToast(uiStr('pwaInstalled'), 'success');
     });
     function initPwaInstall() {
         if (isRunningAsStandaloneApp()) { hidePwaInstallBanner(); return; }
@@ -1188,10 +1264,7 @@
                 try { updatePricingModalActivePlan(); } catch (e) {}
             }
             if (!isFirst) {
-                const msg = (currentUiLang === 'en')
-                    ? `🎉 Your subscription is now active: ${newPlan}. Enjoy!`
-                    : `🎉 تم تفعيل باقتك بنجاح: ${newPlan}! اتمتع بمميزاتها دلوقتي.`;
-                showToast(msg, 'success');
+                showToast(uiStr('subscriptionActivated', { plan: newPlan }), 'success');
             }
         }, err => console.warn('تعذر متابعة الباقة من السيرفر', err));
     }
@@ -1625,9 +1698,7 @@
         // التأكيد نفسه). حسابات جوجل مستثناة لأن جوجل بيأكد الإيميل تلقائيًا.
         if (isEmailVerificationRequired()) {
             closePricingModal();
-            showToast(currentUiLang === 'en'
-                ? 'Please verify your email first before subscribing to a paid plan.'
-                : 'لازم تأكّد إيميلك الأول قبل ما تشترك في باقة مدفوعة.', 'error');
+            showToast(uiStr('verifyEmailFirst'), 'error');
             switchViewByName('profile');
             setTimeout(() => { const el = document.getElementById('email-verify-banner'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 300);
             return;
@@ -2059,19 +2130,19 @@
         const now = Date.now();
         if (now < _emailVerifyResendCooldownUntil) {
             const secsLeft = Math.ceil((_emailVerifyResendCooldownUntil - now) / 1000);
-            showToast(currentUiLang === 'en' ? `Please wait ${secsLeft}s before resending.` : `استنى ${secsLeft} ثانية قبل ما تطلب إرسال تاني.`, 'error');
+            showToast(uiStr('resendWait', { n: secsLeft }), 'error');
             return;
         }
         if (btn) { btn.disabled = true; btn.classList.add('opacity-60'); }
         try {
             await user.sendEmailVerification();
             _emailVerifyResendCooldownUntil = Date.now() + 60 * 1000; // دقيقة بين كل إرسال والتاني
-            showToast(currentUiLang === 'en' ? 'Verification email sent — check your inbox (and spam).' : 'اتبعت رابط التأكيد على إيميلك — راجع صندوق الوارد (والسبام).', 'success');
+            showToast(uiStr('verificationEmailSent'), 'success');
         } catch (e) {
             console.warn('تعذر إرسال إيميل التأكيد', e);
             const msg = (e && e.code === 'auth/too-many-requests')
-                ? (currentUiLang === 'en' ? 'Too many requests, please try again later.' : 'محاولات كتير، جرب تاني بعد شوية.')
-                : (currentUiLang === 'en' ? 'Could not send the verification email, try again.' : 'تعذّر إرسال إيميل التأكيد، جرب تاني.');
+                ? uiStr('tooManyRequests')
+                : uiStr('verificationSendError');
             showToast(msg, 'error');
         } finally {
             if (btn) { btn.disabled = false; btn.classList.remove('opacity-60'); }
@@ -2088,9 +2159,9 @@
         await refreshEmailVerificationBanner(user);
         if (btn) { btn.disabled = false; btn.classList.remove('opacity-60'); }
         if (fbAuth.currentUser && fbAuth.currentUser.emailVerified) {
-            showToast(currentUiLang === 'en' ? 'Email verified, thank you!' : 'تم تأكيد إيميلك، شكرًا!', 'success');
+            showToast(uiStr('emailVerifiedThanks'), 'success');
         } else {
-            showToast(currentUiLang === 'en' ? 'Not verified yet — open the link in the email first.' : 'لسه مش متأكد — افتح الرابط اللي في الإيميل الأول.', 'error');
+            showToast(uiStr('notVerifiedYet'), 'error');
         }
     }
     window.resendVerificationEmail = resendVerificationEmail;
@@ -2140,12 +2211,10 @@
             saveProfile(p);
             closeCancelSubscriptionModal();
             refreshCancelSubscriptionUi(getCurrentPlanName());
-            showToast(currentUiLang === 'en'
-                ? 'Auto-renewal stopped. You keep your current plan until the end of this period.'
-                : 'تم إيقاف التجديد التلقائي. هتفضل مستفيد من باقتك الحالية لحد آخر يوم في الفترة دي.', 'success');
+            showToast(uiStr('autoRenewalStopped'), 'success');
         } catch (e) {
             console.warn('تعذر تسجيل طلب إلغاء الاشتراك', e);
-            showToast(currentUiLang === 'en' ? 'Could not process this, please try again.' : 'تعذّر تنفيذ الطلب، جرب تاني.', 'error');
+            showToast(uiStr('genericProcessError'), 'error');
         } finally {
             if (btn) { btn.disabled = false; btn.classList.remove('opacity-60'); }
         }
@@ -2159,10 +2228,10 @@
             p.subscriptionCancelRequested = false;
             saveProfile(p);
             refreshCancelSubscriptionUi(getCurrentPlanName());
-            showToast(currentUiLang === 'en' ? 'Your subscription will renew as usual.' : 'اشتراكك هيتجدّد عادي زي ما كان.', 'success');
+            showToast(uiStr('subRenewNormally'), 'success');
         } catch (e) {
             console.warn('تعذر التراجع عن إلغاء الاشتراك', e);
-            showToast(currentUiLang === 'en' ? 'Could not undo, please try again.' : 'تعذّر التراجع، جرب تاني.', 'error');
+            showToast(uiStr('undoError'), 'error');
         }
     }
     window.openCancelSubscriptionModal = openCancelSubscriptionModal;
@@ -2224,7 +2293,7 @@
         const currentPlan = getCurrentPlanName();
         const dict = I18N[currentUiLang] || I18N.ar;
         const defaultLabel = dict['subs.subscribe'] || 'اشترك الآن';
-        const activeLabel = currentUiLang === 'en' ? 'Currently subscribed' : 'مشترك حاليًا';
+        const activeLabel = uiStr('currentlySubscribedLabel');
         document.querySelectorAll('[data-plan-btn]').forEach(btn => {
             const isCurrent = btn.getAttribute('data-plan-btn') === currentPlan;
             btn.classList.toggle('subs-btn-active', isCurrent);
@@ -2279,7 +2348,7 @@
         showToast('لو الإيميل ده متسجل عندنا، وصلك رابط لتغيير كلمة المرور.', 'success');
     }
     function logoutAccount() {
-        const sure = confirm(currentUiLang === 'en' ? 'Log out of your account on this device?' : 'تسجيل الخروج من حسابك على الجهاز ده؟');
+        const sure = confirm(uiStr('logoutConfirm'));
         if (!sure) return;
         const p = getProfile();
         p.google = null;
@@ -2295,7 +2364,7 @@
         // داعي نستدعيها هنا يدويًا عشان منعملش استدعاء مزدوج.
         fbAuth.signOut().catch(() => {});
         refreshProfileView();
-        showToast(currentUiLang === 'en' ? 'Logged out. You can sign in again anytime.' : 'تم تسجيل الخروج. تقدر تسجل دخول تاني في أي وقت.');
+        showToast(uiStr('loggedOut'));
     }
     function renderPurchasesOverview() {
         const purchases = getPurchases();
@@ -2367,11 +2436,11 @@
         // تحقق أساسي قبل المعالجة: نوع الملف فعلاً صورة، وحجمه معقول (أقل من 12 ميجا)
         // عشان محدش يرفع ملف مش صورة بالغلط أو ملف ضخم يهنّج المتصفح وهو بيتقرا كـ base64.
         if (!file.type || !file.type.startsWith('image/')) {
-            showToast(currentUiLang === 'en' ? 'Please choose an image file.' : 'من فضلك اختر ملف صورة (jpg, png...).', 'error');
+            showToast(uiStr('chooseImageFile'), 'error');
             e.target.value = ''; return;
         }
         if (file.size > 12 * 1024 * 1024) {
-            showToast(currentUiLang === 'en' ? 'Image is too large (max 12MB).' : 'حجم الصورة كبير جداً (الحد الأقصى 12 ميجا).', 'error');
+            showToast(uiStr('imageTooLarge'), 'error');
             e.target.value = ''; return;
         }
         // فيكس: كان مفيش أي مؤشر تحميل وقت ضغط/معالجة الصورة - على جهاز بطيء أو صورة
@@ -2390,9 +2459,9 @@
             const p = getProfile(); p.photo = compressedDataUrl; saveProfile(p);
             syncProfileToCloud(p);
             refreshProfileView();
-            showToast(currentUiLang === 'en' ? 'Profile photo updated.' : 'تم تحديث صورة الملف الشخصي.', 'success');
+            showToast(uiStr('profilePhotoUpdated'), 'success');
         }).catch(() => {
-            showToast(currentUiLang === 'en' ? 'Could not process this image.' : 'حصلت مشكلة في معالجة الصورة.', 'error');
+            showToast(uiStr('imageProcessError'), 'error');
             if (icon) icon.className = prevIconClass || 'fa-solid fa-camera text-slate-500 text-xl';
         }).finally(() => {
             if (label) delete label.dataset.uploading;
@@ -2401,18 +2470,16 @@
     }
     // بنمسح كل بيانات المنصة المحفوظة محلياً على الجهاز (بروفايل، سجل تقدم، مشتريات محلية، إلخ) بعد تأكيد صريح من المستخدم
     function clearLocalAppData() {
-        const sure = confirm(currentUiLang === 'en'
-            ? 'This will permanently delete your profile, progress history, and locally-saved data on this device/browser. This cannot be undone. Continue?'
-            : 'هيتم حذف بياناتك المحفوظة على الجهاز ده نهائياً (البروفايل، سجل التقدم، أي بيانات محلية) — ده إجراء نهائي ومش هيرجع. متأكد؟');
+        const sure = confirm(uiStr('clearLocalDataConfirm'));
         if (!sure) return;
         try {
             const keysToRemove = Object.keys(localStorage).filter(k => k.startsWith('yusr_'));
             keysToRemove.forEach(k => localStorage.removeItem(k));
-            showToast(currentUiLang === 'en' ? 'Local data cleared.' : 'تم مسح بياناتك المحلية.', 'success');
+            showToast(uiStr('localDataCleared'), 'success');
             setTimeout(() => location.reload(), 800);
         } catch (e) {
             console.warn('Clear local data failed:', e);
-            showToast(currentUiLang === 'en' ? 'Could not clear local data.' : 'تعذر مسح البيانات، حاول تاني.', 'error');
+            showToast(uiStr('localDataClearError'), 'error');
         }
     }
     // ============ حذف الحساب نهائياً (Firebase Auth + Realtime Database + المحلي) ============
@@ -2429,16 +2496,12 @@
             // متزامن) - فبنحط علم وبنرجّع false، وأول ما تسجيل الدخول بجوجل ينجح تاني
             // (من نفس الـ callback المستخدم عادي) هيكمّل عملية الحذف تلقائياً من نفسه.
             window._pendingAccountDeletionAfterReauth = true;
-            showToast(currentUiLang === 'en'
-                ? 'For your security, please confirm by signing in with Google again — deletion will continue automatically.'
-                : 'لأسباب أمنية، أكّد هويتك بتسجيل الدخول بجوجل تاني — الحذف هيكمّل تلقائي بعد كده.', 'info');
+            showToast(uiStr('reauthGoogleNotice'), 'info');
             triggerGoogleSignIn();
             return false;
         }
         const email = user.email;
-        const password = prompt(currentUiLang === 'en'
-            ? `Please re-enter the password for ${email} to confirm permanent account deletion:`
-            : `اكتب كلمة المرور الحالية لحساب ${email} عشان تأكد إنك فعلاً صاحب الحساب قبل الحذف النهائي:`);
+        const password = prompt(uiStr('reauthPasswordPrompt', { email }));
         if (!password) return false;
         const cred = firebase.auth.EmailAuthProvider.credential(email, password);
         await user.reauthenticateWithCredential(cred);
@@ -2455,21 +2518,19 @@
         try {
             Object.keys(localStorage).filter(k => k.startsWith('yusr_')).forEach(k => localStorage.removeItem(k));
         } catch (e) {}
-        showToast(currentUiLang === 'en' ? 'Your account has been permanently deleted.' : 'تم حذف حسابك نهائياً من عندنا.', 'success');
+        showToast(uiStr('accountDeleted'), 'success');
         setTimeout(() => location.reload(), 1200);
     }
     async function deleteAccountPermanently() {
         const user = fbAuth.currentUser;
-        if (!user) { showToast(currentUiLang === 'en' ? 'No signed-in account found.' : 'مفيش حساب مسجّل دخول حالياً.', 'error'); return; }
+        if (!user) { showToast(uiStr('noSignedInAccount'), 'error'); return; }
         // تأكيد صريح بكتابة كلمة، مش بس confirm() عادي - لأن الفعل ده نهائي 100%
         // ومش زي "امسح بياناتي المحلية" اللي ممكن ترجع تسجل دخول تاني وتلاقي حاجتك.
-        const confirmWord = currentUiLang === 'en' ? 'DELETE' : 'حذف';
-        const typed = prompt(currentUiLang === 'en'
-            ? `This will PERMANENTLY delete your account, subscriptions, and all your data from our servers. This cannot be undone.\n\nType "${confirmWord}" to confirm.`
-            : `الإجراء ده هيمسح حسابك نهائياً من عندنا: بياناتك، اشتراكاتك، وسجل استخدامك على السيرفر - ده نهائي ومش هيرجع خالص تاني.\n\nاكتب كلمة "${confirmWord}" بالظبط عشان تأكد.`);
+        const confirmWord = uiStr('deleteWord');
+        const typed = prompt(uiStr('deleteAccountPrompt', { word: confirmWord }));
         if (typed === null) return;
         if (typed.trim() !== confirmWord) {
-            showToast(currentUiLang === 'en' ? 'Confirmation text did not match. Nothing was deleted.' : 'الكلمة اللي كتبتها مش مطابقة، فمتمسحش أي حاجة.', 'error');
+            showToast(uiStr('deleteConfirmMismatch'), 'error');
             return;
         }
         const btn = document.getElementById('delete-account-btn');
@@ -2483,11 +2544,11 @@
                     if (ok) await deleteAccountCore(fbAuth.currentUser);
                 } catch (e2) {
                     console.warn('تعذر التأكد من الهوية لحذف الحساب', e2);
-                    showToast(currentUiLang === 'en' ? 'Could not verify your identity. Password may be wrong.' : 'تعذّر تأكيد هويتك - يمكن كلمة المرور غلط.', 'error');
+                    showToast(uiStr('reauthFailedPassword'), 'error');
                 }
             } else {
                 console.warn('تعذر حذف الحساب', e);
-                showToast(currentUiLang === 'en' ? 'Could not delete your account, please try again.' : 'تعذّر حذف الحساب، جرب تاني.', 'error');
+                showToast(uiStr('deleteAccountError'), 'error');
             }
         } finally {
             if (btn && document.body.contains(btn)) { btn.disabled = false; btn.innerHTML = btn.dataset.origHtml || btn.innerHTML; }
@@ -2500,7 +2561,7 @@
         // ده بيتستخدم في السيرة الذاتية والبورتفوليو والمقدمة الصوتية - فحفظه فاضي
         // بيبوّظ حاجات تانية جوه التطبيق من غير ما المستخدم ياخد أي تنبيه.
         if (!name) {
-            showToast(currentUiLang === 'en' ? 'Please enter your name first.' : 'من فضلك اكتب اسمك الكامل الأول.', 'error');
+            showToast(uiStr('enterNameFirst'), 'error');
             nameInput.focus();
             return;
         }
@@ -2510,7 +2571,7 @@
         saveProfile(p);
         syncProfileToCloud(p);
         updateAccountChip(p);
-        showToast(currentUiLang === 'en' ? 'Saved!' : 'تم الحفظ!', 'success');
+        showToast(uiStr('savedToast'), 'success');
     }
     // Google Sign-In (Google Identity Services). Requires a real Google Cloud OAuth Client ID
     // to actually authenticate — replace GOOGLE_CLIENT_ID below with your own from
@@ -2559,7 +2620,7 @@
                         window._pendingAccountDeletionAfterReauth = false;
                         deleteAccountCore(result.user).catch(e => {
                             console.warn('تعذر إكمال حذف الحساب بعد إعادة التأكيد', e);
-                            showToast(currentUiLang === 'en' ? 'Could not delete your account, please try again.' : 'تعذّر حذف الحساب، جرب تاني.', 'error');
+                            showToast(uiStr('deleteAccountError'), 'error');
                         });
                     }
                 })
@@ -2606,7 +2667,7 @@
                         window._pendingAccountDeletionAfterReauth = false;
                         deleteAccountCore(result.user).catch(e => {
                             console.warn('تعذر إكمال حذف الحساب بعد إعادة التأكيد', e);
-                            showToast(currentUiLang === 'en' ? 'Could not delete your account, please try again.' : 'تعذّر حذف الحساب، جرب تاني.', 'error');
+                            showToast(uiStr('deleteAccountError'), 'error');
                         });
                     }
                 })
@@ -2639,9 +2700,7 @@
     }
     function triggerGoogleSignIn() {
         if (GOOGLE_CLIENT_ID.includes('YOUR_GOOGLE_CLIENT_ID')) {
-            showToast(currentUiLang === 'en'
-                ? "Google Sign-In needs a real Google OAuth Client ID configured by the site owner in the code (GOOGLE_CLIENT_ID). Once set, this button will open the real Google sign-in popup."
-                : "تسجيل الدخول بجوجل الحقيقي محتاج Client ID من Google Cloud يتحط في الكود (GOOGLE_CLIENT_ID) من صاحب الموقع. لحد ما يتحط، الزرار ده هيفضل تجريبي.");
+            showToast(uiStr('googleClientIdMissing'));
             return;
         }
         if (googleTokenClient) {
@@ -2652,9 +2711,7 @@
             googleTokenClient.requestAccessToken();
             return;
         }
-        showToast(currentUiLang === 'en'
-            ? "Google sign-in is still loading, please try again in a second."
-            : "تسجيل الدخول بجوجل لسه بيتحمّل، جرب تدوس تاني بعد لحظة.");
+        showToast(uiStr('googleSigninLoading'));
     }
     try { initGoogleSignIn(); } catch (e) {}
     (function () {
@@ -2688,7 +2745,7 @@
     }
     function flashCopied(btn) {
         const original = btn.innerHTML;
-        btn.innerHTML = '<i class="fa-solid fa-check"></i> ' + (currentUiLang === 'en' ? 'Copied' : 'تم النسخ');
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> ' + uiStr('copiedBtnLabel');
         btn.classList.add('copied-flash');
         setTimeout(() => { btn.innerHTML = original; btn.classList.remove('copied-flash'); }, 1500);
     }
@@ -2715,27 +2772,32 @@
     // المستخدم غيّر جهاز أو مسح بيانات المتصفح.
     const HISTORY_MAX = 20;
     const HISTORY_ENTRY_MAX_CHARS = 20000; // حماية بسيطة من تضخم التخزين لو النتيجة طويلة جدًا
-    const HISTORY_LABELS_AR = {
-        'summary': 'تلخيص مستند', 'writing-review': 'تدقيق أكاديمي', 'academic-abstract': 'ملخص أكاديمي (Abstract)',
-        'academic-vocab-boost': 'تحسين مفردات أكاديمية', 'cover-letter': 'خطاب تغطية', 'cv-job-match': 'مطابقة CV مع وظيفة',
-        'faq-answers': 'إجابات أسئلة شائعة', 'career-plan': 'خطة تطور مهني', 'portfolio': 'بورتفوليو', 'cv': 'سيرة ذاتية',
-        'salary-insights': 'تقدير راتب متوقع', 'scheduling-email': 'إيميل تنسيق ميعاد', 'reply-review': 'مراجعة رد',
-        'salary-followup-questions': 'أسئلة متابعة الراتب', 'dress-tips': 'نصائح ملابس المقابلة', 'transcript': 'تفريغ صوتي إلى نص',
-        'pitch-30-seconds': 'تقديم نفسك في 30 ثانية', 'progress-compare': 'مقارنة جلستين', 'progress-summary': 'تقرير تقدم',
-        'performance-report': 'تقرير أداء مقابلة'
-    };
-    const HISTORY_LABELS_EN = {
-        'summary': 'Document Summary', 'writing-review': 'Academic Review', 'academic-abstract': 'Academic Abstract',
-        'academic-vocab-boost': 'Vocabulary Booster', 'cover-letter': 'Cover Letter', 'cv-job-match': 'CV Job Match',
-        'faq-answers': 'FAQ Answers', 'career-plan': 'Career Plan', 'portfolio': 'Portfolio', 'cv': 'CV',
-        'salary-insights': 'Salary Insights', 'scheduling-email': 'Scheduling Email', 'reply-review': 'Reply Review',
-        'salary-followup-questions': 'Salary Follow-up Questions', 'dress-tips': 'Dress Tips', 'transcript': 'Transcript',
-        'pitch-30-seconds': '30-Second Pitch', 'progress-compare': 'Session Comparison', 'progress-summary': 'Progress Report',
-        'performance-report': 'Interview Performance Report'
+    // ✅ ده بقى قاموس واحد بكل الـ9 لغات المدعومة بدل ما كان عربي/إنجليزي بس.
+    const HISTORY_LABELS = {
+        'summary': { ar:'تلخيص مستند', en:'Document Summary', fr:'Résumé de document', es:'Resumen de documento', tr:'Belge Özeti', de:'Dokumentzusammenfassung', hi:'दस्तावेज़ सारांश', ur:'دستاویز کا خلاصہ', fa:'خلاصه سند' },
+        'writing-review': { ar:'تدقيق أكاديمي', en:'Academic Review', fr:'Relecture académique', es:'Revisión académica', tr:'Akademik İnceleme', de:'Akademische Überprüfung', hi:'शैक्षणिक समीक्षा', ur:'علمی جائزہ', fa:'بررسی آکادمیک' },
+        'academic-abstract': { ar:'ملخص أكاديمي (Abstract)', en:'Academic Abstract', fr:'Résumé académique (Abstract)', es:'Resumen académico (Abstract)', tr:'Akademik Özet (Abstract)', de:'Akademisches Abstract', hi:'शैक्षणिक सार (Abstract)', ur:'علمی خلاصہ (Abstract)', fa:'چکیده آکادمیک (Abstract)' },
+        'academic-vocab-boost': { ar:'تحسين مفردات أكاديمية', en:'Vocabulary Booster', fr:'Amélioration du vocabulaire académique', es:'Mejora de vocabulario académico', tr:'Akademik Kelime Geliştirme', de:'Akademische Wortschatzverbesserung', hi:'शैक्षणिक शब्दावली सुधार', ur:'علمی الفاظ میں بہتری', fa:'تقویت واژگان آکادمیک' },
+        'cover-letter': { ar:'خطاب تغطية', en:'Cover Letter', fr:'Lettre de motivation', es:'Carta de presentación', tr:'Ön Yazı', de:'Anschreiben', hi:'कवर लेटर', ur:'کور لیٹر', fa:'نامه معرفی' },
+        'cv-job-match': { ar:'مطابقة CV مع وظيفة', en:'CV Job Match', fr:'Correspondance CV-emploi', es:'Coincidencia CV-empleo', tr:'CV-İş Eşleştirme', de:'Lebenslauf-Job-Abgleich', hi:'सीवी-जॉब मिलान', ur:'سی وی جاب میچ', fa:'تطابق رزومه با شغل' },
+        'faq-answers': { ar:'إجابات أسئلة شائعة', en:'FAQ Answers', fr:'Réponses FAQ', es:'Respuestas de preguntas frecuentes', tr:'SSS Cevapları', de:'FAQ-Antworten', hi:'सामान्य प्रश्न उत्तर', ur:'عمومی سوالات کے جوابات', fa:'پاسخ‌های سوالات متداول' },
+        'career-plan': { ar:'خطة تطور مهني', en:'Career Plan', fr:'Plan de carrière', es:'Plan de carrera', tr:'Kariyer Planı', de:'Karriereplan', hi:'करियर योजना', ur:'کیریئر پلان', fa:'برنامه شغلی' },
+        'portfolio': { ar:'بورتفوليو', en:'Portfolio', fr:'Portfolio', es:'Portafolio', tr:'Portfolyo', de:'Portfolio', hi:'पोर्टफोलियो', ur:'پورٹ فولیو', fa:'نمونه‌کار' },
+        'cv': { ar:'سيرة ذاتية', en:'CV', fr:'CV', es:'CV', tr:'CV', de:'Lebenslauf', hi:'सीवी', ur:'سی وی', fa:'رزومه' },
+        'salary-insights': { ar:'تقدير راتب متوقع', en:'Salary Insights', fr:'Estimation du salaire', es:'Estimación salarial', tr:'Maaş Tahmini', de:'Gehaltseinschätzung', hi:'वेतन अनुमान', ur:'تنخواہ کا تخمینہ', fa:'برآورد حقوق' },
+        'scheduling-email': { ar:'إيميل تنسيق ميعاد', en:'Scheduling Email', fr:'E-mail de planification', es:'Correo de programación', tr:'Randevu E-postası', de:'Terminplanungs-E-Mail', hi:'शेड्यूलिंग ईमेल', ur:'شیڈولنگ ای میل', fa:'ایمیل هماهنگی زمان' },
+        'reply-review': { ar:'مراجعة رد', en:'Reply Review', fr:'Révision de réponse', es:'Revisión de respuesta', tr:'Yanıt İncelemesi', de:'Antwortüberprüfung', hi:'रिप्लाई समीक्षा', ur:'جواب کا جائزہ', fa:'بررسی پاسخ' },
+        'salary-followup-questions': { ar:'أسئلة متابعة الراتب', en:'Salary Follow-up Questions', fr:'Questions de suivi salarial', es:'Preguntas de seguimiento salarial', tr:'Maaş Takip Soruları', de:'Gehalts-Folgefragen', hi:'वेतन फॉलो-अप प्रश्न', ur:'تنخواہ کے فالو اپ سوالات', fa:'سوالات پیگیری حقوق' },
+        'dress-tips': { ar:'نصائح ملابس المقابلة', en:'Dress Tips', fr:'Conseils vestimentaires', es:'Consejos de vestimenta', tr:'Kıyafet İpuçları', de:'Kleidungstipps', hi:'ड्रेस टिप्स', ur:'لباس کے مشورے', fa:'نکات پوشش' },
+        'transcript': { ar:'تفريغ صوتي إلى نص', en:'Transcript', fr:'Transcription', es:'Transcripción', tr:'Transkript', de:'Transkript', hi:'ट्रांसक्रिप्ट', ur:'ٹرانسکرپٹ', fa:'متن پیاده‌شده' },
+        'pitch-30-seconds': { ar:'تقديم نفسك في 30 ثانية', en:'30-Second Pitch', fr:'Présentation de 30 secondes', es:'Presentación de 30 segundos', tr:'30 Saniyelik Tanıtım', de:'30-Sekunden-Vorstellung', hi:'30-सेकंड पिच', ur:'30 سیکنڈ پچ', fa:'معرفی ۳۰ ثانیه‌ای' },
+        'progress-compare': { ar:'مقارنة جلستين', en:'Session Comparison', fr:'Comparaison de sessions', es:'Comparación de sesiones', tr:'Oturum Karşılaştırması', de:'Sitzungsvergleich', hi:'सत्र तुलना', ur:'سیشن موازنہ', fa:'مقایسه جلسات' },
+        'progress-summary': { ar:'تقرير تقدم', en:'Progress Report', fr:'Rapport de progression', es:'Informe de progreso', tr:'İlerleme Raporu', de:'Fortschrittsbericht', hi:'प्रगति रिपोर्ट', ur:'پیش رفت کی رپورٹ', fa:'گزارش پیشرفت' },
+        'performance-report': { ar:'تقرير أداء مقابلة', en:'Interview Performance Report', fr:'Rapport de performance d\'entretien', es:'Informe de desempeño en la entrevista', tr:'Mülakat Performans Raporu', de:'Vorstellungsgespräch-Leistungsbericht', hi:'साक्षात्कार प्रदर्शन रिपोर्ट', ur:'انٹرویو کارکردگی رپورٹ', fa:'گزارش عملکرد مصاحبه' }
     };
     function historyToolLabel(toolKey) {
-        const map = currentUiLang === 'en' ? HISTORY_LABELS_EN : HISTORY_LABELS_AR;
-        return map[toolKey] || toolKey;
+        const entry = HISTORY_LABELS[toolKey];
+        return (entry && (entry[currentUiLang] || entry.ar)) || toolKey;
     }
     function getHistoryList() {
         try { return JSON.parse(localStorage.getItem('yusr_history') || '[]'); } catch (e) { return []; }
@@ -2799,8 +2861,8 @@
         if (empty) empty.classList.add('hidden');
         list.innerHTML = arr.map((e, i) => {
             const d = new Date(e.time);
-            const dateStr = isNaN(d) ? '' : d.toLocaleDateString(currentUiLang === 'en' ? 'en-US' : 'ar-EG', { year: 'numeric', month: 'short', day: 'numeric' });
-            const timeStr = isNaN(d) ? '' : d.toLocaleTimeString(currentUiLang === 'en' ? 'en-US' : 'ar-EG', { hour: '2-digit', minute: '2-digit' });
+            const dateStr = isNaN(d) ? '' : d.toLocaleDateString(UI_LOCALE[currentUiLang] || 'ar-EG', { year: 'numeric', month: 'short', day: 'numeric' });
+            const timeStr = isNaN(d) ? '' : d.toLocaleTimeString(UI_LOCALE[currentUiLang] || 'ar-EG', { hour: '2-digit', minute: '2-digit' });
             const previewSrc = (e.text || '').replace(/\s+/g, ' ').trim();
             const preview = escapeHtml(previewSrc.slice(0, 90)) + (previewSrc.length > 90 ? '…' : '');
             return `
@@ -2836,7 +2898,7 @@
     function copyChatTranscript() {
         const text = chatHistory.filter(m => m.role !== 'system').map(m => (m.role === 'assistant' ? currentInterviewerName + ': ' : 'أنت: ') + stripArabicDiacritics(m.content)).join('\n\n');
         navigator.clipboard.writeText(text);
-        showToast(currentUiLang === 'en' ? 'Conversation copied!' : 'تم نسخ المحادثة!', 'success');
+        showToast(uiStr('conversationCopied'), 'success');
     }
     function downloadChatTranscript() {
         const text = chatHistory.filter(m => m.role !== 'system').map(m => (m.role === 'assistant' ? currentInterviewerName + ': ' : 'أنت: ') + stripArabicDiacritics(m.content)).join('\n\n');
@@ -3992,7 +4054,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
     function copyPfTranscript() {
         const text = pfChatHistory.filter(m => m.role !== 'system').map(m => (m.role === 'assistant' ? 'المساعد: ' : 'أنت: ') + m.content).join('\n\n');
         navigator.clipboard.writeText(text);
-        showToast(currentUiLang === 'en' ? 'Copied!' : 'تم النسخ!', 'success');
+        showToast(uiStr('copiedToast'), 'success');
     }
     async function runPortfolioBuilder() {
         if (pfChatHistory.filter(m => m.role === 'user').length < 1) return showToast("جاوب على سؤال أو اتنين الأول عشان نقدر نجهزلك محتوى حقيقي.", 'error');
@@ -4900,20 +4962,20 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         const status = document.getElementById('audio-upload-status');
         const AUDIO_MAX_BYTES = 50 * 1024 * 1024; // 50MB - حماية من ملفات ضخمة تستهلك رصيد السيرفر ووقت المستخدم
         if (file.size > AUDIO_MAX_BYTES) {
-            status.innerText = currentUiLang === 'en' ? 'File too large (max 50MB). Try a shorter clip.' : 'حجم الملف كبير جداً (أقصى حجم 50MB)، جرب مقطع أقصر.';
+            status.innerText = uiStr('fileTooLarge50mb');
             event.target.value = '';
             return;
         }
-        status.innerText = (currentUiLang === 'en' ? 'Uploading & transcribing: ' : 'جاري رفع وتفريغ بدقة عالية: ') + file.name + ' …';
+        status.innerText = uiStr('uploadingTranscribing') + ' ' + file.name + ' …';
         if (!checkDeviceTrial()) { status.innerText = ''; return; }
         try {
             const text = await transcribeAudioBlob(file, file.name, false, 'general');
             document.getElementById('transcribe-raw').value = text;
-            status.innerText = currentUiLang === 'en' ? '✓ Transcribed successfully. Review below, then click Clean Up.' : '✓ اتفرّغ بنجاح. راجع النص تحت واضغط "نظّف وحسّن التنسيق".';
+            status.innerText = uiStr('transcribedSuccess');
             incrementDeviceUsage();
         } catch (e) {
             console.warn('Whisper transcription failed:', e);
-            status.innerText = currentUiLang === 'en' ? 'Auto-transcription failed. Please paste the text manually or try again.' : 'تعذر التفريغ التلقائي. جرب تاني أو الصق النص يدوياً.';
+            status.innerText = uiStr('transcriptionFailed');
         }
     }
 
