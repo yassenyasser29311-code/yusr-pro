@@ -1,14 +1,11 @@
     :root{
-        /* ============ باليتة عصرية جديدة (2026 refresh) ============
-           خلفية غامقة جدًا بس مش أسود فلات — فيها توهج بنفسجي/تركواز خفيف
-           زي الإحساس في التصاميم الحديثة (شبه الصورة اللي اتبعتت: خلفية غامقة
-           + إضاءة بنفسجي/وردي ناعمة + لمسة ذهبية للتفاصيل المميزة). */
+        
         --bg: #07070b; --panel: #131319; --panel-2: #1c1c25; --border: #2c2c3a;
         --text: #ffffff; --muted: #b7b9c9; --accent: #a78bfa; --accent-strong:#22d3c9;
         --accent-gold: #f5b942;
         --grad1:#8b5cf6; --grad2:#ec4899; --grad3:#22d3c9; --grad4:#f5b942;
     }
-    /* ---- توهج خلفية عصري خفيف (ثابت، مش بيتحرك، مش بيأثر على القراءة) ---- */
+    
     body {
         background:
             radial-gradient(60% 45% at 85% -8%, rgba(139,92,246,.16), transparent 60%),
@@ -38,20 +35,12 @@
     .text-slate-600 { color: #8a8a8a !important; }
     .bg-\[\#2a2f36\], .bg-\[\#20252c\], .bg-\[\#262b32\] { background-color: #1a1a1a !important; }
 
-    /* ============ حركات دخول عصرية (Reveal animations) ============
-       تُستخدم عن طريق كلاس .reveal-in اللي بيتضاف بـ JS على أي عنصر جديد بيظهر
-       (نتيجة أداة، رسالة شات، كارت...) عشان يدخل بحركة ناعمة بدل ما يظهر فجأة. */
+    
     @keyframes revealInUp { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
     .reveal-in { animation: revealInUp .38s cubic-bezier(.22,.9,.32,1) both; }
     @keyframes softGlow { 0%,100% { box-shadow: 0 0 0 0 rgba(167,139,250,.0); } 50% { box-shadow: 0 0 22px 2px rgba(167,139,250,.18); } }
 
-    /* ============ نقطة 8: وضع فاتح (Light Mode) ============
-       بيتفعّل بإضافة كلاس light-mode على <html> — شوف initTheme()/toggleTheme()
-       في app.js اللي بيقروا ويحفظوا الاختيار في localStorage (yusr_theme) عشان
-       الوضع يفضل ثابت بين الزيارات. بنعيد تعريف نفس متغيرات الجذر، وبعدين
-       بنكرر بالظبط نفس العناصر اللي فوق مثبتة بألوان سودا صريحة (قسم
-       "Gemini-style black/white overrides")، عشان الوضع الفاتح يغطي نفس
-       السطح بالظبط ومفيش حتة تفضل سودا وسط باقي الواجهة الفاتحة. */
+    
     html.light-mode {
         --bg: #f4f5f7; --panel: #ffffff; --panel-2: #edeff2; --border: #dde1e7;
         --text: #14161a; --muted: #5a6170; --accent: #2f6fed; --accent-strong:#1a56d6;
@@ -79,17 +68,9 @@
     html.light-mode .bg-\[\#2a2f36\], html.light-mode .bg-\[\#20252c\], html.light-mode .bg-\[\#262b32\] { background-color: #edeff2 !important; }
     html.light-mode ::-webkit-scrollbar-thumb { background: #c7cfdc; }
     html.light-mode * { scrollbar-color: #c7cfdc transparent; }
-    /* Floating animated blobs used behind the header/hero.
-       ملحوظة مهمة (فيكس): كان عندها z-index:0 بس مش موقّعة موضع "خلف كل حاجة" مضمون -
-       عنصر position:fixed بـ z-index:0 بيتحط في نفس طبقة الرسم بتاعة أي حاجة تانية z-index:0
-       أو auto جوه نفس الـ stacking context، وده كان بيخليها ممكن "تعلو" فوق عناصر تانية
-       زي معاينة كاميرا محاكي المقابلة (فيديو الكاميرا اللايف) في بعض المتصفحات/الأجهزة،
-       خصوصاً إن فيها filter:blur() اللي بيعمل مشاكل تركيب (compositing) مع طبقة الفيديو
-       المسرّعة بالهاردوير. الحل الأضمن: z-index سالب (-1) عشان تتحط فعلياً في طبقة أوطى
-       من أي محتوى تاني بشكل مضمون 100% في كل المتصفحات، بدل ما نعتمد على ترتيب DOM بس. */
+    
     .blob-field { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
-    /* الألوان اتهدّت شوية (opacity أقل + بلور أعلى) عشان الأسود يفضل هو الغالب في الخلفية
-       وتحس إن الحركة أهدى للعين، مع الحفاظ على نفس سرعة الحركة اللي كانت موجودة أصلاً. */
+    
     .blob { position: absolute; border-radius: 50%; filter: blur(64px); opacity: .28; will-change: transform; }
     .blob-a { width: 340px; height: 340px; background: radial-gradient(circle at 30% 30%, var(--grad1), transparent 70%); top: -80px; right: -60px; animation: floatBlob 14s ease-in-out infinite; }
     .blob-b { width: 290px; height: 290px; background: radial-gradient(circle at 30% 30%, var(--grad3), transparent 70%); bottom: -60px; left: -40px; animation: floatBlob 17s ease-in-out infinite reverse; }
@@ -102,42 +83,31 @@
         75% { transform: translate(-40px,-20px) scale(1.06); }
     }
     @media (prefers-reduced-motion: reduce) { .blob { animation: none !important; } }
-    /* كل محتوى التطبيق الحقيقي بيتحط في stacking context جديد خاص بيه (isolate)
-       عشان نضمن 100% إن خلفية البلوبز (z-index:-1) متقدرش "تتسرب" فوق أي عنصر
-       جواه تحت أي ظرف، حتى لو عنصر جوه حط position/transform بنفسه. */
+    
     #app-root { isolation: isolate; }
-    /* معاينة كاميرا محاكي المقابلة: ممنوع تماماً أي انعكاس (mirror) عليها - لا بالـ CSS
-       ولا بأي حاجة تانية، حتى أول مرة تحميل. القاعدة دي بتتأكد إن transform يفضل none
-       على الفيديو دايماً بأعلى أولوية ممكنة، حتى لو أي كلاس/كود تاني حاول يضيف انعكاس. */
+    
     #video-mock-preview { transform: none !important; }
     .gradient-text { background: linear-gradient(90deg, var(--grad1), var(--grad2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
    * { scrollbar-width: thin; scrollbar-color: #3a4048 transparent; }
     *, *::before, *::after { box-sizing: border-box; }
     html, body { overflow-x: hidden; max-width: 100%; }
-    /* فيكس إضافي احترازي: أي صف flex (زي صف "متصل بجوجل" وغيره) لو افترض إن
-       المساحة هتكفي وطلع فجأة أعرض من الشاشة على موبايل ضيق جداً، بدل ما يتقص
-       ويختفي جزء منه بره حدود الشاشة (بسبب overflow-x:hidden فوق)، خليه يلف
-       لسطر تاني تلقائياً بدل ما "يطفح" برة. الشبكة دي بتتفعل بس لو المساحة
-       فعلاً مش كافية، فمش هتأثر على الشكل العادي على شاشات كبيرة خالص. */
+    
     @media (max-width: 420px) {
         #google-signin-area, #google-signedin-area { flex-wrap: wrap; }
     }
     body { font-family: 'Cairo', sans-serif; background: var(--bg); color: var(--text); }
     img, video, canvas, svg { max-width: 100%; height: auto; }
-    /* ---- شبكة أمان عامة ضد أي عنصر بيطلع بره حدود الشاشة (موبايل أو ديسكتوب) ----
-       بتضمن إن أي نص طويل (إيميل، اسم، رابط) يلف جوه العنصر بدل ما يدفعه يعدي عرض
-       الشاشة، وإن أي حقل/زرار ما يكبرش عن أبوه، من غير ما تكسر أي تصميم متعمّد. */
+    
     input, textarea, select, button { max-width: 100%; }
     table { width: 100%; }
     p, h1, h2, h3, h4, span, td, th, label, li, a { overflow-wrap: break-word; word-break: break-word; }
     #app-root { max-width: 100vw; }
     .modal-pop, .panel { max-width: 100%; }
-    /* لوحة عريضة على شاشات كبيرة جدًا: تفضل متمركزة بعرض مريح بدل ما تتمطط
-       من حرف الشاشة للتاني وتبقى صعبة القراءة */
+    
     @media (min-width: 1600px) {
         #app-root > main, #app-root .flex-1 { max-width: 1400px; margin: 0 auto; }
     }
-    /* موبايل: نص أصغر شوية في الجداول والشيبس عشان يفضل كل حاجة جوه الشاشة براحة */
+    
     @media (max-width: 480px) {
         .membership-card-id { font-size: .72rem; letter-spacing: .12em; }
         #admin-users-tbody td, #admin-log-tbody td { padding: .4rem .35rem; font-size: .68rem; }
@@ -162,7 +132,7 @@
     .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); }
     .btn-ghost:hover { background: var(--panel-2); color: var(--text); }
 
-    /* Sidebar */
+    
     #sidebar {
         width: 264px; background: #14171b; border-left: 1px solid var(--border);
         transition: transform .32s cubic-bezier(.4,0,.2,1), width .32s cubic-bezier(.4,0,.2,1);
@@ -177,7 +147,7 @@
     }
     .sidebar-overlay { transition: opacity .3s ease; }
 
-    /* بحث القائمة الجانبية */
+    
     .sidebar-search-wrap { padding: 0 .25rem .9rem; }
     .sidebar-search-box { position: relative; display: flex; align-items: center; }
     .sidebar-search-icon { position: absolute; right: .7rem; font-size: 11px; color: var(--muted); pointer-events: none; }
@@ -220,7 +190,7 @@
     .chip:active { transform: translateY(0) scale(.96); }
     .avatar-upload { width:88px; height:88px; border-radius:999px; border:2px dashed #3a4048; display:flex; align-items:center; justify-content:center; overflow:hidden; cursor:pointer; background:#14171b; flex-shrink:0; }
 
-    /* ---- Micro-interactions (subtle, calm) ---- */
+    
     button, .nav-item, .chip, .btn-primary, .btn-ghost { will-change: transform; }
     .btn-primary, .btn-accent { transition: filter .15s ease, transform .1s ease; }
     .btn-primary:active, .btn-accent:active { transform: scale(.985); }
@@ -231,7 +201,7 @@
     .copied-flash { animation: copiedFlash .5s ease; }
     @keyframes copiedFlash { 0%{ background: rgba(148,163,184,.25); } 100%{ background: transparent; } }
 
-    /* ---- Distinct section accents (kept subtle, not a full re-theme) ---- */
+    
     .btn-accent { color:#0b0d10; font-weight:800; }
     .btn-accent:hover { filter: brightness(1.08); }
     .acc-interview  { background: linear-gradient(135deg,#93c5fd,#3b82f6); color:#0b1220; }
@@ -254,12 +224,12 @@
     .acc-salary     { background: linear-gradient(135deg,#86efac,#16a34a); color:#052e16; }
     .acc-progress   { background: linear-gradient(135deg,#fda4af,#e11d48); color:#3a0410; }
 
-    /* ---- Profile (LinkedIn-style) ---- */
+    
     .profile-cover { height: 110px; border-radius: 1rem 1rem 0 0; background: linear-gradient(120deg,#334155,#0f172a 60%,#1e293b); position: relative; overflow:hidden; }
     .profile-cover::after { content:''; position:absolute; inset:0; background: radial-gradient(circle at 30% 20%, rgba(255,255,255,.08), transparent 60%); }
     .profile-avatar-lg { width:96px; height:96px; border-radius:999px; border:4px solid var(--panel); background:#20252c; overflow:hidden; display:flex; align-items:center;justify-content:center; margin-top:14px; margin-inline-start:1.25rem; box-shadow:0 4px 18px rgba(0,0,0,.4); }
 
-    /* ============ Profile v2 (redesign) ============ */
+    
     .profile-hero { position:relative; background: radial-gradient(120% 140% at 15% 0%, #161c26 0%, #0b0d12 55%, #08090b 100%); border:1px solid var(--border); }
     .profile-hero::before { content:''; position:absolute; inset:0; background:
         radial-gradient(circle at 12% 15%, rgba(94,163,255,.18), transparent 42%),
@@ -272,16 +242,12 @@
     .plan-pill { display:inline-flex; align-items:center; gap:.35rem; font-size:.68rem; font-weight:800; padding:.3rem .7rem; border-radius:999px; background:linear-gradient(135deg,rgba(138,180,248,.16),rgba(94,234,212,.12)); border:1px solid rgba(138,180,248,.3); color:var(--accent-strong); }
     .quick-pill { display:flex; align-items:center; gap:.45rem; white-space:nowrap; background:var(--panel-2); border:1px solid var(--border); color:var(--muted); font-size:.72rem; font-weight:700; padding:.55rem .9rem; border-radius:999px; transition: all .18s ease; }
     .quick-pill:hover { color:var(--text); border-color:rgba(138,180,248,.4); background:rgba(138,180,248,.08); transform: translateY(-1px); }
-    /* فيكس: الكارت كان block عادي من غير أي تمركز، فمربع الأيقونة (عنصر بعرض/ارتفاع
-       ثابت 34px) كان بيلزق على حرف الكارت (شمال) بدل ما يفضل بالظبط في النص، وكذلك
-       الرقم والتسمية تحته كانوا بيتمددوا full-width بمحاذاة النص العادية بدل التمركز.
-       الحل: نخلي الكارت نفسه flex-column بمحتوى متمركز بالكامل (أيقونة + رقم + تسمية)
-       بغض النظر عن اتجاه الصفحة (RTL/LTR) أو أي فروق تنفيذ بين المتصفحات. */
+    
     .stat-card-v2 { position:relative; background:var(--panel); border:1px solid var(--border); border-radius:1rem; padding:.9rem .75rem; overflow:hidden; display:flex; flex-direction:column; align-items:center; text-align:center; }
     .stat-card-v2 .stat-icon { width:34px; height:34px; border-radius:.7rem; display:flex; align-items:center; justify-content:center; font-size:.8rem; margin-bottom:.5rem; flex-shrink:0; }
     .stat-card-v2 p { width:100%; }
 
-    /* ---- Membership "wallet card" (بطاقة عضوية هادية الألوان بدل التصميم البنفسجي الصارخ) ---- */
+    
     .membership-card {
         position:relative; border-radius:1.1rem; padding:1.15rem 1.25rem; overflow:hidden;
         min-height:168px; display:flex; flex-direction:column; justify-content:space-between;
@@ -296,7 +262,7 @@
             radial-gradient(circle at -10% 110%, rgba(94,234,212,.10), transparent 50%);
     }
     .membership-card::after {
-        /* خطوط رفيعة شبه نسيج البطاقات الحقيقية */
+        
         content:''; position:absolute; inset:0; pointer-events:none; opacity:.5;
         background-image: repeating-linear-gradient(115deg, rgba(255,255,255,.025) 0px, rgba(255,255,255,.025) 1px, transparent 1px, transparent 10px);
     }
@@ -324,23 +290,15 @@
     .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
 
-    /* ---- Admin dashboard ---- */
-    /* تثبيت عام: أي نص جوه لوحة الأدمن (الداشبورد أو شاشة الدخول) بيرث line-height
-       طبيعي وهوامش صفر، عشان لو أي عنصر جواه أكتر من سطر (زي الاسم فوق الإيميل في
-       جدول المستخدمين) الأسطر تتباعد صح بدل ما تتراكب فوق بعضها. */
+    
+    
     #admin-dashboard, #admin-gate-modal, #admin-user-modal, #admin-confirm-modal { line-height: 1.6; }
     #admin-dashboard p, #admin-gate-modal p, #admin-user-modal p, #admin-confirm-modal p,
     #admin-dashboard h1, #admin-dashboard h3, #admin-gate-modal h3, #admin-user-modal h3 { margin: 0; line-height: 1.5; }
     #admin-users-tbody tr, #admin-log-tbody tr { border-bottom: 1px solid var(--border); }
     #admin-users-tbody tr:hover, #admin-log-tbody tr:hover { background: var(--panel-2); }
     #admin-users-tbody td, #admin-log-tbody td { padding: .6rem .5rem; vertical-align: middle; line-height: 1.6; }
-    /* أهم فيكس هنا: قاعدة عامة في الملف بتحط word-break:break-word على كل th/td
-       عشان النصوص الطويلة (إيميلات...) متكسرش الشاشة - بس على عمود ضيق جدًا (زي
-       "الاستخدام الشهري" أو "سقف مخصص" في جدول الأدمن على الموبايل) القاعدة دي
-       كانت بتخلي كل حرف ينزل سطر لوحده (الحروف فوق بعضها بالظبط). الحل: نمنع
-       الكسر جوه عناوين وخلايا جداول الأدمن ونخليها سطر واحد ثابت، والجدول نفسه
-       ياخد عرض أدنى كافي عشان الـ overflow-x-auto (اللي موجود بالفعل حواليه) هو
-       اللي يعمل سكرول أفقي بدل ما يزنق كل عمود لحد ما يفضّل حرف واحد بس. */
+    
     #admin-users-tbody th, #admin-users-tbody td,
     #admin-log-tbody th, #admin-log-tbody td,
     #admin-dashboard table thead th {
@@ -349,8 +307,7 @@
     #admin-dashboard table { min-width: 640px; }
     #admin-users-tbody td > button { display: flex; flex-direction: column; align-items: flex-end; gap: .15rem; line-height: 1.5; white-space: normal; }
     #admin-users-tbody td > button p { white-space: normal; }
-    /* أزرار فيها أيقونة + نص (زي زرار "نسخة احتياطية" أو "إدارة") لازم تبقى flex
-       بمسافة واضحة بين الأيقونة والكلام، عشان الأيقونة ما تتلزقش في الحرف اللي جنبها */
+    
     .admin-mini-btn, #admin-dashboard .chip { display: inline-flex; align-items: center; gap: .4rem; line-height: 1.4; }
     .admin-badge { display:inline-flex; align-items:center; gap:.3rem; font-size:.62rem; font-weight:700; padding:.2rem .6rem; border-radius:999px; line-height: 1.4; }
     .admin-badge-online { color:#34d399; background:rgba(52,211,153,.12); border:1px solid rgba(52,211,153,.3); }
@@ -369,7 +326,7 @@
     .auth-gate-tab { color: var(--muted); background: transparent; transition: all .15s ease; }
     .auth-gate-tab.auth-tab-active { background: var(--panel); color: var(--text); }
 
-    /* ---- Signed-in account card (Profile) ---- */
+    
     .signedin-avatar { width:44px; height:44px; border-radius:999px; overflow:hidden; flex-shrink:0; background:#14171b; display:flex; align-items:center; justify-content:center; border:2px solid rgba(52,211,153,.55); box-shadow:0 0 0 3px rgba(52,211,153,.12); }
     .signedin-avatar img { width:100%; height:100%; object-fit:cover; }
     .signedin-badge { display:inline-flex; align-items:center; gap:.3rem; font-size:.62rem; font-weight:700; color:#34d399; background:rgba(52,211,153,.12); border:1px solid rgba(52,211,153,.3); padding:.15rem .55rem; border-radius:999px; }
@@ -379,7 +336,7 @@
     .g-logout-btn:hover { background:rgba(248,113,113,.16); border-color:rgba(248,113,113,.5); transform: translateY(-1px); }
     .g-logout-btn:active { transform: translateY(0) scale(.97); }
 
-    /* Toast notifications (replaces native alert) */
+    
     #toast-container { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; width: min(92vw, 420px); }
     .app-toast { pointer-events: auto; width: 100%; background: #1c2027; border: 1px solid var(--border, #333); color: #e5e7eb; font-size: 12.5px; line-height: 1.5; border-radius: 12px; padding: 10px 14px; box-shadow: 0 8px 24px -6px rgba(0,0,0,.5); display: flex; align-items: flex-start; gap: 8px; opacity: 0; transform: translateY(-10px); transition: opacity .22s ease, transform .22s ease; }
     .app-toast.show { opacity: 1; transform: translateY(0); }
@@ -393,7 +350,7 @@
     .app-toast.toast-warning { border-color: rgba(251,191,36,.45); }
     .app-toast.toast-warning i { color: #fbbf24; }
 
-    /* ============ نقطة 7: تنبيه استباقي لحد الاستخدام ============ */
+    
     #trial-chip { transition: border-color .25s ease; }
     .trial-progress-track { margin-top: 6px; height: 5px; border-radius: 999px; background: var(--border); overflow: hidden; }
     .trial-progress-fill { height: 100%; border-radius: 999px; background: linear-gradient(135deg,var(--grad1),var(--grad3)); transition: width .35s ease, background .25s ease; }
@@ -412,15 +369,8 @@
     .header-trial-badge.trial-danger i { color: #1a0606; }
     .header-trial-badge:hover { filter: brightness(1.08); }
 
-    /* ---- Floating support chat (user ⇄ admin) ---- */
-    /* ⚠️ ملحوظة مهمة: display:flex ما بيتحطش هنا في الرول الأساسي عن قصد.
-       #support-chat-fab هو ID selector، وأي ID selector بيكسب دايمًا قدّام
-       كلاس زي .hidden (Tailwind) في الـ specificity - يعني لو حطينا
-       display:flex هنا مباشرة، كلاس "hidden" اللي بيتضاف/يتشال من app.js
-       (toggleSupportChat / showSupportChatFab / hideSupportChatFab) مكانش
-       هيقدر يخفي العنصر خالص، وده اللي كان بيخلي الشات العائم "يفضل شغال"
-       ومش بيقفل. الحل: display:flex بس لما الكلاس hidden مش موجود (شوف
-       الرول :not(.hidden) تحت). */
+    
+    
     #support-chat-fab { position: fixed; bottom: 20px; inset-inline-end: 20px; z-index: 9998; width: 52px; height: 52px; border-radius: 999px; background: var(--accent-strong); color: #08131f; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 8px 24px -6px rgba(0,0,0,.6); cursor: pointer; transition: transform .15s ease; }
     #support-chat-fab:not(.hidden) { display: flex; }
     #support-chat-fab:hover { transform: translateY(-2px) scale(1.04); }
@@ -445,10 +395,8 @@
         #support-chat-panel { bottom: 72px; inset-inline-end: 10px; width: calc(100vw - 20px); }
     }
 
-/* ============ Password eye/show-hide toggle (login, signup confirm, admin gate) ============ */
-/* بنستخدم خصائص فيزيائية صريحة (right / padding-right) بدل المنطقية
-   (inset-inline-end) عشان الأيقونة تفضل ثابتة في أقصى اليمين دايماً، بغض
-   النظر عن اتجاه الصفحة (RTL) أو اتجاه النص المكتوب جوه الحقل نفسه. */
+
+
 .pw-field-wrap { position: relative; direction: ltr; }
 .pw-field-wrap input { padding-right: 2.35rem !important; box-sizing: border-box; }
 .pw-eye-toggle {
@@ -459,9 +407,8 @@
 }
 .pw-eye-toggle:hover, .pw-eye-toggle:active { color: var(--text); background: rgba(255,255,255,.06); }
 
-/* ============ زرار "مشترك حاليًا" في صفحة الاشتراكات ============ */
-/* بيبان بلون أخضر مختلف تمامًا عن زرار "اشترك الآن" العادي، وبيتعطّل
-   عشان محدش يضغط عليه بالغلط ويفتح مودال الدفع تاني وهو أصلاً مشترك. */
+
+
 .subs-btn-active {
     background: #10b981 !important;
     color: #052e1f !important;
@@ -471,13 +418,10 @@
 }
 .subs-btn-active:hover { background: #10b981 !important; }
 
-/* ============ إخفاء شارة reCAPTCHA العائمة (تحت يمين الشاشة) ============ */
+
 .grecaptcha-badge { visibility: hidden !important; opacity: 0 !important; }
 
-/* ============ شريط تحميل عام (global-loading-bar) ============
-   بيظهر أعلى الشاشة أثناء أي طلب شبكة (admin API أو أدوات الذكاء الاصطناعي)
-   عشان يديله إشارة بصرية إن حاجة بتتحمل، بدل ما يحس إن الصفحة "واقفة" وهو
-   على نت موبايل بطيء. مبني بـ CSS بس (شريط متحرك)، مفيهوش أي طلب شبكة إضافي. */
+
 #global-loading-bar {
     position: fixed; top: 0; inset-inline-start: 0; inset-inline-end: 0;
     height: 3px; z-index: 200; overflow: hidden;
@@ -498,9 +442,7 @@
     #global-loading-bar::after { animation: none; inset-inline-start: 0; width: 100%; opacity: .5; }
 }
 
-/* ============ Skeleton loading placeholders (شيمر) ============
-   بتتحط على أي عنصر لسه بياناته بتتحمل من فايربيز/الووركر، بدل ما المستخدم
-   يشوف مكان فاضي تمامًا وهو مش عارف لو فيه حاجة هتظهر ولا لأ. */
+
 .skeleton {
     position: relative; overflow: hidden; color: transparent !important;
     background: var(--panel-2, #1c1f26); border-radius: 8px; pointer-events: none;
@@ -515,10 +457,7 @@
     .skeleton::after { animation: none; }
 }
 
-/* ============ حجم مناطق اللمس (tap targets) على الموبايل ============
-   معيار WCAG بيوصي بمساحة لمس 44×44px تقريبًا. زراير الأيقونات الصغيرة
-   (32px زي w-8/h-8) بس هي اللي بتتوسع هنا على الموبايل، عشان نتجنب كسر
-   تصميم بقية الأزرار والـ chips والـ nav-items اللي مقاساتها مقصودة. */
+
 @media (max-width: 768px) {
     #theme-toggle-btn,
     button[onclick^="switchViewByName('support')"] {
@@ -526,9 +465,7 @@
     }
 }
 
-/* ============ المساعد الذكي (AI Assistant Chat) — تصميم عصري ============
-   شات حديث بفقاعات متدرجة، مؤشر كتابة نابض، وحدود ناعمة متوهجة بلون
-   العلامة الجديد. */
+
 .assistant-chat-wrap {
     display: flex; flex-direction: column; height: min(72vh, 640px);
     background: linear-gradient(180deg, rgba(167,139,250,.05), rgba(0,0,0,0) 18%), var(--panel);
@@ -581,7 +518,7 @@
 .assistant-chat-send:disabled { opacity: .5; }
 .assistant-provider-hint { font-size: 10px; color: var(--muted); text-align: center; padding: .3rem 0 0; }
 
-/* ============ يسر Pro Bot — مايك / صورة / صوت الرد ============ */
+
 .assistant-icon-btn {
     flex-shrink: 0; width: 40px; height: 40px; border-radius: .8rem; display: flex; align-items: center; justify-content: center;
     background: var(--panel-2); border: 1px solid var(--border); color: var(--muted); font-size: .95rem;
@@ -604,16 +541,9 @@
 }
 .assistant-msg img.assistant-msg-img { max-width: 220px; border-radius: .7rem; display: block; margin-bottom: .4rem; }
 
-/* ======================================================================
-   ============ تحديث شامل: شكل أفخم وأجمد لكل الفورمات + البوت ============
-   ======================================================================
-   الهدف: كل خدمة (مقابلة صوتية، CV، بورتفوليو، تدقيق، تلخيص، تفريغ... إلخ)
-   بتستخدم نفس الكلاسات المشتركة (.panel / .panel-2 / .input-field / .btn-primary
-   / .chip) فبمجرد ما نرفّع شكل الكلاسات دي هنا، كل فورم في الموقع هياخد
-   نفس اللمسة الفخمة تلقائيًا من غير ما نلمس أي HTML/JS تاني ولا نكسر أي
-   وظيفة شغالة. القواعد هنا آخر حاجة في الملف عشان تكسب في الأولوية. */
 
-/* ---- كارت الفورم الرئيسي لكل خدمة: زجاجي، متوهج، بحدود متدرجة ناعمة ---- */
+
+
 .panel {
     position: relative;
     background:
@@ -629,7 +559,7 @@
     overflow: hidden;
     transition: border-color .25s ease, box-shadow .25s ease, transform .25s ease;
 }
-/* شعاع رفيع متوهج أعلى كل كارت فورم، بلون العلامة، بيدي إحساس "بريميوم" */
+
 .panel::before {
     content: "";
     position: absolute; inset-inline: 0; top: 0; height: 2px;
@@ -650,7 +580,7 @@ html.light-mode .panel {
 }
 html.light-mode .panel:hover { border-color: rgba(47,111,237,.28) !important; }
 
-/* ---- كروت فرعية جوه الفورم (كل حقل/قسم صغير) ---- */
+
 .panel-2 {
     border-radius: .95rem !important;
     border: 1px solid var(--border) !important;
@@ -659,7 +589,7 @@ html.light-mode .panel:hover { border-color: rgba(47,111,237,.28) !important; }
 }
 .panel-2:hover { border-color: rgba(167,139,250,.28) !important; }
 
-/* ---- حقول الإدخال: أنعم، أوضح فوكس، إحساس فخم ---- */
+
 .input-field, select.input-field, textarea.input-field {
     border-radius: .9rem !important;
     padding: .7rem 1rem !important;
@@ -675,10 +605,10 @@ html.light-mode .panel:hover { border-color: rgba(47,111,237,.28) !important; }
 .input-field::placeholder { color: var(--muted); opacity: .7; }
 html.light-mode .input-field:focus { box-shadow: 0 0 0 4px rgba(47,111,237,.14) !important; }
 
-/* عناوين الحقول (label) داخل الفورمات - أوضح ومسافة أهدى */
+
 .panel label, .panel-2 label { letter-spacing: .01em; }
 
-/* ---- الأزرار الأساسية: تدرج أغنى + لمعة تمر عند الهوفر ---- */
+
 .btn-primary, .btn-accent {
     position: relative; overflow: hidden;
     border-radius: .9rem !important;
@@ -697,13 +627,11 @@ html.light-mode .input-field:focus { box-shadow: 0 0 0 4px rgba(47,111,237,.14) 
 .btn-accent { box-shadow: 0 6px 20px -6px rgba(0,0,0,.35); }
 .btn-accent:hover { transform: translateY(-1px); }
 
-/* الشيبس (الاختيارات السريعة داخل الفورمات) - إحساس أفخم عند الاختيار */
+
 .chip { background: var(--panel-2); font-weight: 600; }
 .chip:hover { border-color: var(--accent); color: var(--text); background: rgba(167,139,250,.1); }
 
-/* ======================================================================
-   ============ يُسْر Pro Bot — شكل تحفة، رايق، وفخم جدًا ============
-   ====================================================================== */
+
 .assistant-chat-wrap {
     border-radius: 1.4rem !important;
     border: 1px solid rgba(167,139,250,.22) !important;
@@ -763,7 +691,7 @@ html.light-mode .input-field:focus { box-shadow: 0 0 0 4px rgba(47,111,237,.14) 
 .assistant-chat-send:hover { transform: scale(1.06) translateY(-1px); }
 .assistant-typing span { background: linear-gradient(135deg, var(--grad1), var(--grad3)) !important; }
 
-/* زرار الشات العائم (support-chat-fab) - نبضة فخمة تلفت الانتباه بهدوء */
+
 #support-chat-fab {
     background: linear-gradient(135deg, var(--grad1), var(--grad3)) !important;
     box-shadow: 0 10px 30px -10px rgba(139,92,246,.6) !important;
