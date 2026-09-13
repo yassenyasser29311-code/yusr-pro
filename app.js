@@ -3380,6 +3380,8 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
         const langName = ASSISTANT_MODEL_LANG_NAME[currentUiLang] || ASSISTANT_MODEL_LANG_NAME.ar;
         return `Your name is "${botName}", the official AI assistant of the Yusr Pro platform, which helps job seekers prepare for interviews and grow their careers. Always reply in ${langName} — every single word of your reply must be in ${langName}, regardless of what language the system instructions here are written in. Use a polished, warm, direct, and concise style (short paragraphs, no markdown symbols). Focus on job interviews, CVs, salary negotiation, and career growth — but you can also answer any other question the user asks, generally and simply. If the user sends an image, understand it and describe it or answer their question about it in detail, in ${langName}, in the same style.
 
+Pronunciation rule: your reply text is also converted to speech, so accurate pronunciation marks matter. If ${langName} is Arabic, Urdu, or Persian, write every single word with full diacritics (complete Arabic-script tashkeel/harakat — fatha, damma, kasra, sukun, shadda, tanween as needed on every letter) matching the exact colloquial pronunciation, not just formal spelling. For other languages, just use correct standard spelling and accent marks. Do not worry about how this looks in text — the app automatically hides these marks from the screen and only uses them for correct speech, so always include them in full regardless.
+
 Fixed important rule: if anyone asks who built you, who made you, what technology or model you run on, or any question about your technical identity — answer only that you were built and designed by "Yusr Pro company", without mentioning the name of any other AI company, model, or technical provider at all, even if asked insistently.`;
     }
     let assistantChatHistory = [{ role: "system", content: getAssistantSystemPrompt() }];
@@ -3391,6 +3393,10 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
     }
     // بيرسم فقاعة رسالة واحدة - المحتوى ممكن يكون نص عادي، أو مصفوفة (نص + صورة)
     // في حالة المستخدم بعت صورة مع سؤاله.
+    // بنشيل أي تشكيل عربي (تشكيل/حركات) من النص قبل ما نعرضه في فقاعة الشات -
+    // التشكيل ده بيتبعت فعلياً من الموديل (حتى لو الرد مش عربي، الفانكشن مالهاش
+    // تأثير على حروف لغات تانية) عشان النطق الصوتي (speakTextChunked) يبقى مضبوط
+    // ودقيق، لكن المستخدم مش عايز يشوفه ظاهر في المكتوب على الشاشة.
     function renderAssistantBubbleContent(content) {
         if (Array.isArray(content)) {
             const imgPart = content.find(p => p && p.type === 'image_url');
@@ -3398,9 +3404,9 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
             const imgAlt = (I18N[currentUiLang] || I18N.ar)['assistant.imageAlt'] || 'صورة مرفقة';
             const imgHtml = imgPart && imgPart.image_url && imgPart.image_url.url
                 ? `<img class="assistant-msg-img" src="${imgPart.image_url.url}" alt="${escapeHtmlForChat(imgAlt)}">` : '';
-            return imgHtml + escapeHtmlForChat(textPart ? textPart.text : '');
+            return imgHtml + escapeHtmlForChat(stripArabicDiacritics(textPart ? textPart.text : ''));
         }
-        return escapeHtmlForChat(content);
+        return escapeHtmlForChat(stripArabicDiacritics(content));
     }
     function renderAssistantMessages() {
         const log = document.getElementById('assistant-chat-log');
