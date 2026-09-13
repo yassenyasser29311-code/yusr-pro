@@ -585,6 +585,7 @@ async function handleGroqChat(request, env, corsHeaders) {
   const MAX_IMAGES_PER_REQUEST = 4;
   let totalChars = 0;
   let imageCount = 0;
+  let hasImage = false; // بيبقى true لو أي رسالة فيها صورة - محتاجينه عشان نختار موديل يدعم الصور بدل موديل نصي بس
   for (const m of messages) {
     if (!m || typeof m !== "object") return json({ error: "invalid_message" }, 400, corsHeaders);
     if (!ALLOWED_ROLES.has(m.role)) return json({ error: "invalid_role" }, 400, corsHeaders);
@@ -617,6 +618,7 @@ async function handleGroqChat(request, env, corsHeaders) {
             return json({ error: "invalid_image" }, 400, corsHeaders);
           }
           imageCount++;
+          hasImage = true;
           if (imageCount > MAX_IMAGES_PER_REQUEST) return json({ error: "too_many_images" }, 400, corsHeaders);
         } else {
           return json({ error: "invalid_content" }, 400, corsHeaders);
@@ -647,23 +649,31 @@ async function handleGroqChat(request, env, corsHeaders) {
   //                     جوجل، فمحتاجينش SDK مختلف خالص.
   // أي واحد منهم لو مش متظبط، بيتخطّى بهدوء والسلسلة تكمل عادي.
   // ==============================================================
+  // ملحوظة مهمة: "openai/gpt-oss-120b" موديل نصي بس ومش بيدعم صور خالص - لو
+  // بعتنالوا رسالة فيها صورة، Groq بترفضها ويفشل الطلب (وده كان بيخلي زرار
+  // إرفاق الصورة في المساعد الذكي يرجع "تعذر الرد دلوقتي" دايماً). فلو في
+  // صورة في الرسالة، لازم نستخدم موديل Groq اللي بيدعم رؤية الصور فعلاً.
+  const GROQ_TEXT_MODEL = "openai/gpt-oss-120b";
+  const GROQ_VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct";
   const providerChain = [
     {
       name: "groq",
       baseUrl: "https://api.groq.com/openai/v1/chat/completions",
       apiKey: env.GROQ_API_KEY,
-      model: "openai/gpt-oss-120b"
+      model: hasImage ? GROQ_VISION_MODEL : GROQ_TEXT_MODEL
     },
     {
       name: "openai",
       baseUrl: "https://api.openai.com/v1/chat/completions",
       apiKey: env.OPENAI_API_KEY,
+      // gpt-4o-mini بيدعم الصور أصلاً، فمحتاجش تغيير هنا حتى لو hasImage true
       model: env.OPENAI_MODEL || "gpt-4o-mini"
     },
     {
       name: "gemini",
       baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
       apiKey: env.GEMINI_API_KEY,
+      // gemini-2.0-flash بيدعم الصور أصلاً برضو
       model: env.GEMINI_MODEL || "gemini-2.0-flash"
     },
     // فولباك عام إضافي (Cerebras/Together/OpenRouter/أي حد متوافق) —

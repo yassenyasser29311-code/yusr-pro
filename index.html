@@ -1112,29 +1112,29 @@
                     <div class="assistant-chat-header">
                         <div class="assistant-chat-avatar"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
                         <div class="flex-1 min-w-0">
-                            <p class="text-xs sm:text-sm font-bold text-slate-100">يسر Pro Bot</p>
-                            <p class="text-[10.5px] text-slate-400">كلّمه بالكتابة أو الصوت، وابعتله صورة لو محتاج يشوفها</p>
+                            <p class="text-xs sm:text-sm font-bold text-slate-100" data-i18n="assistant.botName">يسر Pro Bot</p>
+                            <p class="text-[10.5px] text-slate-400" data-i18n="assistant.subtitle">كلّمه بالكتابة أو الصوت، وابعتله صورة لو محتاج يشوفها</p>
                         </div>
-                        <button id="assistant-voice-toggle-btn" onclick="toggleAssistantVoice()" class="chip hover:bg-[var(--panel-2)]" title="تشغيل/إيقاف صوت الردود"><i class="fa-solid fa-volume-high"></i></button>
-                        <button onclick="clearAssistantChat()" class="chip hover:bg-[var(--panel-2)]" title="بداية محادثة جديدة"><i class="fa-solid fa-rotate-right"></i></button>
+                        <button id="assistant-voice-toggle-btn" onclick="toggleAssistantVoice()" class="chip hover:bg-[var(--panel-2)]" title="تشغيل/إيقاف صوت الردود" data-i18n-title="assistant.voiceToggleTitle"><i class="fa-solid fa-volume-high"></i></button>
+                        <button onclick="clearAssistantChat()" class="chip hover:bg-[var(--panel-2)]" title="بداية محادثة جديدة" data-i18n-title="assistant.newChatTitle"><i class="fa-solid fa-rotate-right"></i></button>
                     </div>
                     <div id="assistant-chat-log" class="assistant-chat-log"></div>
                     <div id="assistant-image-preview-wrap" class="assistant-image-preview-wrap hidden">
                         <div class="assistant-image-preview-item">
-                            <img id="assistant-image-preview" src="" alt="الصورة المرفقة">
-                            <button onclick="removeAssistantImage()" class="assistant-image-remove-btn" title="إزالة الصورة"><i class="fa-solid fa-xmark"></i></button>
+                            <img id="assistant-image-preview" src="" alt="الصورة المرفقة" data-i18n-alt="assistant.imageAlt">
+                            <button onclick="removeAssistantImage()" class="assistant-image-remove-btn" title="إزالة الصورة" data-i18n-title="assistant.removeImageTitle"><i class="fa-solid fa-xmark"></i></button>
                         </div>
                     </div>
                     <div id="assistant-mic-status" class="assistant-mic-status hidden"></div>
                     <div class="assistant-chat-inputbar">
                         <input type="file" id="assistant-image-input" accept="image/*" class="hidden" onchange="handleAssistantImageSelect(event)">
-                        <button class="assistant-icon-btn" title="إرفاق صورة" onclick="document.getElementById('assistant-image-input').click()"><i class="fa-solid fa-image"></i></button>
-                        <button id="assistant-mic-btn" class="assistant-icon-btn" title="تسجيل صوتي" onclick="toggleAssistantMic()"><i class="fa-solid fa-microphone"></i></button>
-                        <textarea id="assistant-chat-input" rows="1" placeholder="اكتب سؤالك هنا..." onkeydown="handleAssistantInputKey(event)"></textarea>
+                        <button class="assistant-icon-btn" title="إرفاق صورة" onclick="document.getElementById('assistant-image-input').click()" data-i18n-title="assistant.attachImageTitle"><i class="fa-solid fa-image"></i></button>
+                        <button id="assistant-mic-btn" class="assistant-icon-btn" title="تسجيل صوتي" onclick="toggleAssistantMic()" data-i18n-title="assistant.micTitle"><i class="fa-solid fa-microphone"></i></button>
+                        <textarea id="assistant-chat-input" rows="1" placeholder="اكتب سؤالك هنا..." onkeydown="handleAssistantInputKey(event)" data-i18n-ph="assistant.inputPh"></textarea>
                         <button id="assistant-chat-send-btn" class="assistant-chat-send" onclick="sendAssistantMessage()"><i class="fa-solid fa-paper-plane"></i></button>
                     </div>
                 </div>
-                <p class="assistant-provider-hint">مدعوم بأكتر من مزوّد ذكاء اصطناعي — لو مزوّد مشغول، بيتحول للتاني تلقائيًا من غير ما تحس.</p>
+                <p class="assistant-provider-hint" data-i18n="assistant.providerHint">مدعوم بأكتر من مزوّد ذكاء اصطناعي — لو مزوّد مشغول، بيتحول للتاني تلقائيًا من غير ما تحس.</p>
             </section>
 
 

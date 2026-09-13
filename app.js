@@ -275,7 +275,8 @@
             "privacy.s5.title":"5. أمان البيانات","privacy.s5.body":"بياناتك محمية بقواعد أمان (Security Rules) بتضمن إن كل مستخدم يشوف بياناته هو بس، وكل الاتصال بين تطبيقك والسيرفر مشفّر (HTTPS).",
             "privacy.s6.title":"6. حقوقك","privacy.s6.body":"تقدر في أي وقت تطلب تشوف بياناتك المحفوظة، تعدّلها، أو تطلب حذفها بالكامل، عن طريق التواصل معانا من صفحة \"الدعم والتواصل\".",
             "privacy.s7.title":"7. الأطفال","privacy.s7.body":"الخدمة مش موجّهة لمن هم أقل من 13 سنة، ومبنجمعش بيانات بشكل متعمد من الفئة العمرية دي.",
-            "privacy.s8.title":"8. التعديلات على السياسة","privacy.s8.body":"ممكن نحدّث السياسة دي من وقت للتاني، وهنغيّر تاريخ \"آخر تحديث\" فوق أول ما نعدّل حاجة جوهرية."
+            "privacy.s8.title":"8. التعديلات على السياسة","privacy.s8.body":"ممكن نحدّث السياسة دي من وقت للتاني، وهنغيّر تاريخ \"آخر تحديث\" فوق أول ما نعدّل حاجة جوهرية.",
+            "assistant.botName":"يسر Pro Bot","assistant.subtitle":"كلّمه بالكتابة أو الصوت، وابعتله صورة لو محتاج يشوفها","assistant.inputPh":"اكتب سؤالك هنا...","assistant.attachImageTitle":"إرفاق صورة","assistant.micTitle":"تسجيل صوتي","assistant.voiceToggleTitle":"تشغيل/إيقاف صوت الردود","assistant.newChatTitle":"بداية محادثة جديدة","assistant.removeImageTitle":"إزالة الصورة","assistant.imageAlt":"الصورة المرفقة","assistant.providerHint":"مدعوم بأكتر من مزوّد ذكاء اصطناعي — لو مزوّد مشغول، بيتحول للتاني تلقائيًا من غير ما تحس.","assistant.emptyHint":"اسأل {bot} بالكتابة أو الصوت، أو ابعتله صورة يشوفها ويجاوبك عليها.","assistant.defaultImageQuestion":"وصف الصورة دي واشرحلي اللي فيها بالتفصيل."
         },
         en: {
             "nav.searchPh":"Search tools...","nav.searchEmpty":"No matching tools","nav.section.interviews":"Interviews & Hiring","nav.interview":"Voice Mock Interview","nav.faq":"FAQ + Model Answers","nav.career":"Career Growth Plan",
@@ -355,7 +356,8 @@
             "privacy.s5.title":"5. Data Security","privacy.s5.body":"Your data is protected by Security Rules that ensure each user can only see their own data, and all communication between your app and the server is encrypted (HTTPS).",
             "privacy.s6.title":"6. Your Rights","privacy.s6.body":"You can request at any time to view your stored data, edit it, or request its complete deletion, by reaching us through the \"Support & Contact\" page.",
             "privacy.s7.title":"7. Children","privacy.s7.body":"The service is not directed at anyone under 13, and we don't knowingly collect data from that age group.",
-            "privacy.s8.title":"8. Changes to This Policy","privacy.s8.body":"We may update this policy from time to time, and we'll change the \"Last updated\" date above whenever we make a substantial change."
+            "privacy.s8.title":"8. Changes to This Policy","privacy.s8.body":"We may update this policy from time to time, and we'll change the \"Last updated\" date above whenever we make a substantial change.",
+            "assistant.botName":"Yusr Pro Bot","assistant.subtitle":"Talk to it by typing or voice, and send a photo if it needs to see something","assistant.inputPh":"Type your question here...","assistant.attachImageTitle":"Attach photo","assistant.micTitle":"Voice recording","assistant.voiceToggleTitle":"Turn reply voice on/off","assistant.newChatTitle":"Start a new conversation","assistant.removeImageTitle":"Remove image","assistant.imageAlt":"Attached image","assistant.providerHint":"Powered by more than one AI provider — if one is busy, it switches to another automatically without you noticing.","assistant.emptyHint":"Ask {bot} by typing or voice, or send it an image for it to see and answer about.","assistant.defaultImageQuestion":"Describe this image and explain what's in it in detail."
         }
 ,
         fr: {
@@ -435,7 +437,8 @@
             "privacy.s5.title":"5. Sécurité des données","privacy.s5.body":"Vos données sont protégées par des règles de sécurité garantissant que chaque utilisateur ne voit que ses propres données, et toute communication entre votre application et le serveur est chiffrée (HTTPS).",
             "privacy.s6.title":"6. Vos droits","privacy.s6.body":"Vous pouvez à tout moment demander à consulter vos données enregistrées, les modifier, ou demander leur suppression complète, en nous contactant via la page \"Assistance et contact\".",
             "privacy.s7.title":"7. Enfants","privacy.s7.body":"Le service ne s'adresse pas aux personnes de moins de 13 ans, et nous ne collectons pas sciemment de données de cette tranche d'âge.",
-            "privacy.s8.title":"8. Modifications de cette politique","privacy.s8.body":"Nous pouvons mettre à jour cette politique de temps à autre, et nous changerons la date \"Dernière mise à jour\" ci-dessus dès que nous apporterons une modification substantielle."
+            "privacy.s8.title":"8. Modifications de cette politique","privacy.s8.body":"Nous pouvons mettre à jour cette politique de temps à autre, et nous changerons la date \"Dernière mise à jour\" ci-dessus dès que nous apporterons une modification substantielle.",
+            "assistant.botName":"Yusr Pro Bot","assistant.subtitle":"Parlez-lui par écrit ou à la voix, et envoyez une photo s'il doit voir quelque chose","assistant.inputPh":"Écrivez votre question ici...","assistant.attachImageTitle":"Joindre une photo","assistant.micTitle":"Enregistrement vocal","assistant.voiceToggleTitle":"Activer/désactiver la voix des réponses","assistant.newChatTitle":"Démarrer une nouvelle conversation","assistant.removeImageTitle":"Supprimer l'image","assistant.imageAlt":"Image jointe","assistant.providerHint":"Alimenté par plusieurs fournisseurs d'IA — si l'un est occupé, il bascule automatiquement vers un autre sans que vous le remarquiez.","assistant.emptyHint":"Posez une question à {bot} par écrit ou à la voix, ou envoyez-lui une image à voir et commenter.","assistant.defaultImageQuestion":"Décris cette image et explique-moi en détail ce qu'elle contient."
         },
         es: {
             "nav.searchPh":"Buscar herramientas...","nav.searchEmpty":"No se encontraron herramientas","nav.section.interviews":"Entrevistas y contratación","nav.interview":"Entrevista de práctica por voz","nav.faq":"Preguntas frecuentes + respuestas modelo","nav.career":"Plan de desarrollo profesional",
@@ -514,7 +517,8 @@
             "privacy.s5.title":"5. Seguridad de los datos","privacy.s5.body":"Tus datos están protegidos por reglas de seguridad que garantizan que cada usuario solo vea sus propios datos, y toda la comunicación entre tu aplicación y el servidor está cifrada (HTTPS).",
             "privacy.s6.title":"6. Tus derechos","privacy.s6.body":"Puedes solicitar en cualquier momento ver tus datos guardados, editarlos o solicitar su eliminación completa, contactándonos a través de la página \"Soporte y contacto\".",
             "privacy.s7.title":"7. Menores","privacy.s7.body":"El servicio no está dirigido a menores de 13 años, y no recopilamos datos deliberadamente de ese grupo de edad.",
-            "privacy.s8.title":"8. Cambios en esta política","privacy.s8.body":"Podemos actualizar esta política de vez en cuando, y cambiaremos la fecha de \"Última actualización\" arriba cuando hagamos un cambio sustancial."
+            "privacy.s8.title":"8. Cambios en esta política","privacy.s8.body":"Podemos actualizar esta política de vez en cuando, y cambiaremos la fecha de \"Última actualización\" arriba cuando hagamos un cambio sustancial.",
+            "assistant.botName":"Yusr Pro Bot","assistant.subtitle":"Háblale por texto o voz, y envíale una foto si necesita verla","assistant.inputPh":"Escribe tu pregunta aquí...","assistant.attachImageTitle":"Adjuntar foto","assistant.micTitle":"Grabación de voz","assistant.voiceToggleTitle":"Activar/desactivar voz de las respuestas","assistant.newChatTitle":"Iniciar una nueva conversación","assistant.removeImageTitle":"Quitar imagen","assistant.imageAlt":"Imagen adjunta","assistant.providerHint":"Impulsado por varios proveedores de IA — si uno está ocupado, cambia a otro automáticamente sin que lo notes.","assistant.emptyHint":"Pregúntale a {bot} por texto o voz, o envíale una imagen para que la vea y responda.","assistant.defaultImageQuestion":"Describe esta imagen y explícame en detalle qué contiene."
         },
         tr: {
             "nav.searchPh":"Araç ara...","nav.searchEmpty":"Eşleşen araç yok","nav.section.interviews":"Mülakatlar ve İşe Alım","nav.interview":"Sesli Deneme Mülakatı","nav.faq":"SSS + Örnek Cevaplar","nav.career":"Kariyer Gelişim Planı",
@@ -593,7 +597,8 @@
             "privacy.s5.title":"5. Veri Güvenliği","privacy.s5.body":"Verilerin, her kullanıcının yalnızca kendi verilerini görmesini sağlayan Güvenlik Kuralları ile korunur ve uygulaman ile sunucu arasındaki tüm iletişim şifrelenir (HTTPS).",
             "privacy.s6.title":"6. Haklarınız","privacy.s6.body":"\"Destek ve İletişim\" sayfasından bize ulaşarak istediğin zaman kayıtlı verilerini görüntülemeyi, düzenlemeyi veya tamamen silinmesini talep edebilirsin.",
             "privacy.s7.title":"7. Çocuklar","privacy.s7.body":"Hizmet 13 yaşın altındaki kişilere yönelik değildir ve bu yaş grubundan bilerek veri toplamıyoruz.",
-            "privacy.s8.title":"8. Bu Politikadaki Değişiklikler","privacy.s8.body":"Bu politikayı zaman zaman güncelleyebiliriz ve önemli bir değişiklik yaptığımızda yukarıdaki \"Son güncelleme\" tarihini değiştireceğiz."
+            "privacy.s8.title":"8. Bu Politikadaki Değişiklikler","privacy.s8.body":"Bu politikayı zaman zaman güncelleyebiliriz ve önemli bir değişiklik yaptığımızda yukarıdaki \"Son güncelleme\" tarihini değiştireceğiz.",
+            "assistant.botName":"Yusr Pro Bot","assistant.subtitle":"Yazarak veya sesle konuş, görmesi gereken bir şey varsa fotoğraf gönder","assistant.inputPh":"Sorunu buraya yaz...","assistant.attachImageTitle":"Fotoğraf ekle","assistant.micTitle":"Sesli kayıt","assistant.voiceToggleTitle":"Yanıt seslerini aç/kapat","assistant.newChatTitle":"Yeni bir sohbet başlat","assistant.removeImageTitle":"Görseli kaldır","assistant.imageAlt":"Eklenen görsel","assistant.providerHint":"Birden fazla yapay zeka sağlayıcısı tarafından destekleniyor — biri meşgulse, siz fark etmeden otomatik olarak diğerine geçer.","assistant.emptyHint":"{bot} ile yazarak ya da sesle konuş, ya da görmesi ve yorum yapması için bir görsel gönder.","assistant.defaultImageQuestion":"Bu görseli tarif et ve içinde ne olduğunu ayrıntılı anlat."
         },
         de: {
             "nav.searchPh":"Werkzeuge suchen...","nav.searchEmpty":"Keine passenden Werkzeuge","nav.section.interviews":"Vorstellungsgespräche & Bewerbung","nav.interview":"Sprachbasiertes Übungsinterview","nav.faq":"FAQ + Musterantworten","nav.career":"Karriereentwicklungsplan",
@@ -672,7 +677,8 @@
             "privacy.s5.title":"5. Datensicherheit","privacy.s5.body":"Deine Daten sind durch Sicherheitsregeln geschützt, die sicherstellen, dass jeder Nutzer nur seine eigenen Daten sehen kann, und die gesamte Kommunikation zwischen deiner App und dem Server ist verschlüsselt (HTTPS).",
             "privacy.s6.title":"6. Deine Rechte","privacy.s6.body":"Du kannst jederzeit anfordern, deine gespeicherten Daten einzusehen, zu bearbeiten oder ihre vollständige Löschung zu beantragen, indem du uns über die Seite \"Support & Kontakt\" kontaktierst.",
             "privacy.s7.title":"7. Kinder","privacy.s7.body":"Der Dienst richtet sich nicht an Personen unter 13 Jahren, und wir erheben wissentlich keine Daten dieser Altersgruppe.",
-            "privacy.s8.title":"8. Änderungen dieser Richtlinie","privacy.s8.body":"Wir können diese Richtlinie von Zeit zu Zeit aktualisieren und werden das Datum \"Zuletzt aktualisiert\" oben ändern, sobald wir eine wesentliche Änderung vornehmen."
+            "privacy.s8.title":"8. Änderungen dieser Richtlinie","privacy.s8.body":"Wir können diese Richtlinie von Zeit zu Zeit aktualisieren und werden das Datum \"Zuletzt aktualisiert\" oben ändern, sobald wir eine wesentliche Änderung vornehmen.",
+            "assistant.botName":"Yusr Pro Bot","assistant.subtitle":"Schreib ihm oder sprich mit ihm, und schick ein Foto, wenn er etwas sehen soll","assistant.inputPh":"Schreib deine Frage hier...","assistant.attachImageTitle":"Foto anhängen","assistant.micTitle":"Sprachaufnahme","assistant.voiceToggleTitle":"Antwortstimme ein-/ausschalten","assistant.newChatTitle":"Neue Unterhaltung starten","assistant.removeImageTitle":"Bild entfernen","assistant.imageAlt":"Angehängtes Bild","assistant.providerHint":"Unterstützt von mehreren KI-Anbietern — wenn einer ausgelastet ist, wechselt er automatisch zum nächsten, ohne dass du es merkst.","assistant.emptyHint":"Frag {bot} per Text oder Sprache, oder schick ihm ein Bild, das er sich ansehen und dazu antworten soll.","assistant.defaultImageQuestion":"Beschreibe dieses Bild und erkläre mir ausführlich, was darauf zu sehen ist."
         },
         hi: {
             "nav.searchPh":"टूल खोजें...","nav.searchEmpty":"कोई मेल खाता टूल नहीं","nav.section.interviews":"इंटरव्यू और नौकरी","nav.interview":"वॉइस मॉक इंटरव्यू","nav.faq":"सामान्य प्रश्न + नमूना उत्तर","nav.career":"करियर विकास योजना",
@@ -750,7 +756,8 @@
             "privacy.s5.title":"5. डेटा सुरक्षा","privacy.s5.body":"आपका डेटा सुरक्षा नियमों द्वारा सुरक्षित है जो सुनिश्चित करते हैं कि हर उपयोगकर्ता केवल अपना डेटा देख सके, और आपके ऐप और सर्वर के बीच सारा संचार एन्क्रिप्टेड (HTTPS) होता है।",
             "privacy.s6.title":"6. आपके अधिकार","privacy.s6.body":"आप किसी भी समय अपना सेव किया गया डेटा देखने, संपादित करने, या इसे पूरी तरह डिलीट करने का अनुरोध कर सकते हैं, \"सहायता और संपर्क\" पेज के ज़रिए हमसे संपर्क करके।",
             "privacy.s7.title":"7. बच्चे","privacy.s7.body":"यह सेवा 13 वर्ष से कम उम्र के किसी के लिए नहीं है, और हम जानबूझकर इस आयु वर्ग से डेटा इकट्ठा नहीं करते।",
-            "privacy.s8.title":"8. इस नीति में बदलाव","privacy.s8.body":"हम समय-समय पर इस नीति को अपडेट कर सकते हैं, और जब भी कोई महत्वपूर्ण बदलाव करेंगे तो ऊपर दी गई \"आखिरी अपडेट\" तारीख़ बदल देंगे।"
+            "privacy.s8.title":"8. इस नीति में बदलाव","privacy.s8.body":"हम समय-समय पर इस नीति को अपडेट कर सकते हैं, और जब भी कोई महत्वपूर्ण बदलाव करेंगे तो ऊपर दी गई \"आखिरी अपडेट\" तारीख़ बदल देंगे।",
+            "assistant.botName":"यूसर प्रो बॉट","assistant.subtitle":"उससे लिखकर या आवाज़ में बात करें, और अगर उसे कुछ देखना हो तो एक फ़ोटो भेजें","assistant.inputPh":"अपना सवाल यहाँ लिखें...","assistant.attachImageTitle":"फ़ोटो जोड़ें","assistant.micTitle":"आवाज़ रिकॉर्डिंग","assistant.voiceToggleTitle":"जवाब की आवाज़ चालू/बंद करें","assistant.newChatTitle":"नई बातचीत शुरू करें","assistant.removeImageTitle":"तस्वीर हटाएँ","assistant.imageAlt":"जोड़ी गई तस्वीर","assistant.providerHint":"कई AI प्रदाताओं द्वारा संचालित — अगर एक व्यस्त हो, तो बिना एहसास दिलाए अपने आप दूसरे पर बदल जाता है।","assistant.emptyHint":"{bot} से लिखकर या आवाज़ में सवाल पूछें, या उसे देखने और जवाब देने के लिए एक तस्वीर भेजें।","assistant.defaultImageQuestion":"इस तस्वीर का विस्तार से वर्णन करें और बताएं इसमें क्या है।"
         },
         ur: {
             "nav.searchPh":"ٹولز تلاش کریں...","nav.searchEmpty":"کوئی مماثل ٹول نہیں","nav.section.interviews":"انٹرویوز اور ملازمت","nav.interview":"صوتی مشقی انٹرویو","nav.faq":"عمومی سوالات + نمونہ جوابات","nav.career":"کیریئر ترقی کا منصوبہ",
@@ -828,7 +835,8 @@
             "privacy.s5.title":"5. ڈیٹا کی سیکیورٹی","privacy.s5.body":"آپ کا ڈیٹا سیکیورٹی قوانین کے ذریعے محفوظ ہے جو یقینی بناتے ہیں کہ ہر صارف صرف اپنا ڈیٹا دیکھ سکے، اور آپ کی ایپ اور سرور کے درمیان تمام رابطہ خفیہ کاری شدہ (HTTPS) ہے۔",
             "privacy.s6.title":"6. آپ کے حقوق","privacy.s6.body":"آپ کسی بھی وقت اپنا محفوظ شدہ ڈیٹا دیکھنے، اسے تبدیل کرنے، یا اسے مکمل طور پر حذف کرنے کی درخواست کر سکتے ہیں، \"معاونت اور رابطہ\" کے صفحے کے ذریعے ہم سے رابطہ کر کے۔",
             "privacy.s7.title":"7. بچے","privacy.s7.body":"یہ سروس 13 سال سے کم عمر کسی کے لیے نہیں ہے، اور ہم دانستہ طور پر اس عمر گروپ سے ڈیٹا جمع نہیں کرتے۔",
-            "privacy.s8.title":"8. اس پالیسی میں تبدیلیاں","privacy.s8.body":"ہم وقتاً فوقتاً اس پالیسی کو اپ ڈیٹ کر سکتے ہیں، اور جب بھی کوئی اہم تبدیلی کریں گے تو اوپر \"آخری اپ ڈیٹ\" کی تاریخ بدل دیں گے۔"
+            "privacy.s8.title":"8. اس پالیسی میں تبدیلیاں","privacy.s8.body":"ہم وقتاً فوقتاً اس پالیسی کو اپ ڈیٹ کر سکتے ہیں، اور جب بھی کوئی اہم تبدیلی کریں گے تو اوپر \"آخری اپ ڈیٹ\" کی تاریخ بدل دیں گے۔",
+            "assistant.botName":"یسر پرو بوٹ","assistant.subtitle":"لکھ کر یا آواز میں اس سے بات کریں، اور اگر اسے کچھ دیکھنا ہو تو تصویر بھیجیں","assistant.inputPh":"اپنا سوال یہاں لکھیں...","assistant.attachImageTitle":"تصویر منسلک کریں","assistant.micTitle":"آواز کی ریکارڈنگ","assistant.voiceToggleTitle":"جوابات کی آواز آن/آف کریں","assistant.newChatTitle":"نئی گفتگو شروع کریں","assistant.removeImageTitle":"تصویر ہٹائیں","assistant.imageAlt":"منسلک تصویر","assistant.providerHint":"متعدد AI فراہم کنندگان سے چلتا ہے — اگر ایک مصروف ہو تو خود بخود دوسرے پر چلا جاتا ہے، آپ کو پتہ بھی نہیں چلتا۔","assistant.emptyHint":"{bot} سے لکھ کر یا آواز میں سوال پوچھیں، یا اسے دیکھنے اور جواب دینے کے لیے کوئی تصویر بھیجیں۔","assistant.defaultImageQuestion":"اس تصویر کی تفصیل سے وضاحت کریں کہ اس میں کیا ہے۔"
         },
         fa: {
             "nav.searchPh":"جستجوی ابزارها...","nav.searchEmpty":"ابزاری یافت نشد","nav.section.interviews":"مصاحبه‌ها و استخدام","nav.interview":"مصاحبه آزمایشی صوتی","nav.faq":"سوالات متداول + پاسخ‌های نمونه","nav.career":"برنامه رشد شغلی",
@@ -906,7 +914,8 @@
             "privacy.s5.title":"۵. امنیت داده‌ها","privacy.s5.body":"داده‌های شما توسط قوانین امنیتی محافظت می‌شود که تضمین می‌کند هر کاربر فقط داده‌های خودش را می‌بیند، و تمام ارتباط بین برنامه شما و سرور رمزگذاری‌شده (HTTPS) است.",
             "privacy.s6.title":"۶. حقوق شما","privacy.s6.body":"می‌توانید در هر زمان با تماس از طریق صفحه \"پشتیبانی و ارتباط\"، درخواست مشاهده داده‌های ذخیره‌شده خود، ویرایش آن‌ها، یا حذف کامل آن‌ها را بدهید.",
             "privacy.s7.title":"۷. کودکان","privacy.s7.body":"این خدمت برای افراد زیر ۱۳ سال طراحی نشده و ما عمداً از این گروه سنی داده جمع‌آوری نمی‌کنیم.",
-            "privacy.s8.title":"۸. تغییرات در این سیاست","privacy.s8.body":"ممکن است این سیاست را هر از گاهی به‌روزرسانی کنیم و هرگاه تغییر قابل‌توجهی ایجاد کنیم، تاریخ \"آخرین به‌روزرسانی\" در بالا را تغییر خواهیم داد."
+            "privacy.s8.title":"۸. تغییرات در این سیاست","privacy.s8.body":"ممکن است این سیاست را هر از گاهی به‌روزرسانی کنیم و هرگاه تغییر قابل‌توجهی ایجاد کنیم، تاریخ \"آخرین به‌روزرسانی\" در بالا را تغییر خواهیم داد.",
+            "assistant.botName":"یسر پرو بات","assistant.subtitle":"با نوشتن یا صدا باهاش صحبت کن، و اگه لازم بود چیزی رو ببینه یه عکس براش بفرست","assistant.inputPh":"سوالت رو اینجا بنویس...","assistant.attachImageTitle":"پیوست کردن عکس","assistant.micTitle":"ضبط صدا","assistant.voiceToggleTitle":"روشن/خاموش کردن صدای پاسخ‌ها","assistant.newChatTitle":"شروع گفتگوی جدید","assistant.removeImageTitle":"حذف عکس","assistant.imageAlt":"عکس پیوست‌شده","assistant.providerHint":"توسط چند ارائه‌دهنده هوش مصنوعی پشتیبانی می‌شود — اگه یکی مشغول باشه، بدون اینکه متوجه بشی به‌طور خودکار به دیگری تغییر می‌کند.","assistant.emptyHint":"از {bot} با نوشتن یا صدا سوال بپرس، یا عکسی براش بفرست تا ببینه و دربارش جواب بده.","assistant.defaultImageQuestion":"این عکس رو توصیف کن و با جزئیات توضیح بده توش چی هست."
         }
     };
     function applyI18n() {
@@ -923,6 +932,18 @@
             const key = el.getAttribute('data-i18n-ph');
             if (dict[key]) el.placeholder = dict[key];
         });
+        // data-i18n-title: بيترجم خاصية title (تلميحات الزراير اللي بتظهر عند
+        // الوقوف بالماوس)، و data-i18n-alt: بيترجم alt (نص بديل للصور لقارئات
+        // الشاشة) - الاتنين كانوا ناقصين قبل كده فكل tooltips الأزرار كانت
+        // فاضلة عربي دايماً مهما غيّرت اللغة.
+        document.querySelectorAll('[data-i18n-title]').forEach(el => {
+            const key = el.getAttribute('data-i18n-title');
+            if (dict[key]) el.title = dict[key];
+        });
+        document.querySelectorAll('[data-i18n-alt]').forEach(el => {
+            const key = el.getAttribute('data-i18n-alt');
+            if (dict[key]) el.alt = dict[key];
+        });
         const activeNav = document.querySelector('.nav-item.active');
         if (activeNav) {
             document.getElementById('view-title').innerText = (currentUiLang === 'en' ? viewTitlesEn : viewTitles)[activeNav.dataset.view] || '';
@@ -931,6 +952,10 @@
         // بتاخد data-i18n) - فلازم نرجّع نطبّق حالة "مشترك حاليًا" بعده على طول
         // عشان مايتمسحش شكل الباقة الحالية لما المستخدم يغيّر لغة الواجهة.
         if (typeof updateSubscriptionButtonsState === 'function') updateSubscriptionButtonsState();
+        // نفس الفكرة: شاشة "يسر Pro Bot" بتتبني بالـ JS مش بـ data-i18n عادي،
+        // فلازم نعيد رسمها يدويًا كل مرة اللغة تتغيّر عشان نص الترحيب الفاضي
+        // ("اسأل يسر Pro Bot...") يتحدّث فورًا هو كمان.
+        if (typeof renderAssistantMessages === 'function') renderAssistantMessages();
     }
     function setAppLanguage(lang) {
         currentAppLang = lang;
@@ -3151,7 +3176,7 @@
         if (!saved) return;
         interviewRole = saved.interviewRole; selectedNationality = saved.selectedNationality;
         chatHistory = saved.chatHistory; speakingStats = saved.speakingStats || [];
-        currentInterviewerName = saved.currentInterviewerName || (voiceGenderPref === 'female' ? 'ريناد' : 'أحمد');
+        currentInterviewerName = saved.currentInterviewerName || (voiceGenderPref === 'female' ? 'مريم' : 'أحمد');
         document.getElementById('interview-resume-banner').classList.add('hidden');
         document.getElementById('interview-setup-box').classList.add('hidden');
         document.getElementById('chat-interface').classList.remove('hidden');
@@ -3173,7 +3198,7 @@
         selectedNationality = document.getElementById('interviewer-nationality').value;
         if (!interviewRole) return showToast("يرجى كتابة اسم الوظيفة أولاً.", 'error');
 
-        currentInterviewerName = voiceGenderPref === 'female' ? 'ريناد' : 'أحمد';
+        currentInterviewerName = voiceGenderPref === 'female' ? 'مريم' : 'أحمد';
         document.getElementById('interview-setup-box').classList.add('hidden');
         document.getElementById('interview-resume-banner').classList.add('hidden');
         document.getElementById('chat-interface').classList.remove('hidden');
@@ -3327,11 +3352,37 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
     // الصور: فهم الصور محتاج مزوّد فيه دعم رؤية فعليًا (OpenAI أو Gemini) -
     // لو الأدمن ضبط مفتاح واحد منهم على الأقل في الووركر، ميزة الصور هتشتغل
     // تلقائيًا من غير أي تعديل تاني هنا.
-    const ASSISTANT_BOT_NAME = "يسر Pro Bot";
-    const ASSISTANT_SYSTEM_PROMPT = `اسمك "${ASSISTANT_BOT_NAME}"، المساعد الذكي الرسمي لمنصة يُسر Pro لتدريب المتقدمين على مقابلات الشغل وتطوير مسارهم المهني. جاوب بالعربية بأسلوب راقي وودود ومباشر ومختصر (فقرات قصيرة، بدون رموز markdown)، وركّز على مقابلات الشغل، السيرة الذاتية، التفاوض على الراتب، وتطوير المسار المهني - وتقدر كمان تجاوب بعمومية على أي سؤال تاني يسأله المستخدم بذكاء وبساطة. لو المستخدم بعتلك صورة، افهمها واوصفها أو جاوب على سؤاله عنها بالتفصيل بنفس الأسلوب.
+    // اسم البوت بيتغيّر حسب لغة الواجهة المختارة (data-i18n key: assistant.botName)
+    // عشان مايفضلش "يسر Pro Bot" مكتوب عربي دايماً حتى لو المستخدم مغيّر اللغة.
+    function getAssistantBotName() {
+        const dict = I18N[currentUiLang] || I18N.ar;
+        return dict['assistant.botName'] || 'يسر Pro Bot';
+    }
+    // اسم اللغة بالإنجليزي (مش لازم يتترجم - ده تعليمة داخلية للموديل بس، مش
+    // نص هيشوفه المستخدم) عشان نقول للموديل يرد بأي لغة بالظبط.
+    const ASSISTANT_MODEL_LANG_NAME = {
+        ar: 'Arabic (Egyptian colloquial dialect, friendly and natural)',
+        en: 'English',
+        fr: 'French',
+        es: 'Spanish',
+        tr: 'Turkish',
+        de: 'German',
+        hi: 'Hindi',
+        ur: 'Urdu',
+        fa: 'Persian (Farsi)'
+    };
+    // بنبني الـ system prompt ديناميكيًا كل مرة (مش ثابت) عشان يعكس لغة الواجهة
+    // الحالية أول ما المستخدم يغيّرها - التعليمات نفسها مكتوبة بالإنجليزي (النموذج
+    // بيفهمها كويس جداً بأي لغة) لكن الناتج اللي المستخدم هيشوفه بيبقى باللغة
+    // المطلوبة بالظبط.
+    function getAssistantSystemPrompt() {
+        const botName = getAssistantBotName();
+        const langName = ASSISTANT_MODEL_LANG_NAME[currentUiLang] || ASSISTANT_MODEL_LANG_NAME.ar;
+        return `Your name is "${botName}", the official AI assistant of the Yusr Pro platform, which helps job seekers prepare for interviews and grow their careers. Always reply in ${langName} — every single word of your reply must be in ${langName}, regardless of what language the system instructions here are written in. Use a polished, warm, direct, and concise style (short paragraphs, no markdown symbols). Focus on job interviews, CVs, salary negotiation, and career growth — but you can also answer any other question the user asks, generally and simply. If the user sends an image, understand it and describe it or answer their question about it in detail, in ${langName}, in the same style.
 
-قاعدة مهمة وثابتة: لو حد سألك مين طوّرك، مين عملك، إنت شغال بأي تقنية أو موديل، أو أي سؤال عن هويتك التقنية - جاوب بس إنك من تطوير وتصميم "شركة يسر Pro"، من غير ما تذكر اسم أي شركة ذكاء اصطناعي تانية أو أي موديل أو مزوّد تقني على الإطلاق، حتى لو سُئلت بإلحاح.`;
-    let assistantChatHistory = [{ role: "system", content: ASSISTANT_SYSTEM_PROMPT }];
+Fixed important rule: if anyone asks who built you, who made you, what technology or model you run on, or any question about your technical identity — answer only that you were built and designed by "Yusr Pro company", without mentioning the name of any other AI company, model, or technical provider at all, even if asked insistently.`;
+    }
+    let assistantChatHistory = [{ role: "system", content: getAssistantSystemPrompt() }];
     let assistantChatBusy = false;
     let assistantPendingImage = null; // data URL للصورة المرفقة المنتظرة الإرسال
 
@@ -3344,8 +3395,9 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
         if (Array.isArray(content)) {
             const imgPart = content.find(p => p && p.type === 'image_url');
             const textPart = content.find(p => p && p.type === 'text');
+            const imgAlt = (I18N[currentUiLang] || I18N.ar)['assistant.imageAlt'] || 'صورة مرفقة';
             const imgHtml = imgPart && imgPart.image_url && imgPart.image_url.url
-                ? `<img class="assistant-msg-img" src="${imgPart.image_url.url}" alt="صورة مرفقة">` : '';
+                ? `<img class="assistant-msg-img" src="${imgPart.image_url.url}" alt="${escapeHtmlForChat(imgAlt)}">` : '';
             return imgHtml + escapeHtmlForChat(textPart ? textPart.text : '');
         }
         return escapeHtmlForChat(content);
@@ -3355,9 +3407,11 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
         if (!log) return;
         const visible = assistantChatHistory.filter(m => m.role !== 'system');
         if (visible.length === 0) {
+            const dict = I18N[currentUiLang] || I18N.ar;
+            const emptyHint = (dict['assistant.emptyHint'] || 'اسأل {bot} بالكتابة أو الصوت، أو ابعتله صورة يشوفها ويجاوبك عليها.').replace('{bot}', getAssistantBotName());
             log.innerHTML = `<div class="text-center text-[11px] text-slate-500 py-6">
                 <i class="fa-solid fa-wand-magic-sparkles text-lg mb-1.5 block" style="color:var(--accent)"></i>
-                اسأل ${ASSISTANT_BOT_NAME} بالكتابة أو الصوت، أو ابعتله صورة يشوفها ويجاوبك عليها.
+                ${escapeHtmlForChat(emptyHint)}
             </div>`;
             return;
         }
@@ -3522,8 +3576,9 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
         input.value = '';
         // لو في صورة مرفقة، بنبعتها كجزء من محتوى الرسالة (فورمات متعدد الوسائط)
         // مع نص السؤال - لو المستخدم مكتبش سؤال، بنحط سؤال افتراضي "وصف الصورة".
+        const defaultImageQuestion = (I18N[currentUiLang] || I18N.ar)['assistant.defaultImageQuestion'] || 'وصف الصورة دي واشرحلي اللي فيها بالتفصيل.';
         const content = assistantPendingImage
-            ? [{ type: 'text', text: text || 'وصف الصورة دي واشرحلي اللي فيها بالتفصيل.' }, { type: 'image_url', image_url: { url: assistantPendingImage } }]
+            ? [{ type: 'text', text: text || defaultImageQuestion }, { type: 'image_url', image_url: { url: assistantPendingImage } }]
             : text;
         assistantChatHistory.push({ role: 'user', content });
         removeAssistantImage();
@@ -3536,6 +3591,10 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
         try {
             // بنبعت آخر 16 رسالة بس (+ الـ system) عشان نفضل جوه حدود السيرفر
             // ونخلي الرد سريع، من غير ما نحتاج للتاريخ الكامل من أول المحادثة.
+            // وبنجدّد نص الـ system prompt بلغة الواجهة الحالية كل مرة (مش بس
+            // أول مرة) عشان لو المستخدم غيّر اللغة وسط المحادثة، الرد الجاي
+            // يطلع باللغة الجديدة فورًا من غير ما يحتاج يبدأ محادثة جديدة.
+            assistantChatHistory[0] = { role: 'system', content: getAssistantSystemPrompt() };
             const trimmed = [assistantChatHistory[0], ...assistantChatHistory.slice(1).slice(-16)];
             const reply = await callGroqConversation(trimmed);
             assistantChatHistory.push({ role: 'assistant', content: reply });
@@ -3553,7 +3612,7 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
         }
     }
     function clearAssistantChat() {
-        assistantChatHistory = [{ role: 'system', content: ASSISTANT_SYSTEM_PROMPT }];
+        assistantChatHistory = [{ role: 'system', content: getAssistantSystemPrompt() }];
         removeAssistantImage();
         renderAssistantMessages();
     }
