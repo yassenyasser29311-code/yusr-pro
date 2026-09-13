@@ -603,3 +603,180 @@
     background: rgba(0,0,0,.65); color: #fff; font-size: 10px; display: flex; align-items: center; justify-content: center;
 }
 .assistant-msg img.assistant-msg-img { max-width: 220px; border-radius: .7rem; display: block; margin-bottom: .4rem; }
+
+/* ======================================================================
+   ============ تحديث شامل: شكل أفخم وأجمد لكل الفورمات + البوت ============
+   ======================================================================
+   الهدف: كل خدمة (مقابلة صوتية، CV، بورتفوليو، تدقيق، تلخيص، تفريغ... إلخ)
+   بتستخدم نفس الكلاسات المشتركة (.panel / .panel-2 / .input-field / .btn-primary
+   / .chip) فبمجرد ما نرفّع شكل الكلاسات دي هنا، كل فورم في الموقع هياخد
+   نفس اللمسة الفخمة تلقائيًا من غير ما نلمس أي HTML/JS تاني ولا نكسر أي
+   وظيفة شغالة. القواعد هنا آخر حاجة في الملف عشان تكسب في الأولوية. */
+
+/* ---- كارت الفورم الرئيسي لكل خدمة: زجاجي، متوهج، بحدود متدرجة ناعمة ---- */
+.panel {
+    position: relative;
+    background:
+        linear-gradient(180deg, rgba(167,139,250,.06), rgba(34,211,201,.03) 40%, transparent 75%),
+        var(--panel) !important;
+    border: 1px solid rgba(167,139,250,.16) !important;
+    border-radius: 1.25rem !important;
+    box-shadow:
+        0 1px 0 0 rgba(255,255,255,.04) inset,
+        0 18px 45px -22px rgba(0,0,0,.55),
+        0 0 0 1px rgba(0,0,0,.15);
+    backdrop-filter: blur(6px);
+    overflow: hidden;
+    transition: border-color .25s ease, box-shadow .25s ease, transform .25s ease;
+}
+/* شعاع رفيع متوهج أعلى كل كارت فورم، بلون العلامة، بيدي إحساس "بريميوم" */
+.panel::before {
+    content: "";
+    position: absolute; inset-inline: 0; top: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--grad1), var(--grad3), var(--grad2), transparent);
+    opacity: .75; pointer-events: none;
+}
+.panel:hover {
+    border-color: rgba(167,139,250,.32) !important;
+    box-shadow:
+        0 1px 0 0 rgba(255,255,255,.05) inset,
+        0 22px 55px -20px rgba(139,92,246,.28),
+        0 0 0 1px rgba(0,0,0,.15);
+}
+html.light-mode .panel {
+    background: linear-gradient(180deg, rgba(47,111,237,.05), rgba(255,255,255,0) 45%), #ffffff !important;
+    border-color: rgba(47,111,237,.14) !important;
+    box-shadow: 0 18px 40px -24px rgba(15,23,42,.18);
+}
+html.light-mode .panel:hover { border-color: rgba(47,111,237,.28) !important; }
+
+/* ---- كروت فرعية جوه الفورم (كل حقل/قسم صغير) ---- */
+.panel-2 {
+    border-radius: .95rem !important;
+    border: 1px solid var(--border) !important;
+    background: linear-gradient(180deg, rgba(255,255,255,.025), transparent) , var(--panel-2) !important;
+    transition: border-color .2s ease, background .2s ease;
+}
+.panel-2:hover { border-color: rgba(167,139,250,.28) !important; }
+
+/* ---- حقول الإدخال: أنعم، أوضح فوكس، إحساس فخم ---- */
+.input-field, select.input-field, textarea.input-field {
+    border-radius: .9rem !important;
+    padding: .7rem 1rem !important;
+    font-size: .88rem !important;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.25);
+    transition: all .2s cubic-bezier(.22,.9,.32,1);
+}
+.input-field:focus {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 4px rgba(167,139,250,.18), inset 0 1px 2px rgba(0,0,0,.15) !important;
+    transform: translateY(-1px);
+}
+.input-field::placeholder { color: var(--muted); opacity: .7; }
+html.light-mode .input-field:focus { box-shadow: 0 0 0 4px rgba(47,111,237,.14) !important; }
+
+/* عناوين الحقول (label) داخل الفورمات - أوضح ومسافة أهدى */
+.panel label, .panel-2 label { letter-spacing: .01em; }
+
+/* ---- الأزرار الأساسية: تدرج أغنى + لمعة تمر عند الهوفر ---- */
+.btn-primary, .btn-accent {
+    position: relative; overflow: hidden;
+    border-radius: .9rem !important;
+    font-weight: 800 !important;
+    letter-spacing: .01em;
+}
+.btn-primary { background: linear-gradient(135deg, var(--grad1), var(--grad3) 65%, var(--grad2)) !important; background-size: 200% 200% !important; }
+.btn-primary:hover { background-position: 100% 50% !important; box-shadow: 0 10px 30px -8px rgba(139,92,246,.55) !important; }
+.btn-primary::after, .btn-accent::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,.35) 50%, transparent 70%);
+    transform: translateX(-120%);
+    transition: transform .55s ease;
+}
+.btn-primary:hover::after, .btn-accent:hover::after { transform: translateX(120%); }
+.btn-accent { box-shadow: 0 6px 20px -6px rgba(0,0,0,.35); }
+.btn-accent:hover { transform: translateY(-1px); }
+
+/* الشيبس (الاختيارات السريعة داخل الفورمات) - إحساس أفخم عند الاختيار */
+.chip { background: var(--panel-2); font-weight: 600; }
+.chip:hover { border-color: var(--accent); color: var(--text); background: rgba(167,139,250,.1); }
+
+/* ======================================================================
+   ============ يُسْر Pro Bot — شكل تحفة، رايق، وفخم جدًا ============
+   ====================================================================== */
+.assistant-chat-wrap {
+    border-radius: 1.4rem !important;
+    border: 1px solid rgba(167,139,250,.22) !important;
+    background:
+        radial-gradient(120% 60% at 15% -10%, rgba(139,92,246,.14), transparent 55%),
+        radial-gradient(90% 50% at 100% 0%, rgba(34,211,201,.10), transparent 55%),
+        var(--panel) !important;
+    box-shadow: 0 25px 70px -30px rgba(139,92,246,.45), 0 0 0 1px rgba(0,0,0,.2);
+}
+.assistant-chat-header {
+    background: linear-gradient(90deg, rgba(139,92,246,.22), rgba(34,211,201,.14), rgba(236,72,153,.10)) !important;
+    background-size: 200% 100%;
+    animation: assistantHeaderShift 8s ease-in-out infinite;
+    border-bottom: 1px solid rgba(167,139,250,.18) !important;
+}
+@keyframes assistantHeaderShift { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+.assistant-chat-avatar {
+    background: linear-gradient(135deg, var(--grad1), var(--grad3), var(--grad2)) !important;
+    background-size: 200% 200%;
+    animation: assistantAvatarGlow 5s ease-in-out infinite;
+    box-shadow: 0 0 0 4px rgba(167,139,250,.18), 0 0 18px rgba(139,92,246,.5) !important;
+}
+@keyframes assistantAvatarGlow {
+    0%,100% { background-position: 0% 50%; box-shadow: 0 0 0 4px rgba(167,139,250,.18), 0 0 18px rgba(139,92,246,.5); }
+    50% { background-position: 100% 50%; box-shadow: 0 0 0 4px rgba(34,211,201,.18), 0 0 22px rgba(34,211,201,.55); }
+}
+.assistant-msg {
+    box-shadow: 0 6px 18px -10px rgba(0,0,0,.45);
+    border-radius: 1.1rem;
+}
+.assistant-msg.from-user {
+    background: linear-gradient(135deg, var(--accent), var(--accent-strong)) !important;
+    border-bottom-right-radius: .35rem;
+    box-shadow: 0 8px 22px -8px rgba(167,139,250,.55);
+}
+.assistant-msg.from-bot {
+    background: linear-gradient(180deg, rgba(255,255,255,.03), transparent), var(--panel-2) !important;
+    border: 1px solid rgba(167,139,250,.14) !important;
+}
+.assistant-chat-inputbar {
+    background: linear-gradient(180deg, transparent, rgba(139,92,246,.04)) !important;
+    border-top: 1px solid rgba(167,139,250,.16) !important;
+}
+.assistant-chat-inputbar textarea {
+    border-radius: 1rem !important;
+    background: #14141c !important;
+}
+.assistant-chat-inputbar textarea:focus {
+    box-shadow: 0 0 0 4px rgba(167,139,250,.16);
+}
+.assistant-chat-send {
+    background: linear-gradient(135deg, var(--grad1), var(--grad3)) !important;
+    background-size: 200% 200%;
+    animation: assistantAvatarGlow 5s ease-in-out infinite;
+    border-radius: 1rem !important;
+}
+.assistant-chat-send:hover { transform: scale(1.06) translateY(-1px); }
+.assistant-typing span { background: linear-gradient(135deg, var(--grad1), var(--grad3)) !important; }
+
+/* زرار الشات العائم (support-chat-fab) - نبضة فخمة تلفت الانتباه بهدوء */
+#support-chat-fab {
+    background: linear-gradient(135deg, var(--grad1), var(--grad3)) !important;
+    box-shadow: 0 10px 30px -10px rgba(139,92,246,.6) !important;
+    animation: fabBreath 3.2s ease-in-out infinite;
+}
+@keyframes fabBreath {
+    0%,100% { box-shadow: 0 10px 30px -10px rgba(139,92,246,.6); }
+    50% { box-shadow: 0 10px 34px -8px rgba(34,211,201,.55); }
+}
+
+html.light-mode .assistant-chat-wrap { box-shadow: 0 25px 60px -30px rgba(47,111,237,.35); }
+html.light-mode .assistant-msg.from-bot { border-color: rgba(47,111,237,.15) !important; }
+
+@media (prefers-reduced-motion: reduce) {
+    .assistant-chat-header, .assistant-chat-avatar, .assistant-chat-send, #support-chat-fab { animation: none !important; }
+}
