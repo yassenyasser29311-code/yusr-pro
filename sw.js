@@ -69,7 +69,10 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(req.url);
 
   if (url.hostname.endsWith("workers.dev") || url.pathname.startsWith("/groqChat") ||
-      url.pathname.startsWith("/groqTranscribe") || url.pathname.startsWith("/edgeTtsSpeak")) {
+      url.pathname.startsWith("/groqTranscribe") || url.pathname.startsWith("/edgeTtsSpeak") ||
+      url.hostname === "www.gstatic.com" || url.hostname === "cdnjs.cloudflare.com" ||
+      url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com" ||
+      url.hostname === "cdn.tailwindcss.com") {
     return;
   }
 
@@ -80,7 +83,8 @@ self.addEventListener("fetch", (event) => {
       fetch(req, { cache: "no-store" })
         .then((networkRes) => {
           if (networkRes && networkRes.ok) {
-            caches.open(CACHE_NAME).then((cache) => cache.put(req, networkRes.clone()));
+            const copy = networkRes.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(() => {});
           }
           return networkRes;
         })
