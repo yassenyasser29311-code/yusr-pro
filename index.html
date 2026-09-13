@@ -771,15 +771,15 @@
                         <i class="fa-solid fa-download"></i>
                     </div>
                     <div class="flex-1 min-w-0 sidebar-label">
-                        <p class="text-[11px] font-extrabold">عندنا تطبيق أندرويد كمان 📱</p>
-                        <p class="text-[9.5px] opacity-80">تحميل مباشر (APK)، أسرع وبيتحدث لوحده</p>
+                        <p class="text-[11px] font-extrabold">جرّب تطبيقنا لأندرويد 📱</p>
+                        <p class="text-[9.5px] opacity-80">أسرع وأسهل من المتصفح، وتحميله مباشر من هنا</p>
                     </div>
                     <button type="button" onclick="dismissApkPromo(event)" title="إخفاء" aria-label="إخفاء اقتراح التطبيق" class="apk-promo-close shrink-0 sidebar-label p-1">
                         <i class="fa-solid fa-xmark text-[11px]"></i>
                     </button>
                 </div>
                 <a href="/yusr-pro-latest.apk" download class="apk-promo-btn w-full mt-2 text-[11px] font-extrabold py-2 rounded-lg sidebar-label flex items-center justify-center gap-1.5">
-                    <i class="fa-solid fa-download"></i> نزّل التطبيق دلوقتي
+                    <i class="fa-solid fa-download"></i> نزّل تطبيق يُسْر Pro دلوقتي
                 </a>
             </div>
             <div id="account-chip" class="panel-2 rounded-xl px-2.5 py-2 flex items-center gap-2 cursor-pointer" onclick="switchViewByName('profile')">
@@ -1115,6 +1115,7 @@
                             <p class="text-xs sm:text-sm font-bold text-slate-100" data-i18n="assistant.botName">يسر Pro Bot</p>
                             <p class="text-[10.5px] text-slate-400" data-i18n="assistant.subtitle">كلّمه بالكتابة أو الصوت، وابعتله صورة لو محتاج يشوفها</p>
                         </div>
+                        <button id="assistant-gender-toggle-btn" onclick="setVoiceGender(voiceGenderPref === 'female' ? 'male' : 'female')" class="chip hover:bg-[var(--panel-2)]" title="صوت الرد: راجل"><i class="fa-solid fa-mars"></i></button>
                         <button id="assistant-voice-toggle-btn" onclick="toggleAssistantVoice()" class="chip hover:bg-[var(--panel-2)]" title="تشغيل/إيقاف صوت الردود" data-i18n-title="assistant.voiceToggleTitle"><i class="fa-solid fa-volume-high"></i></button>
                         <button onclick="clearAssistantChat()" class="chip hover:bg-[var(--panel-2)]" title="بداية محادثة جديدة" data-i18n-title="assistant.newChatTitle"><i class="fa-solid fa-rotate-right"></i></button>
                     </div>

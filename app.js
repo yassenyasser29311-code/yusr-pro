@@ -1039,6 +1039,35 @@
     }
     function openIosInstallModal() { const m = document.getElementById('ios-install-modal'); if (m) m.classList.remove('hidden'); }
     function closeIosInstallModal() { const m = document.getElementById('ios-install-modal'); if (m) m.classList.add('hidden'); }
+
+    // ============ إعلان تحميل تطبيق الأندرويد (APK) في الـ sidebar ============
+    // بيبان بس لمستخدمي أندرويد اللي بيفتحوا الموقع من المتصفح العادي (مش من
+    // جوه التطبيق نفسه)، وبيختفي لو المستخدم دوس "إخفاء" ولمدة أسبوع بعدين
+    // يرجع يبان تاني تلقائيًا. رابط التحميل بيسحب الملف yusr-pro-latest.apk
+    // مباشرة أول ما يدوس (attribute "download" في الرابط في الـ HTML).
+    function isAndroidDevice() {
+        return /android/i.test(navigator.userAgent);
+    }
+    function isRunningInsideApk() {
+        // لو التطبيق المُعبّأ بتاعك (WebView) بيحقن يوزر-إيجنت مخصوص، غيّر
+        // الكلمة "YusrProAndroidApp" هنا بنفس العلامة اللي حاططها فعليًا.
+        return /YusrProAndroidApp/i.test(navigator.userAgent);
+    }
+    function showApkPromoIfEligible() {
+        if (isRunningInsideApk() || !isAndroidDevice()) return;
+        try {
+            const dismissedAt = parseInt(localStorage.getItem('yusr_apk_promo_dismissed_at') || '0', 10);
+            if (dismissedAt && (Date.now() - dismissedAt) < 7 * 24 * 60 * 60 * 1000) return;
+        } catch (e) {}
+        const card = document.getElementById('apk-promo-sidebar');
+        if (card) card.classList.remove('hidden');
+    }
+    function dismissApkPromo(e) {
+        if (e) e.stopPropagation();
+        try { localStorage.setItem('yusr_apk_promo_dismissed_at', String(Date.now())); } catch (e) {}
+        const card = document.getElementById('apk-promo-sidebar');
+        if (card) card.classList.add('hidden');
+    }
     window.addEventListener('beforeinstallprompt', function (e) {
         e.preventDefault();
         deferredPwaInstallPrompt = e;
@@ -2934,9 +2963,18 @@
     function updateVoiceGenderButtons() {
         const maleBtn = document.getElementById('voice-gender-male-btn');
         const femaleBtn = document.getElementById('voice-gender-female-btn');
-        if (!maleBtn || !femaleBtn) return;
-        maleBtn.classList.toggle('active', voiceGenderPref === 'male');
-        femaleBtn.classList.toggle('active', voiceGenderPref === 'female');
+        if (maleBtn && femaleBtn) {
+            maleBtn.classList.toggle('active', voiceGenderPref === 'male');
+            femaleBtn.classList.toggle('active', voiceGenderPref === 'female');
+        }
+        // زرار اختيار صوت الراجل/الست جوه شات المساعد نفسه - بيتحدث تلقائي هنا
+        // عشان يفضل متزامن مع نفس الاختيار العام حتى لو اتغيّر من الإعدادات.
+        const assistantGenderBtn = document.getElementById('assistant-gender-toggle-btn');
+        if (assistantGenderBtn) {
+            const icon = assistantGenderBtn.querySelector('i');
+            if (icon) icon.className = voiceGenderPref === 'female' ? 'fa-solid fa-venus' : 'fa-solid fa-mars';
+            assistantGenderBtn.title = voiceGenderPref === 'female' ? 'صوت الرد: صوت ست (دوس تغيير لراجل)' : 'صوت الرد: صوت راجل (دوس تغيير لست)';
+        }
     }
 
     // بنسمي بيانات أسماء شائعة لأصوات عربية/إنجليزية مؤنثة عشان نقدر نميّز جنس صوت المتصفح
@@ -5042,6 +5080,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
 
     initTheme();
     initPwaInstall();
+    showApkPromoIfEligible();
     checkDeviceTrial();
     updateAccountChip();
     applyI18n();
