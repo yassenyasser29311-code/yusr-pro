@@ -828,7 +828,7 @@ window.__H = {
         if (!user || user.isAnonymous) return;
         userDocRef(user.uid).update({
             name: p.name || '', title: p.title || '', photo: p.photo || '',
-            points: p.points || 0, plan: p.plan || '', google: p.google || null,
+            points: p.points || 0, google: p.google || null,
             email: user.email || '',
             displayName: p.name || user.displayName || '',
             updatedAt: firebase.database.ServerValue.TIMESTAMP
