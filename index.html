@@ -821,19 +821,19 @@
                     <i class="fa-solid fa-headset"></i>
                 </button>
                 <!-- نقطة 8: زرار تبديل الوضع الفاتح/الداكن -->
-                <button id="theme-toggle-btn" onclick="toggleTheme()" title="التحويل للوضع الفاتح" aria-label="التحويل للوضع الفاتح" class="w-8 h-8 rounded-lg btn-ghost flex items-center justify-center text-xs shrink-0">
+                <button id="theme-toggle-btn" onclick="toggleTheme()" data-i18n-title="common.themeToggleBtnTitle" title="التحويل للوضع الفاتح" data-i18n-aria="common.themeToggleBtnAria" aria-label="التحويل للوضع الفاتح" class="w-8 h-8 rounded-lg btn-ghost flex items-center justify-center text-xs shrink-0">
                     <i id="theme-toggle-icon" class="fa-solid fa-sun"></i>
                 </button>
                 <select id="lang-picker" class="input-field rounded-lg text-[11px] px-2 py-1.5" onchange="setAppLanguage(this.value)">
-                    <option value="ar-EG">العربية</option>
+                    <option value="ar-EG" data-i18n="common.auto2Text">العربية</option>
                     <option value="en-US">English</option>
                     <option value="fr-FR">Français</option>
                     <option value="es-ES">Español</option>
                     <option value="tr-TR">Türkçe</option>
                     <option value="de-DE">Deutsch</option>
                     <option value="hi-IN">हिन्दी</option>
-                    <option value="ur-PK">اردو</option>
-                    <option value="fa-IR">فارسی</option>
+                    <option value="ur-PK" data-i18n="common.auto3Text">اردو</option>
+                    <option value="fa-IR" data-i18n="common.auto4Text">فارسی</option>
                 </select>
             </div>
         </header>
@@ -850,8 +850,8 @@
                     <span>لازم تأكّد إيميلك (<span id="email-verify-banner-address" class="font-bold" dir="ltr">-</span>) عشان تقدر تشترك في باقة مدفوعة. مش لاقي الإيميل؟ راجع صندوق السبام.</span>
                 </div>
                 <div class="flex gap-2 shrink-0 w-full sm:w-auto">
-                    <button id="email-verify-resend-btn" onclick="resendVerificationEmail()" class="flex-1 chip bg-[var(--panel)] hover:bg-black/30"><i class="fa-solid fa-paper-plane"></i> إعادة الإرسال</button>
-                    <button id="email-verify-recheck-btn" onclick="recheckEmailVerification()" class="flex-1 chip hover:bg-black/30"><i class="fa-solid fa-rotate"></i> تحققت، حدّث الحالة</button>
+                    <button id="email-verify-resend-btn" onclick="resendVerificationEmail()" class="flex-1 chip bg-[var(--panel)] hover:bg-black/30" data-i18n="common.emailVerifyResendBtnText"><i class="fa-solid fa-paper-plane"></i> إعادة الإرسال</button>
+                    <button id="email-verify-recheck-btn" onclick="recheckEmailVerification()" class="flex-1 chip hover:bg-black/30" data-i18n="common.emailVerifyRecheckBtnText"><i class="fa-solid fa-rotate"></i> تحققت، حدّث الحالة</button>
                 </div>
             </div>
 
@@ -946,16 +946,16 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <input type="text" id="faq-role" data-i18n-ph="faq.rolePh" placeholder="مثلاً: مسؤول مبيعات عقارات" class="input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
                         <select id="faq-count" class="input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
-                            <option value="8">8 أسئلة</option>
-                            <option value="12" selected>12 سؤال</option>
-                            <option value="18">18 سؤال</option>
+                            <option value="8" data-i18n="faq.auto1Text">8 أسئلة</option>
+                            <option value="12" selected data-i18n="faq.auto2Text">12 سؤال</option>
+                            <option value="18" data-i18n="faq.auto3Text">18 سؤال</option>
                         </select>
                     </div>
                     <select id="faq-level" class="w-full input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
-                        <option value="خريج جديد / أقل من سنة خبرة">خريج جديد / أقل من سنة خبرة</option>
-                        <option value="مستوى متوسط (Mid-level)" selected>مستوى متوسط (Mid-level)</option>
-                        <option value="مستوى أول / خبرة كبيرة (Senior)">مستوى أول / خبرة كبيرة (Senior)</option>
-                        <option value="مستوى إداري / قيادي (Manager+)">مستوى إداري / قيادي (Manager+)</option>
+                        <option value="خريج جديد / أقل من سنة خبرة" data-i18n="faq.auto4Text">خريج جديد / أقل من سنة خبرة</option>
+                        <option value="مستوى متوسط (Mid-level)" selected data-i18n="faq.auto5Text">مستوى متوسط (Mid-level)</option>
+                        <option value="مستوى أول / خبرة كبيرة (Senior)" data-i18n="faq.auto6Text">مستوى أول / خبرة كبيرة (Senior)</option>
+                        <option value="مستوى إداري / قيادي (Manager+)" data-i18n="faq.auto7Text">مستوى إداري / قيادي (Manager+)</option>
                     </select>
                     <button onclick="runFaqGenerator()" class="w-full py-3 btn-accent acc-faq font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2">
                         <i class="fa-solid fa-list-check"></i> <span data-i18n="faq.run">جهّز الأسئلة والإجابات</span>
@@ -980,10 +980,10 @@
                     </div>
                     <textarea id="career-context" rows="3" data-i18n-ph="career.contextPh" placeholder="اي تفاصيل إضافية تفيد (مهاراتك الحالية، الوقت المتاح للدراسة، إلخ) - اختياري" class="w-full input-field rounded-xl p-3 text-xs sm:text-sm resize-none"></textarea>
                     <div>
-                        <label class="block text-xs text-slate-400 mb-1.5"><i class="fa-solid fa-align-right"></i> طول الخطة</label>
+                        <label class="block text-xs text-slate-400 mb-1.5" data-i18n="career.auto1Text"><i class="fa-solid fa-align-right"></i> طول الخطة</label>
                         <select id="career-length" class="w-full input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
-                            <option value="detailed" selected>خطة مفصّلة كاملة (كل الخطوات والتفاصيل)</option>
-                            <option value="summary">ملخص سريع وواضح (أهم النقاط بس، من غير إطالة)</option>
+                            <option value="detailed" selected data-i18n="career.auto2Text">خطة مفصّلة كاملة (كل الخطوات والتفاصيل)</option>
+                            <option value="summary" data-i18n="career.auto3Text">ملخص سريع وواضح (أهم النقاط بس، من غير إطالة)</option>
                         </select>
                     </div>
                     <button onclick="runCareerPlanner()" class="w-full py-3 btn-accent acc-career font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2">
@@ -1003,13 +1003,13 @@
 
                     <!-- Guided prompt: gives the user something specific to say in front of the camera -->
                     <div class="panel-2 rounded-xl p-3.5 space-y-2.5">
-                        <p class="text-xs font-bold text-slate-300 flex items-center gap-2"><i class="fa-solid fa-clipboard-question"></i> جهّزلي حاجة أقولها قدام الكاميرا</p>
-                        <p class="text-[10.5px] text-slate-500">من غير ما تفتح الكاميرا وتتلخبط إيه تقول، اختار وضع وهيديك سؤال محدد تجاوب عليه، أو نص جاهز تتمرن تقراه بوضوح — وبعدين سجّل نفسك وانت بترد.</p>
+                        <p class="text-xs font-bold text-slate-300 flex items-center gap-2" data-i18n="videoMock.auto1Text"><i class="fa-solid fa-clipboard-question"></i> جهّزلي حاجة أقولها قدام الكاميرا</p>
+                        <p class="text-[10.5px] text-slate-500" data-i18n="videoMock.auto2Text">من غير ما تفتح الكاميرا وتتلخبط إيه تقول، اختار وضع وهيديك سؤال محدد تجاوب عليه، أو نص جاهز تتمرن تقراه بوضوح — وبعدين سجّل نفسك وانت بترد.</p>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            <input type="text" id="video-mock-topic" placeholder="الوظيفة أو الموضوع (مثلاً: خدمة عملاء)" class="input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
+                            <input type="text" id="video-mock-topic" data-i18n-ph="videoMock.videoMockTopicPh" placeholder="الوظيفة أو الموضوع (مثلاً: خدمة عملاء)" class="input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
                             <select id="video-mock-prompt-mode" class="input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
-                                <option value="question">سؤال مقابلة أرد عليه بصوتي</option>
-                                <option value="script">نص جاهز أتمرن أقراه بوضوح</option>
+                                <option value="question" data-i18n="videoMock.auto3Text">سؤال مقابلة أرد عليه بصوتي</option>
+                                <option value="script" data-i18n="videoMock.auto4Text">نص جاهز أتمرن أقراه بوضوح</option>
                             </select>
                         </div>
                         <button onclick="generateVideoMockPrompt()" class="w-full py-2.5 btn-accent acc-video font-bold text-xs rounded-xl flex items-center justify-center gap-2">
@@ -1017,13 +1017,13 @@
                         </button>
                         <div id="video-mock-prompt-box" class="hidden panel rounded-xl p-3 text-xs sm:text-sm leading-relaxed space-y-2">
                             <div id="video-mock-prompt-text"></div>
-                            <button onclick="generateVideoMockPrompt()" class="text-[10.5px] text-[var(--accent-strong)] underline">جهّزلي واحد تاني</button>
+                            <button onclick="generateVideoMockPrompt()" class="text-[10.5px] text-[var(--accent-strong)] underline" data-i18n="videoMock.auto5Text">جهّزلي واحد تاني</button>
                         </div>
                     </div>
 
                     <!-- Camera practice -->
                     <div class="panel-2 rounded-xl p-3.5 space-y-2.5">
-                        <p class="text-xs font-bold text-slate-300 flex items-center gap-2"><i class="fa-solid fa-camera"></i> تدرّب قدام الكاميرا</p>
+                        <p class="text-xs font-bold text-slate-300 flex items-center gap-2" data-i18n="videoMock.auto6Text"><i class="fa-solid fa-camera"></i> تدرّب قدام الكاميرا</p>
                         <video id="video-mock-preview" class="hidden w-full rounded-xl max-h-72 bg-black" autoplay muted playsinline></video>
                         <div class="flex flex-wrap gap-2">
                             <button id="video-mock-start-btn" onclick="startVideoMockCamera()" class="btn-accent acc-video font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2">
@@ -1036,35 +1036,35 @@
                                 <i class="fa-solid fa-stop"></i> قفل الكاميرا
                             </button>
                         </div>
-                        <p id="video-mock-status" class="text-[10.5px] text-slate-500">اضغط "شغّل الكاميرا" وهيطلب المتصفح إذن الكاميرا والمايك، وبعدها تقدر تسجل مقطع وتنزّله عشان تراجعه.</p>
+                        <p id="video-mock-status" class="text-[10.5px] text-slate-500" data-i18n="videoMock.videoMockStatusText">اضغط "شغّل الكاميرا" وهيطلب المتصفح إذن الكاميرا والمايك، وبعدها تقدر تسجل مقطع وتنزّله عشان تراجعه.</p>
                         <div id="video-mock-analysis-result" class="hidden panel rounded-xl p-3 text-xs sm:text-sm leading-relaxed"></div>
                     </div>
 
                     <!-- Scheduling email simulation -->
                     <div class="panel-2 rounded-xl p-3.5 space-y-2.5">
-                        <p class="text-xs font-bold text-slate-300 flex items-center gap-2"><i class="fa-solid fa-envelope"></i> محاكاة إيميل مواعيد المقابلة</p>
-                        <p class="text-[10.5px] text-slate-500">هيتولّد إيميل واقعي من "مسؤول توظيف" بيطلب منك تأكيد موعد/مكان أو رابط مقابلة أونلاين، وأحياناً توقعاتك للراتب — تدرّب على الرد عليه باحترافية.</p>
+                        <p class="text-xs font-bold text-slate-300 flex items-center gap-2" data-i18n="videoMock.auto7Text"><i class="fa-solid fa-envelope"></i> محاكاة إيميل مواعيد المقابلة</p>
+                        <p class="text-[10.5px] text-slate-500" data-i18n="videoMock.auto8Text">هيتولّد إيميل واقعي من "مسؤول توظيف" بيطلب منك تأكيد موعد/مكان أو رابط مقابلة أونلاين، وأحياناً توقعاتك للراتب — تدرّب على الرد عليه باحترافية.</p>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <input type="text" id="video-email-role" placeholder="الوظيفة المتقدم لها (مثلاً: محاسب)" class="input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
+                            <input type="text" id="video-email-role" data-i18n-ph="videoMock.videoEmailRolePh" placeholder="الوظيفة المتقدم لها (مثلاً: محاسب)" class="input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
                             <select id="video-email-type" class="input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
-                                <option value="إيميل يطلب تأكيد موعد ومكان المقابلة الحضورية">تأكيد موعد ومكان (حضورياً)</option>
-                                <option value="إيميل يطلب تأكيد موعد مقابلة أونلاين عبر رابط فيديو كول">تأكيد موعد مقابلة أونلاين</option>
-                                <option value="إيميل يسأل عن توقعاتك للراتب قبل المقابلة">سؤال عن توقعات الراتب</option>
-                                <option value="إيميل بيطلب منك اقتراح موعد بديل لأن الموعد الأصلي اتلغى فجأة">تعارض/تعديل موعد مفاجئ</option>
-                                <option value="إيميل مستعجل من مسؤول التوظيف بيطلب رد سريع خلال يوم عمل واحد">إيميل مستعجل (رد خلال يوم)</option>
+                                <option value="إيميل يطلب تأكيد موعد ومكان المقابلة الحضورية" data-i18n="videoMock.auto9Text">تأكيد موعد ومكان (حضورياً)</option>
+                                <option value="إيميل يطلب تأكيد موعد مقابلة أونلاين عبر رابط فيديو كول" data-i18n="videoMock.auto10Text">تأكيد موعد مقابلة أونلاين</option>
+                                <option value="إيميل يسأل عن توقعاتك للراتب قبل المقابلة" data-i18n="videoMock.auto11Text">سؤال عن توقعات الراتب</option>
+                                <option value="إيميل بيطلب منك اقتراح موعد بديل لأن الموعد الأصلي اتلغى فجأة" data-i18n="videoMock.auto12Text">تعارض/تعديل موعد مفاجئ</option>
+                                <option value="إيميل مستعجل من مسؤول التوظيف بيطلب رد سريع خلال يوم عمل واحد" data-i18n="videoMock.auto13Text">إيميل مستعجل (رد خلال يوم)</option>
                             </select>
                         </div>
                         <select id="video-email-tone" class="w-full input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
-                            <option value="نبرة رسمية جداً ومختصرة" selected>نبرة رسمية جداً</option>
-                            <option value="نبرة ودودة ومريحة نسبياً">نبرة ودودة ومريحة</option>
-                            <option value="نبرة فيها استعجال وضغط وقت واضح">نبرة فيها استعجال وضغط وقت</option>
+                            <option value="نبرة رسمية جداً ومختصرة" selected data-i18n="videoMock.auto14Text">نبرة رسمية جداً</option>
+                            <option value="نبرة ودودة ومريحة نسبياً" data-i18n="videoMock.auto15Text">نبرة ودودة ومريحة</option>
+                            <option value="نبرة فيها استعجال وضغط وقت واضح" data-i18n="videoMock.auto16Text">نبرة فيها استعجال وضغط وقت</option>
                         </select>
                         <button onclick="generateSchedulingEmail()" class="w-full py-2.5 btn-accent acc-video font-bold text-xs rounded-xl flex items-center justify-center gap-2">
                             <i class="fa-solid fa-wand-magic-sparkles"></i> ولّد إيميل تجريبي
                         </button>
                         <div id="video-email-result" class="hidden panel rounded-xl p-3 text-xs sm:text-sm leading-relaxed"></div>
                         <div id="video-email-reply-box" class="hidden space-y-2">
-                            <textarea id="video-email-reply" rows="4" placeholder="اكتب ردّك على الإيميل هنا..." class="w-full input-field rounded-xl p-3 text-xs sm:text-sm resize-none"></textarea>
+                            <textarea id="video-email-reply" rows="4" data-i18n-ph="videoMock.videoEmailReplyPh" placeholder="اكتب ردّك على الإيميل هنا..." class="w-full input-field rounded-xl p-3 text-xs sm:text-sm resize-none"></textarea>
                             <button onclick="reviewSchedulingReply()" class="w-full py-2 btn-accent acc-video font-bold text-xs rounded-xl flex items-center justify-center gap-2">
                                 <i class="fa-solid fa-check-double"></i> قيّم ردّي
                             </button>
@@ -1074,8 +1074,8 @@
 
                     <!-- Salary follow-up questions -->
                     <div class="panel-2 rounded-xl p-3.5 space-y-2.5">
-                        <p class="text-xs font-bold text-slate-300 flex items-center gap-2"><i class="fa-solid fa-circle-question"></i> أسئلة متابعة مناسبة للراتب الوظيفي</p>
-                        <input type="text" id="video-salary-q-role" placeholder="الوظيفة (اختياري لو مكتوبها فوق)" class="w-full input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
+                        <p class="text-xs font-bold text-slate-300 flex items-center gap-2" data-i18n="videoMock.auto17Text"><i class="fa-solid fa-circle-question"></i> أسئلة متابعة مناسبة للراتب الوظيفي</p>
+                        <input type="text" id="video-salary-q-role" data-i18n-ph="videoMock.videoSalaryQRolePh" placeholder="الوظيفة (اختياري لو مكتوبها فوق)" class="w-full input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
                         <button onclick="generateSalaryFollowupQuestions()" class="w-full py-2.5 btn-accent acc-video font-bold text-xs rounded-xl flex items-center justify-center gap-2">
                             <i class="fa-solid fa-comments-dollar"></i> ولّد أسئلة متابعة عن الراتب
                         </button>
@@ -1084,19 +1084,19 @@
 
                     <!-- Dress & appearance tips -->
                     <div class="panel-2 rounded-xl p-3.5 space-y-2.5">
-                        <p class="text-xs font-bold text-slate-300 flex items-center gap-2"><i class="fa-solid fa-shirt"></i> نصائح لبس ومظهر مناسب للمقابلة</p>
+                        <p class="text-xs font-bold text-slate-300 flex items-center gap-2" data-i18n="videoMock.auto18Text"><i class="fa-solid fa-shirt"></i> نصائح لبس ومظهر مناسب للمقابلة</p>
                         <select id="video-dress-sector" class="w-full input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
-                            <option value="شركة كبيرة / بيئة عمل مكتبية رسمية">بيئة مكتبية رسمية (بنوك/شركات كبيرة)</option>
-                            <option value="ستارت أب / بيئة عمل شبابية غير رسمية">ستارت أب / بيئة شبابية</option>
-                            <option value="وظيفة تواصل مباشر مع العملاء (خدمة عملاء، مبيعات، ريسبشن)">تواصل مباشر مع عملاء</option>
-                            <option value="مجال إبداعي (تصميم، محتوى، فنون)">مجال إبداعي</option>
-                            <option value="مقابلة أونلاين عبر فيديو كول">مقابلة أونلاين (فيديو كول)</option>
-                            <option value="بيئة عمل خليجية محافظة">بيئة عمل خليجية محافظة</option>
+                            <option value="شركة كبيرة / بيئة عمل مكتبية رسمية" data-i18n="videoMock.auto19Text">بيئة مكتبية رسمية (بنوك/شركات كبيرة)</option>
+                            <option value="ستارت أب / بيئة عمل شبابية غير رسمية" data-i18n="videoMock.auto20Text">ستارت أب / بيئة شبابية</option>
+                            <option value="وظيفة تواصل مباشر مع العملاء (خدمة عملاء، مبيعات، ريسبشن)" data-i18n="videoMock.auto21Text">تواصل مباشر مع عملاء</option>
+                            <option value="مجال إبداعي (تصميم، محتوى، فنون)" data-i18n="videoMock.auto22Text">مجال إبداعي</option>
+                            <option value="مقابلة أونلاين عبر فيديو كول" data-i18n="videoMock.auto23Text">مقابلة أونلاين (فيديو كول)</option>
+                            <option value="بيئة عمل خليجية محافظة" data-i18n="videoMock.auto24Text">بيئة عمل خليجية محافظة</option>
                         </select>
                         <select id="video-dress-gender" class="w-full input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
-                            <option value="both" selected>نصايح للرجل والمرأة</option>
-                            <option value="male">نصايح للرجل بس</option>
-                            <option value="female">نصايح للمرأة بس</option>
+                            <option value="both" selected data-i18n="videoMock.auto25Text">نصايح للرجل والمرأة</option>
+                            <option value="male" data-i18n="videoMock.auto26Text">نصايح للرجل بس</option>
+                            <option value="female" data-i18n="videoMock.auto27Text">نصايح للمرأة بس</option>
                         </select>
                         <button onclick="generateDressTips()" class="w-full py-2.5 btn-accent acc-video font-bold text-xs rounded-xl flex items-center justify-center gap-2">
                             <i class="fa-solid fa-shirt"></i> جهّز نصائح المظهر
@@ -1115,7 +1115,7 @@
                             <p class="text-xs sm:text-sm font-bold text-slate-100" data-i18n="assistant.botName">يسر Pro Bot</p>
                             <p class="text-[10.5px] text-slate-400" data-i18n="assistant.subtitle">كلّمه بالكتابة أو الصوت، وابعتله صورة لو محتاج يشوفها</p>
                         </div>
-                        <button id="assistant-gender-toggle-btn" onclick="setVoiceGender(voiceGenderPref === 'female' ? 'male' : 'female')" class="chip hover:bg-[var(--panel-2)]" title="صوت الرد: راجل"><i class="fa-solid fa-mars"></i></button>
+                        <button id="assistant-gender-toggle-btn" onclick="setVoiceGender(voiceGenderPref === 'female' ? 'male' : 'female')" class="chip hover:bg-[var(--panel-2)]" data-i18n-title="assistant.assistantGenderToggleBtnTitle" title="صوت الرد: راجل"><i class="fa-solid fa-mars"></i></button>
                         <button id="assistant-voice-toggle-btn" onclick="toggleAssistantVoice()" class="chip hover:bg-[var(--panel-2)]" title="تشغيل/إيقاف صوت الردود" data-i18n-title="assistant.voiceToggleTitle"><i class="fa-solid fa-volume-high"></i></button>
                         <button onclick="clearAssistantChat()" class="chip hover:bg-[var(--panel-2)]" title="بداية محادثة جديدة" data-i18n-title="assistant.newChatTitle"><i class="fa-solid fa-rotate-right"></i></button>
                     </div>
@@ -1144,18 +1144,18 @@
                 <div class="panel rounded-2xl p-4 sm:p-5 space-y-3">
                     <div class="panel-2 rounded-xl px-3 py-2 text-[11px] text-slate-400 flex items-start gap-2">
                         <i class="fa-solid fa-circle-info mt-0.5 text-slate-500"></i>
-                        <span>الأداة بتدور على نتائج بحث حية عن سوق العمل لحظة ما تضغط "قدّر"، وبتبني عليها التقدير مع معرفة الذكاء الاصطناعي — مش بيانات رسمية أو استطلاع سوقي دقيق 100% — استخدمه كنقطة بداية للتفاوض مش كرقم نهائي.</span>
+                        <span data-i18n="salary.auto1Text">الأداة بتدور على نتائج بحث حية عن سوق العمل لحظة ما تضغط "قدّر"، وبتبني عليها التقدير مع معرفة الذكاء الاصطناعي — مش بيانات رسمية أو استطلاع سوقي دقيق 100% — استخدمه كنقطة بداية للتفاوض مش كرقم نهائي.</span>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <input type="text" id="salary-role" placeholder="المسمى الوظيفي (مثلاً: مصمم جرافيك)" class="input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
-                        <input type="text" id="salary-experience" placeholder="سنوات الخبرة (مثلاً: 3 سنوات)" class="input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
+                        <input type="text" id="salary-role" data-i18n-ph="salary.salaryRolePh" placeholder="المسمى الوظيفي (مثلاً: مصمم جرافيك)" class="input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
+                        <input type="text" id="salary-experience" data-i18n-ph="salary.salaryExperiencePh" placeholder="سنوات الخبرة (مثلاً: 3 سنوات)" class="input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
                     </div>
                     <select id="salary-region" class="w-full input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
-                        <option value="مصر">مصر</option>
-                        <option value="السعودية">السعودية</option>
-                        <option value="الإمارات">الإمارات</option>
-                        <option value="دول الخليج بشكل عام">دول الخليج بشكل عام</option>
-                        <option value="عن بعد (Remote) لصالح شركات أجنبية">عن بعد (Remote) لشركات أجنبية</option>
+                        <option value="مصر" data-i18n="salary.auto2Text">مصر</option>
+                        <option value="السعودية" data-i18n="salary.auto3Text">السعودية</option>
+                        <option value="الإمارات" data-i18n="salary.auto4Text">الإمارات</option>
+                        <option value="دول الخليج بشكل عام" data-i18n="salary.auto5Text">دول الخليج بشكل عام</option>
+                        <option value="عن بعد (Remote) لصالح شركات أجنبية" data-i18n="salary.auto6Text">عن بعد (Remote) لشركات أجنبية</option>
                     </select>
                     <button onclick="runSalaryInsights()" class="w-full py-3 btn-accent acc-salary font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2">
                         <i class="fa-solid fa-sack-dollar"></i> قدّر الراتب المناسب
@@ -1167,7 +1167,7 @@
             <!-- ================= PROGRESS TRACKING / ARCHIVE ================= -->
             <section id="view-progress" class="view">
                 <div class="panel rounded-2xl p-4 sm:p-5 space-y-3">
-                    <p class="text-xs text-slate-400">أرشيف مقابلاتك: بدل ما كل مقابلة تبقى منفصلة، صفحة واحدة بتجمّع كل مقابلاتك ونصوصها وتقارير أداءك من "مقابلة تدريبية صوتية" وتوريك تطورك بمرور الوقت.</p>
+                    <p class="text-xs text-slate-400" data-i18n="progress.auto1Text">أرشيف مقابلاتك: بدل ما كل مقابلة تبقى منفصلة، صفحة واحدة بتجمّع كل مقابلاتك ونصوصها وتقارير أداءك من "مقابلة تدريبية صوتية" وتوريك تطورك بمرور الوقت.</p>
                     <div class="panel-2 rounded-xl px-3 py-2.5 text-[11px] text-emerald-200/90 bg-emerald-500/[.06] border border-emerald-500/20 flex items-start gap-2">
                         <i class="fa-solid fa-box-archive mt-0.5 text-emerald-400"></i>
                         <span><b>أرشيف دائم مش مؤقت:</b> كل مقابلة بتتحفظ هنا بشكل دائم على جهازك (نص المحادثة كامل + تقرير الأداء)، وهتفضل موجودة حتى لو قفلت المتصفح أو رجعت تاني بعد مدة طويلة — لحد ما تمسحها إنت بنفسك بزرار "مسح السجل" تحت.</span>
@@ -1178,14 +1178,14 @@
                     </div>
                     <div id="progress-stats" class="grid grid-cols-3 gap-2"></div>
                     <div class="panel-2 rounded-xl p-3.5 space-y-2.5">
-                        <p class="text-xs font-bold text-slate-300 flex items-center gap-2"><i class="fa-solid fa-bell"></i> تذكير بمقابلة قادمة</p>
+                        <p class="text-xs font-bold text-slate-300 flex items-center gap-2" data-i18n="progress.auto2Text"><i class="fa-solid fa-bell"></i> تذكير بمقابلة قادمة</p>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             <input type="date" id="progress-reminder-date" class="input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
                             <input type="time" id="progress-reminder-time" class="input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
                         </div>
-                        <button onclick="setInterviewReminder()" class="w-full btn-accent acc-progress font-bold text-xs rounded-xl py-2.5">احفظ التذكير</button>
-                        <button onclick="requestReminderNotificationPermission(true)" id="progress-reminder-enable-btn" class="text-[10.5px] text-[var(--accent-strong)] underline text-right w-fit">فعّل إشعار push حقيقي من المتصفح</button>
-                        <p id="progress-reminder-status" class="text-[10.5px] text-slate-500">لو حددت الساعة، هيوصلك إشعار مظبوط في وقت المقابلة نفسه (لغاية ٥ دقايق فرق)، بالإضافة لإشعار تذكير قبلها بيومين. طالما سمحت بإذن الإشعارات والمتصفح شغال (حتى لو التاب مش قدامك) - لسه محتاج المتصفح يكون فاتح، مش هيوصلك وهو مقفول تماماً.</p>
+                        <button onclick="setInterviewReminder()" class="w-full btn-accent acc-progress font-bold text-xs rounded-xl py-2.5" data-i18n="progress.auto3Text">احفظ التذكير</button>
+                        <button onclick="requestReminderNotificationPermission(true)" id="progress-reminder-enable-btn" class="text-[10.5px] text-[var(--accent-strong)] underline text-right w-fit" data-i18n="progress.progressReminderEnableBtnText">فعّل إشعار push حقيقي من المتصفح</button>
+                        <p id="progress-reminder-status" class="text-[10.5px] text-slate-500" data-i18n="progress.progressReminderStatusText">لو حددت الساعة، هيوصلك إشعار مظبوط في وقت المقابلة نفسه (لغاية ٥ دقايق فرق)، بالإضافة لإشعار تذكير قبلها بيومين. طالما سمحت بإذن الإشعارات والمتصفح شغال (حتى لو التاب مش قدامك) - لسه محتاج المتصفح يكون فاتح، مش هيوصلك وهو مقفول تماماً.</p>
                     </div>
                     <button onclick="runProgressSummaryReport()" class="w-full py-2.5 btn-accent acc-progress font-bold text-xs rounded-xl flex items-center justify-center gap-2">
                         <i class="fa-solid fa-file-lines"></i> تقرير تقدم مختصر لكل جلساتي
@@ -1193,7 +1193,7 @@
                     <div id="progress-summary-result" class="hidden panel-2 rounded-xl p-3.5 text-xs sm:text-sm leading-relaxed max-h-[380px] overflow-y-auto"></div>
 
                     <div class="flex items-center justify-between">
-                        <p class="text-xs font-bold text-slate-300">سجل الجلسات السابقة</p>
+                        <p class="text-xs font-bold text-slate-300" data-i18n="progress.auto4Text">سجل الجلسات السابقة</p>
                         <button onclick="clearProgressHistory()" class="chip hover:bg-red-500/10 hover:text-red-300 hover:border-red-500/30">
                             <i class="fa-solid fa-trash"></i> مسح السجل
                         </button>
@@ -1203,7 +1203,7 @@
                             <select id="progress-compare-a" class="input-field rounded-xl px-2.5 py-1.5 text-[11px]"></select>
                             <select id="progress-compare-b" class="input-field rounded-xl px-2.5 py-1.5 text-[11px]"></select>
                         </div>
-                        <button onclick="runProgressCompare()" class="w-full py-2 btn-accent acc-progress font-bold text-xs rounded-xl">قارن بين الجلستين</button>
+                        <button onclick="runProgressCompare()" class="w-full py-2 btn-accent acc-progress font-bold text-xs rounded-xl" data-i18n="progress.auto5Text">قارن بين الجلستين</button>
                         <div id="progress-compare-result" class="hidden panel rounded-xl p-3 text-xs sm:text-sm leading-relaxed"></div>
                     </div>
                     <div id="progress-list" class="space-y-2"></div>
@@ -1304,21 +1304,21 @@
             <section id="view-match" class="view">
                 <div class="panel rounded-2xl p-4 sm:p-5 space-y-3">
                     <div class="flex justify-between items-center border-b border-[var(--border)] pb-2.5">
-                        <p class="text-xs text-slate-400">الصق وصف الوظيفة وسيرتك الذاتية، وهنطلعلك نسبة توافق تقريبية ونقاط ضعف محددة وكلمات مفتاحية ناقصة تساعدك تعدي فلاتر الـ ATS.</p>
+                        <p class="text-xs text-slate-400" data-i18n="match.auto1Text">الصق وصف الوظيفة وسيرتك الذاتية، وهنطلعلك نسبة توافق تقريبية ونقاط ضعف محددة وكلمات مفتاحية ناقصة تساعدك تعدي فلاتر الـ ATS.</p>
                         <button onclick="openCvModal()" class="chip hover:bg-[var(--panel-2)] shrink-0">
                             <i class="fa-solid fa-id-card"></i> ربط الـ CV
                         </button>
                     </div>
                     <div>
                         <div class="flex justify-between items-center mb-1.5">
-                            <label class="block text-xs text-slate-400">سيرتك الذاتية</label>
-                            <button onclick="fillMatchResumeFromSaved()" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-arrow-rotate-left"></i> استخدم الـ CV المحفوظ</button>
+                            <label class="block text-xs text-slate-400" data-i18n="match.auto2Text">سيرتك الذاتية</label>
+                            <button onclick="fillMatchResumeFromSaved()" class="chip hover:bg-[var(--panel-2)]" data-i18n="match.auto3Text"><i class="fa-solid fa-arrow-rotate-left"></i> استخدم الـ CV المحفوظ</button>
                         </div>
-                        <textarea id="cv-match-resume" rows="6" placeholder="الصق نص سيرتك الذاتية هنا، أو اضغط 'ربط الـ CV' فوق..." class="w-full input-field rounded-xl p-3 text-xs sm:text-sm resize-none"></textarea>
+                        <textarea id="cv-match-resume" rows="6" data-i18n-ph="match.cvMatchResumePh" placeholder="الصق نص سيرتك الذاتية هنا، أو اضغط 'ربط الـ CV' فوق..." class="w-full input-field rounded-xl p-3 text-xs sm:text-sm resize-none"></textarea>
                     </div>
                     <div>
-                        <label class="block text-xs text-slate-400 mb-1.5">وصف الوظيفة</label>
-                        <textarea id="cv-match-jobdesc" rows="6" placeholder="الصق نص إعلان الوظيفة هنا..." class="w-full input-field rounded-xl p-3 text-xs sm:text-sm resize-none"></textarea>
+                        <label class="block text-xs text-slate-400 mb-1.5" data-i18n="match.auto4Text">وصف الوظيفة</label>
+                        <textarea id="cv-match-jobdesc" rows="6" data-i18n-ph="match.cvMatchJobdescPh" placeholder="الصق نص إعلان الوظيفة هنا..." class="w-full input-field rounded-xl p-3 text-xs sm:text-sm resize-none"></textarea>
                     </div>
                     <button onclick="runCvJobMatch()" class="w-full py-3 btn-accent acc-match font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2">
                         <i class="fa-solid fa-bullseye"></i> حلّل نسبة التوافق
@@ -1330,31 +1330,31 @@
             <!-- ================= COVER LETTER GENERATOR ================= -->
             <section id="view-cover" class="view">
                 <div class="panel rounded-2xl p-4 sm:p-5 space-y-3">
-                    <p class="text-xs text-slate-400">مخصصة لمراسلات رحلة التوظيف الرسمية: خطاب تقديم مرفق مع الـ CV، رسالة شكر بعد المقابلة، أو رد على عرض راتب.</p>
+                    <p class="text-xs text-slate-400" data-i18n="cover.auto1Text">مخصصة لمراسلات رحلة التوظيف الرسمية: خطاب تقديم مرفق مع الـ CV، رسالة شكر بعد المقابلة، أو رد على عرض راتب.</p>
 
                     <div class="panel-2 rounded-xl p-3 space-y-2">
-                        <p class="text-[11px] font-bold text-slate-300 flex items-center gap-2"><i class="fa-solid fa-id-card-clip"></i> استورد بيانات من CV جاهز (اختياري)</p>
-                        <p class="text-[10.5px] text-slate-500">صوّر الـ CV بتاعك بالكاميرا أو ارفع صورة/سكرين شوت منه، والذكاء الاصطناعي هيقراه ويستخرج منه أهم البيانات عشان يبني الرسالة عليها.</p>
+                        <p class="text-[11px] font-bold text-slate-300 flex items-center gap-2" data-i18n="cover.auto2Text"><i class="fa-solid fa-id-card-clip"></i> استورد بيانات من CV جاهز (اختياري)</p>
+                        <p class="text-[10.5px] text-slate-500" data-i18n="cover.auto3Text">صوّر الـ CV بتاعك بالكاميرا أو ارفع صورة/سكرين شوت منه، والذكاء الاصطناعي هيقراه ويستخرج منه أهم البيانات عشان يبني الرسالة عليها.</p>
                         <div class="flex flex-wrap gap-2">
                             <input type="file" id="cover-cv-file-input" accept="image/*" class="hidden" onchange="extractCvFromFile(event)">
-                            <label for="cover-cv-file-input" class="chip hover:bg-[var(--panel-2)] cursor-pointer"><i class="fa-solid fa-upload"></i> ارفع صورة الـ CV</label>
+                            <label for="cover-cv-file-input" class="chip hover:bg-[var(--panel-2)] cursor-pointer" data-i18n="cover.auto4Text"><i class="fa-solid fa-upload"></i> ارفع صورة الـ CV</label>
                             <input type="file" id="cover-cv-camera-input" accept="image/*" capture="environment" class="hidden" onchange="extractCvFromFile(event)">
-                            <label for="cover-cv-camera-input" class="chip hover:bg-[var(--panel-2)] cursor-pointer"><i class="fa-solid fa-camera"></i> صوّر الـ CV دلوقتي</label>
+                            <label for="cover-cv-camera-input" class="chip hover:bg-[var(--panel-2)] cursor-pointer" data-i18n="cover.auto5Text"><i class="fa-solid fa-camera"></i> صوّر الـ CV دلوقتي</label>
                         </div>
                         <p id="cover-cv-extract-status" class="text-[10.5px] text-slate-500"></p>
-                        <textarea id="cover-cv-extract" rows="3" placeholder="هنا هتظهر البيانات اللي اتقرأت من صورة الـ CV، وتقدر تعدّل فيها قبل ما تكمل" class="hidden w-full input-field rounded-lg p-2.5 text-xs resize-none"></textarea>
+                        <textarea id="cover-cv-extract" rows="3" data-i18n-ph="cover.coverCvExtractPh" placeholder="هنا هتظهر البيانات اللي اتقرأت من صورة الـ CV، وتقدر تعدّل فيها قبل ما تكمل" class="hidden w-full input-field rounded-lg p-2.5 text-xs resize-none"></textarea>
                     </div>
 
                     <select id="cover-type" class="w-full input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
-                        <option value="cover">رسالة تقديم (Cover Letter) مرفقة مع الـ CV</option>
-                        <option value="thanks">رسالة شكر ومتابعة بعد المقابلة (Thank You Note)</option>
-                        <option value="salary">رد على عرض راتب / مفاوضة راتب</option>
+                        <option value="cover" data-i18n="cover.auto6Text">رسالة تقديم (Cover Letter) مرفقة مع الـ CV</option>
+                        <option value="thanks" data-i18n="cover.auto7Text">رسالة شكر ومتابعة بعد المقابلة (Thank You Note)</option>
+                        <option value="salary" data-i18n="cover.auto8Text">رد على عرض راتب / مفاوضة راتب</option>
                     </select>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <input type="text" id="cover-role" placeholder="الوظيفة المتقدم لها" class="input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
-                        <input type="text" id="cover-company" placeholder="اسم الشركة (اختياري)" class="input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
+                        <input type="text" id="cover-role" data-i18n-ph="cover.coverRolePh" placeholder="الوظيفة المتقدم لها" class="input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
+                        <input type="text" id="cover-company" data-i18n-ph="cover.coverCompanyPh" placeholder="اسم الشركة (اختياري)" class="input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
                     </div>
-                    <textarea id="cover-notes" rows="4" placeholder="أهم نقطة أو نقطتين عايز تبرزهم (خبرة، إنجاز، سبب اهتمامك بالشركة...) - اختياري" class="w-full input-field rounded-xl p-3 text-xs sm:text-sm resize-none"></textarea>
+                    <textarea id="cover-notes" rows="4" data-i18n-ph="cover.coverNotesPh" placeholder="أهم نقطة أو نقطتين عايز تبرزهم (خبرة، إنجاز، سبب اهتمامك بالشركة...) - اختياري" class="w-full input-field rounded-xl p-3 text-xs sm:text-sm resize-none"></textarea>
                     <button onclick="runCoverLetterGenerator()" class="w-full py-3 btn-accent acc-cover font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2">
                         <i class="fa-solid fa-envelope-open-text"></i> جهّز الرسالة
                     </button>
@@ -1406,9 +1406,9 @@
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <select id="writing-mode" class="input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
-                            <option value="تدقيق إملائي ونحوي شامل">تدقيق إملائي ونحوي</option>
-                            <option value="اقتراح تنسيق أكاديمي حسب أسلوب APA">تنسيق أكاديمي (APA)</option>
-                            <option value="اقتراح تنسيق أكاديمي حسب أسلوب Harvard">تنسيق أكاديمي (Harvard)</option>
+                            <option value="تدقيق إملائي ونحوي شامل" data-i18n="writing.auto1Text">تدقيق إملائي ونحوي</option>
+                            <option value="اقتراح تنسيق أكاديمي حسب أسلوب APA" data-i18n="writing.auto2Text">تنسيق أكاديمي (APA)</option>
+                            <option value="اقتراح تنسيق أكاديمي حسب أسلوب Harvard" data-i18n="writing.auto3Text">تنسيق أكاديمي (Harvard)</option>
                         </select>
                         <input type="text" id="writing-topic" data-i18n-ph="writing.topicPh" placeholder="موضوع البحث (اختياري - يفيد في اقتراح مصادر)" class="input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
                     </div>
@@ -1437,10 +1437,10 @@
                     <div class="flex justify-between items-center">
                         <p class="text-xs text-slate-400" data-i18n="sum.desc">لخّص أي تقرير أو مقال أو محاضرة في ثواني.</p>
                         <select id="summary-style" class="input-field rounded-xl px-2.5 py-1.5 text-[11px]">
-                            <option value="short">ملخص قصير جداً (فهم سريع)</option>
-                            <option value="bullets">نقاط مختصرة</option>
-                            <option value="paragraph">فقرة واحدة</option>
-                            <option value="detailed">ملخص تفصيلي منظم بعناوين</option>
+                            <option value="short" data-i18n="summarizer.auto1Text">ملخص قصير جداً (فهم سريع)</option>
+                            <option value="bullets" data-i18n="summarizer.auto2Text">نقاط مختصرة</option>
+                            <option value="paragraph" data-i18n="summarizer.auto3Text">فقرة واحدة</option>
+                            <option value="detailed" data-i18n="summarizer.auto4Text">ملخص تفصيلي منظم بعناوين</option>
                         </select>
                     </div>
                     <textarea id="summarizer-input" rows="7" data-i18n-ph="sum.inputPh" placeholder="الصق النص هنا..." class="w-full input-field rounded-xl p-3 text-xs sm:text-sm resize-none"></textarea>
@@ -1471,16 +1471,16 @@
                         <div>
                             <label class="block text-xs text-slate-400 mb-1.5" data-i18n="tr.sourceLangLabel">لغة الكلام المصدر</label>
                             <select id="transcribe-source-lang" class="w-full input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
-                                <option value="">🔎 الكشف التلقائي للغة</option>
-                                <option value="ar-EG">العربية</option>
+                                <option value="" data-i18n="tr.auto1Text">🔎 الكشف التلقائي للغة</option>
+                                <option value="ar-EG" data-i18n="tr.auto2Text">العربية</option>
                                 <option value="en-US">English</option>
                                 <option value="fr-FR">Français</option>
                                 <option value="es-ES">Español</option>
                                 <option value="tr-TR">Türkçe</option>
                                 <option value="de-DE">Deutsch</option>
                                 <option value="hi-IN">हिन्दी</option>
-                                <option value="ur-PK">اردو</option>
-                                <option value="fa-IR">فارسی</option>
+                                <option value="ur-PK" data-i18n="tr.auto3Text">اردو</option>
+                                <option value="fa-IR" data-i18n="tr.auto4Text">فارسی</option>
                                 <option value="ru-RU">Русский</option>
                                 <option value="zh-CN">中文</option>
                                 <option value="ja-JP">日本語</option>
@@ -1491,8 +1491,8 @@
                         <div>
                             <label class="block text-xs text-slate-400 mb-1.5" data-i18n="tr.targetLangLabel">ترجم النص النهائي إلى (اختياري)</label>
                             <select id="transcribe-target-lang" class="w-full input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
-                                <option value="">بدون ترجمة - نفس اللغة</option>
-                                <option value="العربية الفصحى">العربية</option>
+                                <option value="" data-i18n="tr.auto5Text">بدون ترجمة - نفس اللغة</option>
+                                <option value="العربية الفصحى" data-i18n="tr.auto6Text">العربية</option>
                                 <option value="English">English</option>
                                 <option value="Français">Français</option>
                                 <option value="Español">Español</option>
@@ -1502,7 +1502,7 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-3">
-                        <button id="transcribe-mic-btn" onclick="toggleTranscribeMic()" class="w-12 h-12 rounded-xl panel-2 text-slate-300 hover:text-white flex items-center justify-center shrink-0" aria-label="تسجيل صوتي للتفريغ">
+                        <button id="transcribe-mic-btn" onclick="toggleTranscribeMic()" class="w-12 h-12 rounded-xl panel-2 text-slate-300 hover:text-white flex items-center justify-center shrink-0" data-i18n-aria="tr.transcribeMicBtnAria" aria-label="تسجيل صوتي للتفريغ">
                             <i class="fa-solid fa-microphone"></i>
                         </button>
                         <p id="transcribe-status" class="text-xs text-slate-500" data-i18n="tr.micHint">اضغط للتسجيل، أو ارفع ملف فوق، أو الصق نص جاهز تحت.</p>
@@ -1531,18 +1531,18 @@
                         <div>
                             <label class="block text-xs text-slate-400 mb-1.5" data-i18n="pitch.purposeLabel">هتستخدمه فين؟</label>
                             <select id="pitch-purpose" class="w-full input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
-                                <option value="بداية مقابلة شخصية (سؤال 'حدثني عن نفسك')">بداية مقابلة شخصية</option>
-                                <option value="فيديو تعريفي على لينكد إن أو البورتفوليو">فيديو تعريفي (لينكد إن / بورتفوليو)</option>
-                                <option value="تواصل بارد مع شركة أو صاحب عمل (Networking)">تواصل بارد مع شركة (Networking)</option>
-                                <option value="بداية مكالمة هاتفية أو فرصة عمل مفاجئة">بداية مكالمة هاتفية / فرصة مفاجئة</option>
+                                <option value="بداية مقابلة شخصية (سؤال 'حدثني عن نفسك')" data-i18n="pitch.auto1Text">بداية مقابلة شخصية</option>
+                                <option value="فيديو تعريفي على لينكد إن أو البورتفوليو" data-i18n="pitch.auto2Text">فيديو تعريفي (لينكد إن / بورتفوليو)</option>
+                                <option value="تواصل بارد مع شركة أو صاحب عمل (Networking)" data-i18n="pitch.auto3Text">تواصل بارد مع شركة (Networking)</option>
+                                <option value="بداية مكالمة هاتفية أو فرصة عمل مفاجئة" data-i18n="pitch.auto4Text">بداية مكالمة هاتفية / فرصة مفاجئة</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-xs text-slate-400 mb-1.5" data-i18n="pitch.toneLabel">أسلوب الكلام</label>
                             <select id="pitch-tone" class="w-full input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm">
-                                <option value="رسمي احترافي هادئ">رسمي احترافي هادئ</option>
-                                <option value="حماسي وفيه طاقة">حماسي وفيه طاقة</option>
-                                <option value="بسيط وودود قريب من الناس">بسيط وودود قريب من الناس</option>
+                                <option value="رسمي احترافي هادئ" data-i18n="pitch.auto5Text">رسمي احترافي هادئ</option>
+                                <option value="حماسي وفيه طاقة" data-i18n="pitch.auto6Text">حماسي وفيه طاقة</option>
+                                <option value="بسيط وودود قريب من الناس" data-i18n="pitch.auto7Text">بسيط وودود قريب من الناس</option>
                             </select>
                         </div>
                     </div>
@@ -1556,19 +1556,19 @@
                     <div id="pitch-result" class="hidden panel-2 rounded-xl p-3.5 text-xs sm:text-sm leading-relaxed max-h-[380px] overflow-y-auto"></div>
 
                     <div id="pitch-audio-box" class="hidden panel-2 rounded-xl p-3.5 space-y-2 border border-[var(--border)]">
-                        <p class="text-xs font-bold text-slate-300 flex items-center gap-2"><i class="fa-solid fa-volume-high"></i> اسمع النص وقيس توقيته</p>
+                        <p class="text-xs font-bold text-slate-300 flex items-center gap-2" data-i18n="pitch.auto8Text"><i class="fa-solid fa-volume-high"></i> اسمع النص وقيس توقيته</p>
                         <p id="pitch-timing" class="text-[10.5px] text-slate-500"></p>
                         <div class="flex gap-2">
                             <button onclick="previewPitchAudio()" class="flex-1 py-2.5 btn-accent acc-pitch font-bold text-xs rounded-xl flex items-center justify-center gap-2">
                                 <i class="fa-solid fa-play"></i> استمع للنص
                             </button>
-                            <button onclick="stopSpeaking()" class="px-4 py-2.5 chip hover:bg-[var(--panel-2)]" aria-label="إيقاف القراءة الصوتية"><i class="fa-solid fa-stop"></i></button>
+                            <button onclick="stopSpeaking()" class="px-4 py-2.5 chip hover:bg-[var(--panel-2)]" data-i18n-aria="pitch.auto9Aria" aria-label="إيقاف القراءة الصوتية"><i class="fa-solid fa-stop"></i></button>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-2 pt-1">
-                        <button onclick="switchViewByName('cv')" class="panel-2 rounded-xl p-2.5 text-center lift-hover text-[11px] text-slate-400 flex items-center justify-center gap-1.5"><i class="fa-solid fa-file-lines"></i> جهّز الـ CV الأول</button>
-                        <button onclick="switchViewByName('interview')" class="panel-2 rounded-xl p-2.5 text-center lift-hover text-[11px] text-slate-400 flex items-center justify-center gap-1.5"><i class="fa-solid fa-microphone-lines"></i> اتدرّب في مقابلة صوتية</button>
+                        <button onclick="switchViewByName('cv')" class="panel-2 rounded-xl p-2.5 text-center lift-hover text-[11px] text-slate-400 flex items-center justify-center gap-1.5" data-i18n="pitch.auto10Text"><i class="fa-solid fa-file-lines"></i> جهّز الـ CV الأول</button>
+                        <button onclick="switchViewByName('interview')" class="panel-2 rounded-xl p-2.5 text-center lift-hover text-[11px] text-slate-400 flex items-center justify-center gap-1.5" data-i18n="pitch.auto11Text"><i class="fa-solid fa-microphone-lines"></i> اتدرّب في مقابلة صوتية</button>
                     </div>
                 </div>
             </section>
@@ -1580,20 +1580,20 @@
                 <div class="profile-hero rounded-2xl overflow-hidden">
                     <div class="relative p-4 sm:p-6 pb-5">
                         <div class="flex flex-col sm:flex-row sm:items-end gap-4">
-                            <label for="profile-photo-input" class="profile-avatar-xl cursor-pointer" role="button" aria-label="تغيير صورة الملف الشخصي" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.querySelector('input,~input')||document.getElementById('profile-photo-input').click();}">
-                                <img id="profile-photo-preview" class="hidden w-full h-full object-cover" alt="صورة الملف الشخصي" />
+                            <label for="profile-photo-input" class="profile-avatar-xl cursor-pointer" role="button" data-i18n-aria="profile.auto1Aria" aria-label="تغيير صورة الملف الشخصي" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.querySelector('input,~input')||document.getElementById('profile-photo-input').click();}">
+                                <img id="profile-photo-preview" class="hidden w-full h-full object-cover" data-i18n-alt="profile.profilePhotoPreviewAlt" alt="صورة الملف الشخصي" />
                                 <i id="profile-photo-icon" class="fa-solid fa-camera text-slate-500 text-xl" aria-hidden="true"></i>
-                                <div class="avatar-edit-hint"><i class="fa-solid fa-pen" aria-hidden="true"></i>&nbsp;تغيير</div>
+                                <div class="avatar-edit-hint" data-i18n="profile.auto2Text"><i class="fa-solid fa-pen" aria-hidden="true"></i>&nbsp;تغيير</div>
                             </label>
-                            <input type="file" id="profile-photo-input" accept="image/*" class="hidden" onchange="handleProfilePhotoUpload(event)" aria-label="رفع صورة الملف الشخصي">
+                            <input type="file" id="profile-photo-input" accept="image/*" class="hidden" onchange="handleProfilePhotoUpload(event)" data-i18n-aria="profile.profilePhotoInputAria" aria-label="رفع صورة الملف الشخصي">
 
                             <div class="flex-1 min-w-0 space-y-2">
                                 <div class="flex flex-wrap items-center gap-2">
                                     <span id="profile-points" class="points-badge text-[11px] px-3 py-1.5 rounded-full flex items-center gap-1.5"><i class="fa-solid fa-star"></i> <span id="profile-points-count">0</span> <span data-i18n="profile.points">نقطة</span></span>
                                     <span class="plan-pill"><i class="fa-solid fa-gem"></i> <span id="profile-stat-plan" data-i18n="profile.planFree">مجاني</span></span>
                                 </div>
-                                <input type="text" id="profile-name" data-i18n-ph="profile.namePh" placeholder="اسمك الكامل" maxlength="60" aria-label="اسمك الكامل" class="input-field rounded-xl px-3.5 py-2 text-base font-extrabold w-full sm:max-w-sm">
-                                <input type="text" id="profile-title" data-i18n-ph="profile.titlePh" placeholder="المسمى الوظيفي (مثلاً: مطوّر واجهات أمامية)" maxlength="80" aria-label="المسمى الوظيفي" class="input-field rounded-xl px-3.5 py-2 text-xs w-full sm:max-w-sm">
+                                <input type="text" id="profile-name" data-i18n-ph="profile.namePh" placeholder="اسمك الكامل" maxlength="60" data-i18n-aria="profile.profileNameAria" aria-label="اسمك الكامل" class="input-field rounded-xl px-3.5 py-2 text-base font-extrabold w-full sm:max-w-sm">
+                                <input type="text" id="profile-title" data-i18n-ph="profile.titlePh" placeholder="المسمى الوظيفي (مثلاً: مطوّر واجهات أمامية)" maxlength="80" data-i18n-aria="profile.profileTitleAria" aria-label="المسمى الوظيفي" class="input-field rounded-xl px-3.5 py-2 text-xs w-full sm:max-w-sm">
                             </div>
 
                             <button onclick="saveProfileInfo()" class="btn-accent acc-profile font-bold text-xs px-4 py-2.5 rounded-xl flex items-center gap-2 shrink-0 self-start sm:self-end">
@@ -1603,10 +1603,10 @@
 
                         <!-- Quick shortcuts -->
                         <div class="flex items-center gap-2 overflow-x-auto pt-4 mt-4 border-t border-[var(--border)] no-scrollbar">
-                            <button onclick="switchViewByName('cv')" class="quick-pill"><i class="fa-solid fa-file-lines"></i> السيرة الذاتية</button>
-                            <button onclick="switchViewByName('portfolio')" class="quick-pill"><i class="fa-solid fa-briefcase"></i> البورتفوليو</button>
-                            <button onclick="switchViewByName('progress')" class="quick-pill"><i class="fa-solid fa-chart-line"></i> متابعة التقدم</button>
-                            <button onclick="switchViewByName('subscriptions')" class="quick-pill"><i class="fa-solid fa-gem"></i> الباقات</button>
+                            <button onclick="switchViewByName('cv')" class="quick-pill" data-i18n="profile.auto3Text"><i class="fa-solid fa-file-lines"></i> السيرة الذاتية</button>
+                            <button onclick="switchViewByName('portfolio')" class="quick-pill" data-i18n="profile.auto4Text"><i class="fa-solid fa-briefcase"></i> البورتفوليو</button>
+                            <button onclick="switchViewByName('progress')" class="quick-pill" data-i18n="profile.auto5Text"><i class="fa-solid fa-chart-line"></i> متابعة التقدم</button>
+                            <button onclick="switchViewByName('subscriptions')" class="quick-pill" data-i18n="profile.auto6Text"><i class="fa-solid fa-gem"></i> الباقات</button>
                         </div>
                     </div>
                 </div>
@@ -1625,8 +1625,8 @@
                     </div>
                     <div class="stat-card-v2">
                         <div class="stat-icon" style="background:rgba(253,186,116,.14); color:#fdba74;"><i class="fa-solid fa-shield-halved"></i></div>
-                        <p id="profile-stat-privacy" class="text-[11px] font-bold text-slate-100">آمن</p>
-                        <p class="text-[10px] text-slate-500">حالة حسابك</p>
+                        <p id="profile-stat-privacy" class="text-[11px] font-bold text-slate-100" data-i18n="profile.profileStatPrivacyText">آمن</p>
+                        <p class="text-[10px] text-slate-500" data-i18n="profile.auto7Text">حالة حسابك</p>
                     </div>
                 </div>
 
@@ -1635,7 +1635,7 @@
                     <div class="lg:col-span-2 space-y-4">
                         <!-- Google account -->
                         <div class="panel rounded-2xl p-4 sm:p-5">
-                            <p class="section-eyebrow"><i class="fa-solid fa-user-shield"></i> حساب الدخول</p>
+                            <p class="section-eyebrow" data-i18n="profile.auto8Text"><i class="fa-solid fa-user-shield"></i> حساب الدخول</p>
                             <div id="google-signin-area" class="panel-2 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center gap-3">
                                 <div id="g_id_signin_container"></div>
                                 <button onclick="triggerGoogleSignIn()" class="g-signin-btn flex items-center gap-2">
@@ -1648,7 +1648,7 @@
                             <div id="google-signedin-area" class="hidden panel-2 rounded-xl p-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                                 <div class="flex items-center gap-3 min-w-0">
                                     <div class="signedin-avatar">
-                                        <img id="signedin-avatar-img" class="hidden" alt="صورة الحساب" />
+                                        <img id="signedin-avatar-img" class="hidden" data-i18n-alt="profile.signedinAvatarImgAlt" alt="صورة الحساب" />
                                         <i id="signedin-avatar-icon" class="fa-solid fa-user text-slate-500"></i>
                                     </div>
                                     <div class="flex-1 min-w-0">
@@ -1668,51 +1668,51 @@
 
                         <!-- Account overview: subscriptions, purchases, totals -->
                         <div class="panel rounded-2xl p-4 sm:p-5 space-y-4" id="profile-account-panel">
-                            <p class="section-eyebrow"><i class="fa-solid fa-wallet"></i> نظرة عامة على حسابك</p>
+                            <p class="section-eyebrow" data-i18n="profile.auto9Text"><i class="fa-solid fa-wallet"></i> نظرة عامة على حسابك</p>
 
                             <div class="grid grid-cols-2 gap-3">
                                 <div class="purchase-row justify-center flex-col text-center gap-1 py-3">
                                     <p id="profile-current-plan" class="text-sm font-bold text-slate-100">مجاني</p>
-                                    <p class="text-[10px] text-slate-500">باقتك الحالية</p>
+                                    <p class="text-[10px] text-slate-500" data-i18n="profile.auto10Text">باقتك الحالية</p>
                                 </div>
                                 <div class="purchase-row justify-center flex-col text-center gap-1 py-3">
                                     <p id="profile-total-count" class="text-sm font-bold text-slate-100">0</p>
-                                    <p class="text-[10px] text-slate-500">عدد الاشتراكات/المشتريات</p>
+                                    <p class="text-[10px] text-slate-500" data-i18n="profile.auto11Text">عدد الاشتراكات/المشتريات</p>
                                 </div>
                             </div>
 
                             <div class="space-y-2">
                                 <div class="flex items-center justify-between">
-                                    <p class="text-xs font-bold text-slate-300 flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left"></i> سجل الاشتراكات والمشتريات</p>
-                                    <button onclick="openPricingModal()" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-plus"></i> اشترك في باقة</button>
+                                    <p class="text-xs font-bold text-slate-300 flex items-center gap-2" data-i18n="profile.auto12Text"><i class="fa-solid fa-clock-rotate-left"></i> سجل الاشتراكات والمشتريات</p>
+                                    <button onclick="openPricingModal()" class="chip hover:bg-[var(--panel-2)]" data-i18n="profile.auto13Text"><i class="fa-solid fa-plus"></i> اشترك في باقة</button>
                                 </div>
                                 <div id="profile-purchases-list" class="space-y-2"></div>
                             </div>
 
                             <!-- بانر بيبان لو المستخدم طلب إلغاء الاشتراك بالفعل - التجديد التلقائي متوقف لحد آخر الفترة الحالية -->
                             <div id="cancel-sub-active-banner" class="hidden panel-2 rounded-xl p-3 text-[11px] text-amber-300 flex items-center justify-between gap-2 flex-wrap">
-                                <span class="flex items-center gap-2"><i class="fa-solid fa-circle-info"></i> تم إيقاف التجديد التلقائي لباقتك، وهتفضل مستفيد منها لحد آخر يوم في الفترة الحالية.</span>
-                                <button onclick="undoCancelSubscription()" class="chip hover:bg-[var(--panel-2)] shrink-0"><i class="fa-solid fa-rotate-left"></i> تراجع عن الإلغاء</button>
+                                <span class="flex items-center gap-2" data-i18n="profile.auto14Text"><i class="fa-solid fa-circle-info"></i> تم إيقاف التجديد التلقائي لباقتك، وهتفضل مستفيد منها لحد آخر يوم في الفترة الحالية.</span>
+                                <button onclick="undoCancelSubscription()" class="chip hover:bg-[var(--panel-2)] shrink-0" data-i18n="profile.auto15Text"><i class="fa-solid fa-rotate-left"></i> تراجع عن الإلغاء</button>
                             </div>
                             <!-- زرار "إلغاء الاشتراك" - بيبان بس لو المستخدم فعلاً في باقة مدفوعة ولسه ماطلبش إلغاء -->
                             <div id="cancel-sub-row" class="hidden flex items-center justify-between gap-2 pt-1 border-t border-[var(--border)]">
-                                <p class="text-[10.5px] text-slate-500">مش عايز تكمل في باقتك الحالية؟</p>
-                                <button id="cancel-sub-btn" onclick="openCancelSubscriptionModal()" class="chip hover:bg-red-500/10 hover:text-red-300 shrink-0"><i class="fa-solid fa-ban"></i> إلغاء الاشتراك</button>
+                                <p class="text-[10.5px] text-slate-500" data-i18n="profile.auto16Text">مش عايز تكمل في باقتك الحالية؟</p>
+                                <button id="cancel-sub-btn" onclick="openCancelSubscriptionModal()" class="chip hover:bg-red-500/10 hover:text-red-300 shrink-0" data-i18n="profile.cancelSubBtnText"><i class="fa-solid fa-ban"></i> إلغاء الاشتراك</button>
                             </div>
                         </div>
 
                         <!-- Privacy & local data controls -->
                         <div class="panel rounded-2xl p-4 sm:p-5 space-y-3" id="profile-privacy-panel">
-                            <p class="section-eyebrow"><i class="fa-solid fa-lock"></i> الخصوصية وبياناتك</p>
-                            <p class="text-[11px] text-slate-500 leading-relaxed">بيانات الملف الشخصي وسجل التدريب وسجل الاستخدام متخزنة على جهازك (المتصفح) بشكل أساسي، ولو سجّلت دخول بجوجل بتتزامن نسخة منها مع حسابك عشان تلاقيها من أي جهاز. صور الـ CV وملفات الصوت/الفيديو بتتبعت للمعالجة وقت الاستخدام بس ومش بتتخزن دائم على السيرفر.</p>
+                            <p class="section-eyebrow" data-i18n="profile.auto17Text"><i class="fa-solid fa-lock"></i> الخصوصية وبياناتك</p>
+                            <p class="text-[11px] text-slate-500 leading-relaxed" data-i18n="profile.auto18Text">بيانات الملف الشخصي وسجل التدريب وسجل الاستخدام متخزنة على جهازك (المتصفح) بشكل أساسي، ولو سجّلت دخول بجوجل بتتزامن نسخة منها مع حسابك عشان تلاقيها من أي جهاز. صور الـ CV وملفات الصوت/الفيديو بتتبعت للمعالجة وقت الاستخدام بس ومش بتتخزن دائم على السيرفر.</p>
                             <div class="flex flex-wrap gap-2">
-                                <button onclick="requestPasswordChange()" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-key"></i> تغيير كلمة المرور</button>
-                                <button onclick="clearLocalAppData()" class="chip hover:bg-red-500/10 hover:text-red-300"><i class="fa-solid fa-trash-can"></i> امسح بياناتي المحفوظة على الجهاز ده بس</button>
+                                <button onclick="requestPasswordChange()" class="chip hover:bg-[var(--panel-2)]" data-i18n="profile.auto19Text"><i class="fa-solid fa-key"></i> تغيير كلمة المرور</button>
+                                <button onclick="clearLocalAppData()" class="chip hover:bg-red-500/10 hover:text-red-300" data-i18n="profile.auto20Text"><i class="fa-solid fa-trash-can"></i> امسح بياناتي المحفوظة على الجهاز ده بس</button>
                             </div>
                             <div class="pt-3 mt-1 border-t border-[var(--border)] space-y-2">
-                                <p class="text-[10.5px] font-bold text-red-300/90 flex items-center gap-1.5"><i class="fa-solid fa-triangle-exclamation"></i> منطقة الخطر</p>
-                                <p class="text-[10.5px] text-slate-500 leading-relaxed">حذف الحساب بيمسح حسابك نهائياً من عندنا: بياناتك، اشتراكاتك، وسجل استخدامك على السيرفر (مش بس على الجهاز ده) - وده إجراء نهائي مينفعش يترجع.</p>
-                                <button id="delete-account-btn" onclick="deleteAccountPermanently()" class="chip" style="border-color:rgba(248,113,113,.4); color:#f87171; background:rgba(248,113,113,.08);"><i class="fa-solid fa-user-slash"></i> احذف حسابي نهائياً</button>
+                                <p class="text-[10.5px] font-bold text-red-300/90 flex items-center gap-1.5" data-i18n="profile.auto21Text"><i class="fa-solid fa-triangle-exclamation"></i> منطقة الخطر</p>
+                                <p class="text-[10.5px] text-slate-500 leading-relaxed" data-i18n="profile.auto22Text">حذف الحساب بيمسح حسابك نهائياً من عندنا: بياناتك، اشتراكاتك، وسجل استخدامك على السيرفر (مش بس على الجهاز ده) - وده إجراء نهائي مينفعش يترجع.</p>
+                                <button id="delete-account-btn" onclick="deleteAccountPermanently()" class="chip" style="border-color:rgba(248,113,113,.4); color:#f87171; background:rgba(248,113,113,.08);" data-i18n="profile.deleteAccountBtnText"><i class="fa-solid fa-user-slash"></i> احذف حسابي نهائياً</button>
                             </div>
                         </div>
                     </div>
@@ -1721,7 +1721,7 @@
                     <div class="space-y-4">
                         <div class="membership-card">
                             <div class="membership-card-top">
-                                <p class="text-[11px] font-bold text-slate-300 flex items-center gap-1.5 relative"><i class="fa-solid fa-crown text-amber-300/80"></i> عضويتك</p>
+                                <p class="text-[11px] font-bold text-slate-300 flex items-center gap-1.5 relative" data-i18n="profile.auto23Text"><i class="fa-solid fa-crown text-amber-300/80"></i> عضويتك</p>
                                 <div class="membership-chip"></div>
                             </div>
                             <div>
@@ -1730,15 +1730,15 @@
                             </div>
                             <div class="membership-card-bottom">
                                 <div>
-                                    <p class="text-[10px] text-slate-500 relative">إجمالي المدفوع</p>
+                                    <p class="text-[10px] text-slate-500 relative" data-i18n="profile.auto24Text">إجمالي المدفوع</p>
                                     <p id="profile-total-spent" class="text-xl font-extrabold text-white relative">0 ج.م</p>
                                 </div>
-                                <button onclick="switchViewByName('subscriptions')" class="btn-primary text-[11px] font-bold px-3.5 py-2 rounded-xl relative shrink-0">ترقية الباقة</button>
+                                <button onclick="switchViewByName('subscriptions')" class="btn-primary text-[11px] font-bold px-3.5 py-2 rounded-xl relative shrink-0" data-i18n="profile.auto25Text">ترقية الباقة</button>
                             </div>
                         </div>
                         <div class="panel rounded-2xl p-4 space-y-2.5">
-                            <p class="section-eyebrow"><i class="fa-solid fa-lightbulb"></i> نصايح سريعة</p>
-                            <p class="text-[11px] text-slate-400 leading-relaxed">كمّل بياناتك وصورتك عشان يبقى شكل الـ CV والبورتفوليو بتوعك أحسن، وتقدر تتابع تقدمك بدقة من صفحة "متابعة التقدم".</p>
+                            <p class="section-eyebrow" data-i18n="profile.auto26Text"><i class="fa-solid fa-lightbulb"></i> نصايح سريعة</p>
+                            <p class="text-[11px] text-slate-400 leading-relaxed" data-i18n="profile.auto27Text">كمّل بياناتك وصورتك عشان يبقى شكل الـ CV والبورتفوليو بتوعك أحسن، وتقدر تتابع تقدمك بدقة من صفحة "متابعة التقدم".</p>
                         </div>
                     </div>
                 </div>
@@ -1754,37 +1754,37 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                         <div class="panel-2 rounded-xl p-4 space-y-2 lift-hover">
                             <h4 class="text-xs font-bold text-slate-200" data-i18n="subs.basicName">الأساسية</h4>
-                            <p class="text-lg font-bold text-white">79 <span class="text-xs">ج.م</span> <span class="text-[10px] text-slate-500" data-i18n="subs.perMonth">/ شهرياً</span></p>
+                            <p class="text-lg font-bold text-white">79 <span class="text-xs" data-i18n="subscriptions.auto1Text">ج.م</span> <span class="text-[10px] text-slate-500" data-i18n="subs.perMonth">/ شهرياً</span></p>
                             <ul class="text-[10.5px] text-slate-400 space-y-1.5">
-                                <li><i class="fa-solid fa-check text-slate-400"></i> 25 طلب ذكاء اصطناعي شهرياً</li>
-                                <li><i class="fa-solid fa-check text-slate-400"></i> بناء سيرة ذاتية وتلخيص مستندات</li>
+                                <li data-i18n="subscriptions.auto2Text"><i class="fa-solid fa-check text-slate-400"></i> 25 طلب ذكاء اصطناعي شهرياً</li>
+                                <li data-i18n="subscriptions.auto3Text"><i class="fa-solid fa-check text-slate-400"></i> بناء سيرة ذاتية وتلخيص مستندات</li>
                             <button onclick="openPricingModal()" data-plan-btn="الأساسية" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl" data-i18n="subs.subscribe">اشترك الآن</button>
                         </div>
                         <div class="rounded-xl p-4 space-y-2 border-2 border-violet-400 relative bg-[#20252c] lift-hover">
                             <span class="absolute top-0 left-0 bg-violet-400 text-slate-950 text-[9px] font-bold px-2 py-0.5 rounded-br-lg rounded-tl-xl" data-i18n="subs.popular">الأكثر طلباً</span>
                             <h4 class="text-xs font-bold text-slate-100" data-i18n="subs.proName">الاحترافية</h4>
-                            <p class="text-lg font-bold text-white">179 <span class="text-xs">ج.م</span> <span class="text-[10px] text-slate-500" data-i18n="subs.perMonth">/ شهرياً</span></p>
+                            <p class="text-lg font-bold text-white">179 <span class="text-xs" data-i18n="subscriptions.auto4Text">ج.م</span> <span class="text-[10px] text-slate-500" data-i18n="subs.perMonth">/ شهرياً</span></p>
                             <ul class="text-[10.5px] text-slate-300 space-y-1.5">
-                                <li><i class="fa-solid fa-check text-slate-300"></i> 150 طلب ذكاء اصطناعي شهرياً</li>
-                                <li><i class="fa-solid fa-check text-slate-300"></i> تقارير أداء تفصيلية</li>
-                                <li><i class="fa-solid fa-check text-slate-300"></i> مونتاج + تفريغ صوتي بكل اللغات</li>
+                                <li data-i18n="subscriptions.auto5Text"><i class="fa-solid fa-check text-slate-300"></i> 150 طلب ذكاء اصطناعي شهرياً</li>
+                                <li data-i18n="subscriptions.auto6Text"><i class="fa-solid fa-check text-slate-300"></i> تقارير أداء تفصيلية</li>
+                                <li data-i18n="subscriptions.auto7Text"><i class="fa-solid fa-check text-slate-300"></i> مونتاج + تفريغ صوتي بكل اللغات</li>
                             <button onclick="openPricingModal()" data-plan-btn="الاحترافية" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl" data-i18n="subs.subscribe">اشترك الآن</button>
                         </div>
                         <div class="rounded-xl p-4 space-y-2 border-2 border-amber-400/70 relative bg-[#221d12] lift-hover">
                             <span class="absolute top-0 left-0 bg-amber-400 text-slate-950 text-[9px] font-bold px-2 py-0.5 rounded-br-lg rounded-tl-xl" data-i18n="subs.bestValue">أعلى فئة</span>
                             <h4 class="text-xs font-bold text-amber-200" data-i18n="subs.eliteName">النخبة</h4>
-                            <p class="text-lg font-bold text-white">349 <span class="text-xs">ج.م</span> <span class="text-[10px] text-slate-500" data-i18n="subs.perMonth">/ شهرياً</span></p>
+                            <p class="text-lg font-bold text-white">349 <span class="text-xs" data-i18n="subscriptions.auto8Text">ج.م</span> <span class="text-[10px] text-slate-500" data-i18n="subs.perMonth">/ شهرياً</span></p>
                             <ul class="text-[10.5px] text-slate-300 space-y-1.5">
-                                <li><i class="fa-solid fa-check text-amber-300"></i> طلبات ذكاء اصطناعي غير محدودة تماماً</li>
-                                <li><i class="fa-solid fa-check text-amber-300"></i> كل أدوات المنصة بلا استثناء</li>
+                                <li data-i18n="subscriptions.auto9Text"><i class="fa-solid fa-check text-amber-300"></i> طلبات ذكاء اصطناعي غير محدودة تماماً</li>
+                                <li data-i18n="subscriptions.auto10Text"><i class="fa-solid fa-check text-amber-300"></i> كل أدوات المنصة بلا استثناء</li>
                             <button onclick="openPricingModal()" data-plan-btn="النخبة" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl" data-i18n="subs.subscribe">اشترك الآن</button>
                         </div>
                         <div class="panel-2 rounded-xl p-4 space-y-2 lift-hover">
                             <h4 class="text-xs font-bold text-slate-200" data-i18n="subs.yearlyName">السنوية</h4>
-                            <p class="text-lg font-bold text-white">1790 <span class="text-xs">ج.م</span> <span class="text-[10px] text-slate-500" data-i18n="subs.perYear">/ سنوياً</span></p>
+                            <p class="text-lg font-bold text-white">1790 <span class="text-xs" data-i18n="subscriptions.auto11Text">ج.م</span> <span class="text-[10px] text-slate-500" data-i18n="subs.perYear">/ سنوياً</span></p>
                             <ul class="text-[10.5px] text-slate-400 space-y-1.5">
-                                <li><i class="fa-solid fa-check text-slate-400"></i> كل مزايا الاحترافية</li>
-                                <li><i class="fa-solid fa-check text-slate-400"></i> شهرين مجاناً</li>
+                                <li data-i18n="subscriptions.auto12Text"><i class="fa-solid fa-check text-slate-400"></i> كل مزايا الاحترافية</li>
+                                <li data-i18n="subscriptions.auto13Text"><i class="fa-solid fa-check text-slate-400"></i> شهرين مجاناً</li>
                             <button onclick="openPricingModal()" data-plan-btn="السنوية" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl" data-i18n="subs.subscribe">اشترك الآن</button>
                         </div>
                     </div>
@@ -1797,10 +1797,10 @@
                         <div class="panel-2 rounded-xl p-4 space-y-2 lift-hover">
                             <h4 class="text-xs font-bold text-slate-200" data-i18n="subs.teamSmallName">فريق صغير</h4>
                             <p class="text-[10px] text-slate-500 mb-1" data-i18n="subs.teamSmallRange">حتى 10 أفراد</p>
-                            <p class="text-lg font-bold text-white">149 <span class="text-xs">ج.م</span> <span class="text-[10px] text-slate-500" data-i18n="subs.perSeat">/ للفرد شهرياً</span></p>
+                            <p class="text-lg font-bold text-white">149 <span class="text-xs" data-i18n="subscriptions.auto14Text">ج.م</span> <span class="text-[10px] text-slate-500" data-i18n="subs.perSeat">/ للفرد شهرياً</span></p>
                             <ul class="text-[10.5px] text-slate-400 space-y-1.5">
-                                <li><i class="fa-solid fa-check text-slate-400"></i> كل مزايا الباقة الاحترافية</li>
-                                <li><i class="fa-solid fa-check text-slate-400"></i> لوحة متابعة تقدّم الفريق</li>
+                                <li data-i18n="subscriptions.auto15Text"><i class="fa-solid fa-check text-slate-400"></i> كل مزايا الباقة الاحترافية</li>
+                                <li data-i18n="subscriptions.auto16Text"><i class="fa-solid fa-check text-slate-400"></i> لوحة متابعة تقدّم الفريق</li>
                             </ul>
                             <button onclick="openPricingModal()" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl" data-i18n="subs.subscribe">اشترك الآن</button>
                         </div>
@@ -1808,11 +1808,11 @@
                             <span class="absolute top-0 left-0 bg-violet-400 text-slate-950 text-[9px] font-bold px-2 py-0.5 rounded-br-lg rounded-tl-xl" data-i18n="subs.recommended">موصى بها للجامعات</span>
                             <h4 class="text-xs font-bold text-slate-100" data-i18n="subs.teamMedName">دفعة / كلية</h4>
                             <p class="text-[10px] text-slate-400 mb-1" data-i18n="subs.teamMedRange">11 إلى 100 فرد</p>
-                            <p class="text-lg font-bold text-white">99 <span class="text-xs">ج.م</span> <span class="text-[10px] text-slate-500" data-i18n="subs.perSeat">/ للفرد شهرياً</span></p>
+                            <p class="text-lg font-bold text-white">99 <span class="text-xs" data-i18n="subscriptions.auto17Text">ج.م</span> <span class="text-[10px] text-slate-500" data-i18n="subs.perSeat">/ للفرد شهرياً</span></p>
                             <ul class="text-[10.5px] text-slate-300 space-y-1.5">
-                                <li><i class="fa-solid fa-check text-slate-300"></i> كل مزايا الاحترافية لكل الطلاب</li>
-                                <li><i class="fa-solid fa-check text-slate-300"></i> تقرير جماعي لمشرف الدفعة</li>
-                                <li><i class="fa-solid fa-check text-slate-300"></i> جلسة تدريب تعريفية مجانية</li>
+                                <li data-i18n="subscriptions.auto18Text"><i class="fa-solid fa-check text-slate-300"></i> كل مزايا الاحترافية لكل الطلاب</li>
+                                <li data-i18n="subscriptions.auto19Text"><i class="fa-solid fa-check text-slate-300"></i> تقرير جماعي لمشرف الدفعة</li>
+                                <li data-i18n="subscriptions.auto20Text"><i class="fa-solid fa-check text-slate-300"></i> جلسة تدريب تعريفية مجانية</li>
                             </ul>
                             <button onclick="openPricingModal()" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl" data-i18n="subs.subscribe">اشترك الآن</button>
                         </div>
@@ -1821,8 +1821,8 @@
                             <p class="text-[10px] text-slate-500 mb-1" data-i18n="subs.uniRange">أكتر من 100 فرد</p>
                             <p class="text-lg font-bold text-white" data-i18n="subs.customPrice">سعر خاص حسب العدد</p>
                             <ul class="text-[10.5px] text-slate-400 space-y-1.5">
-                                <li><i class="fa-solid fa-check text-slate-400"></i> كل المزايا + تخصيص كامل</li>
-                                <li><i class="fa-solid fa-check text-slate-400"></i> مدير حساب مخصص للجامعة</li>
+                                <li data-i18n="subscriptions.auto21Text"><i class="fa-solid fa-check text-slate-400"></i> كل المزايا + تخصيص كامل</li>
+                                <li data-i18n="subscriptions.auto22Text"><i class="fa-solid fa-check text-slate-400"></i> مدير حساب مخصص للجامعة</li>
                             </ul>
                             <button onclick="switchViewByName('support')" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl" data-i18n="subs.contactUs">تواصل معنا</button>
                         </div>
@@ -1843,18 +1843,18 @@
                             <p class="text-[11px] text-slate-400 flex items-center gap-2"><i class="fa-solid fa-wallet"></i> <span data-i18n="don.wallet">محفظة إلكترونية</span></p>
                             <div class="flex items-center justify-between panel rounded-lg px-3 py-2">
                                 <span class="font-bold text-slate-100 text-sm" dir="ltr">01279383905</span>
-                                <button onclick="copyPlainText('01279383905', this)" class="chip" aria-label="نسخ الرقم"><i class="fa-solid fa-copy"></i></button>
+                                <button onclick="copyPlainText('01279383905', this)" class="chip" data-i18n-aria="donations.auto1Aria" aria-label="نسخ الرقم"><i class="fa-solid fa-copy"></i></button>
                             </div>
                             <div class="flex items-center justify-between panel rounded-lg px-3 py-2">
                                 <span class="font-bold text-slate-100 text-sm" dir="ltr">01279383843</span>
-                                <button onclick="copyPlainText('01279383843', this)" class="chip" aria-label="نسخ الرقم"><i class="fa-solid fa-copy"></i></button>
+                                <button onclick="copyPlainText('01279383843', this)" class="chip" data-i18n-aria="donations.auto2Aria" aria-label="نسخ الرقم"><i class="fa-solid fa-copy"></i></button>
                             </div>
                         </div>
                         <div class="panel-2 rounded-xl p-4 space-y-2">
                             <p class="text-[11px] text-slate-400 flex items-center gap-2"><i class="fa-solid fa-money-bill-transfer"></i> InstaPay</p>
                             <div class="flex items-center justify-between panel rounded-lg px-3 py-2">
                                 <span class="font-bold text-slate-100 text-sm" dir="ltr">01279383905</span>
-                                <button onclick="copyPlainText('01279383905', this)" class="chip" aria-label="نسخ الرقم"><i class="fa-solid fa-copy"></i></button>
+                                <button onclick="copyPlainText('01279383905', this)" class="chip" data-i18n-aria="donations.auto3Aria" aria-label="نسخ الرقم"><i class="fa-solid fa-copy"></i></button>
                             </div>
                         </div>
                     </div>
@@ -1890,16 +1890,16 @@
                     <div class="panel-2 rounded-xl p-3.5 text-[11px] text-slate-400 text-center" data-i18n="sup.hours">بنرد عادةً خلال ساعات قليلة. للاستفسارات العاجلة، الأسرع هو الواتساب.</div>
 
                     <div class="panel-2 rounded-xl p-4 space-y-3 max-w-3xl mx-auto w-full">
-                        <h4 class="text-xs font-bold text-slate-100 flex items-center gap-2"><i class="fa-solid fa-comment-dots"></i> عندك اقتراح أو شكوى أو استفسار؟</h4>
+                        <h4 class="text-xs font-bold text-slate-100 flex items-center gap-2" data-i18n="support.auto1Text"><i class="fa-solid fa-comment-dots"></i> عندك اقتراح أو شكوى أو استفسار؟</h4>
                         <select id="fb-type" class="w-full input-field rounded-xl px-3 py-2.5 text-xs">
-                            <option value="اقتراح">اقتراح</option>
-                            <option value="شكوى">شكوى</option>
-                            <option value="استفسار">استفسار</option>
+                            <option value="اقتراح" data-i18n="support.auto2Text">اقتراح</option>
+                            <option value="شكوى" data-i18n="support.auto3Text">شكوى</option>
+                            <option value="استفسار" data-i18n="support.auto4Text">استفسار</option>
                         </select>
-                        <input id="fb-contact" type="text" placeholder="رقم موبايل أو إيميل للتواصل (اختياري)" class="w-full input-field rounded-xl px-3 py-2.5 text-xs" dir="ltr">
+                        <input id="fb-contact" type="text" data-i18n-ph="support.fbContactPh" placeholder="رقم موبايل أو إيميل للتواصل (اختياري)" class="w-full input-field rounded-xl px-3 py-2.5 text-xs" dir="ltr">
                         <input id="fb-website" type="text" name="website" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true">
-                        <textarea id="fb-message" rows="3" placeholder="اكتب رسالتك هنا..." class="w-full input-field rounded-xl p-3 text-xs"></textarea>
-                        <button onclick="submitFeedback()" class="w-full py-2.5 btn-primary font-bold text-xs rounded-xl">إرسال</button>
+                        <textarea id="fb-message" rows="3" data-i18n-ph="support.fbMessagePh" placeholder="اكتب رسالتك هنا..." class="w-full input-field rounded-xl p-3 text-xs"></textarea>
+                        <button onclick="submitFeedback()" class="w-full py-2.5 btn-primary font-bold text-xs rounded-xl" data-i18n="support.auto5Text">إرسال</button>
                         <p id="fb-status" class="text-[11px] text-center text-emerald-400 hidden"></p>
                     </div>
                 </div>
@@ -2095,93 +2095,93 @@
 <!-- ============ تعليمات تثبيت التطبيق على آيفون (Safari مبيدعمش زرار التثبيت التلقائي) ============ -->
 <div id="ios-install-modal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center p-4 z-50" onclick="if(event.target===this) closeIosInstallModal()">
     <div class="panel modal-pop w-full max-w-[360px] rounded-2xl p-5 space-y-4 relative text-center" onclick="event.stopPropagation()">
-        <button onclick="closeIosInstallModal()" aria-label="إغلاق" class="absolute top-3 left-3 w-8 h-8 rounded-full panel-2 text-slate-400 hover:text-white flex items-center justify-center z-10">
+        <button onclick="closeIosInstallModal()" data-i18n-aria="pwaIosModal.auto1Aria" aria-label="إغلاق" class="absolute top-3 left-3 w-8 h-8 rounded-full panel-2 text-slate-400 hover:text-white flex items-center justify-center z-10">
             <i class="fa-solid fa-xmark"></i>
         </button>
         <div class="w-12 h-12 rounded-full bg-slate-700/40 text-slate-300 flex items-center justify-center mx-auto text-xl"><i class="fa-solid fa-mobile-screen-button"></i></div>
-        <h3 class="font-bold text-sm">تثبيت التطبيق على آيفون</h3>
+        <h3 class="font-bold text-sm" data-i18n="pwaIosModal.auto2Text">تثبيت التطبيق على آيفون</h3>
         <ol class="text-[12.5px] text-slate-300 space-y-2.5 text-right list-decimal pr-4 leading-relaxed">
             <li>اضغط زرار المشاركة <i class="fa-solid fa-arrow-up-from-bracket px-0.5"></i> تحت في متصفح Safari.</li>
-            <li>مرّر لحد ما تلاقي "إضافة إلى الشاشة الرئيسية" (Add to Home Screen).</li>
-            <li>اضغط "إضافة" فوق — هتلاقي أيقونة يُسْر Pro على شاشتك زي أي تطبيق عادي.</li>
+            <li data-i18n="pwaIosModal.auto3Text">مرّر لحد ما تلاقي "إضافة إلى الشاشة الرئيسية" (Add to Home Screen).</li>
+            <li data-i18n="pwaIosModal.auto4Text">اضغط "إضافة" فوق — هتلاقي أيقونة يُسْر Pro على شاشتك زي أي تطبيق عادي.</li>
         </ol>
-        <button onclick="closeIosInstallModal()" class="w-full btn-ghost text-xs font-bold py-2.5 rounded-xl">تمام، فهمت</button>
+        <button onclick="closeIosInstallModal()" class="w-full btn-ghost text-xs font-bold py-2.5 rounded-xl" data-i18n="pwaIosModal.auto5Text">تمام، فهمت</button>
     </div>
 </div>
 
 <div id="pricing-modal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center p-0 sm:p-4 z-50">
     <div class="panel modal-pop w-full max-w-[380px] h-full sm:h-auto sm:max-h-[88vh] rounded-none sm:rounded-2xl p-5 space-y-4 overflow-y-auto relative">
-        <button onclick="closePricingModal()" aria-label="رجوع" class="absolute top-3 left-3 w-8 h-8 rounded-full panel-2 text-slate-400 hover:text-white flex items-center justify-center z-10">
+        <button onclick="closePricingModal()" data-i18n-aria="pricing.auto1Aria" aria-label="رجوع" class="absolute top-3 left-3 w-8 h-8 rounded-full panel-2 text-slate-400 hover:text-white flex items-center justify-center z-10">
             <i class="fa-solid fa-xmark"></i>
         </button>
         <div class="text-center space-y-1 pt-1">
             <div class="w-12 h-12 rounded-full bg-slate-700/40 text-slate-300 flex items-center justify-center mx-auto text-xl"><i class="fa-solid fa-gem"></i></div>
-            <h3 class="text-lg font-bold text-slate-100">اختر باقتك</h3>
-            <p class="text-xs text-slate-400">كل أدوات المنصة في مكان واحد - مقابلات، سيرة ذاتية، بورتفوليو، تدقيق أكاديمي، تفريغ صوتي، وأكتر.</p>
+            <h3 class="text-lg font-bold text-slate-100" data-i18n="pricing.auto2Text">اختر باقتك</h3>
+            <p class="text-xs text-slate-400" data-i18n="pricing.auto3Text">كل أدوات المنصة في مكان واحد - مقابلات، سيرة ذاتية، بورتفوليو، تدقيق أكاديمي، تفريغ صوتي، وأكتر.</p>
         </div>
 
         <div class="space-y-3 text-right">
             <div class="panel-2 rounded-xl p-3.5 space-y-2">
-                <h4 class="text-xs font-bold text-slate-200">الأساسية</h4>
-                <p class="text-lg font-bold text-white">79 ج.م <span class="text-[10px] text-slate-500">/ شهرياً</span></p>
+                <h4 class="text-xs font-bold text-slate-200" data-i18n="pricing.auto4Text">الأساسية</h4>
+                <p class="text-lg font-bold text-white">79 ج.م <span class="text-[10px] text-slate-500" data-i18n="pricing.auto5Text">/ شهرياً</span></p>
                 <ul class="text-[10.5px] text-slate-400 space-y-1.5">
-                    <li><i class="fa-solid fa-check text-slate-400"></i> 25 طلب ذكاء اصطناعي شهرياً (مقابلات، سيرة ذاتية، كل الأدوات)</li>
-                    <li><i class="fa-solid fa-check text-slate-400"></i> بناء سيرة ذاتية وتلخيص مستندات</li>
-                    <li><i class="fa-solid fa-check text-slate-400"></i> أسئلة شائعة لكل وظيفة</li>
-                    <li><i class="fa-solid fa-check text-slate-400"></i> دعم عبر شات الموقع</li>
+                    <li data-i18n="pricing.auto6Text"><i class="fa-solid fa-check text-slate-400"></i> 25 طلب ذكاء اصطناعي شهرياً (مقابلات، سيرة ذاتية، كل الأدوات)</li>
+                    <li data-i18n="pricing.auto7Text"><i class="fa-solid fa-check text-slate-400"></i> بناء سيرة ذاتية وتلخيص مستندات</li>
+                    <li data-i18n="pricing.auto8Text"><i class="fa-solid fa-check text-slate-400"></i> أسئلة شائعة لكل وظيفة</li>
+                    <li data-i18n="pricing.auto9Text"><i class="fa-solid fa-check text-slate-400"></i> دعم عبر شات الموقع</li>
                 </ul>
-                <button onclick="openPaymentRequest('الأساسية', 79, 'شهرياً')" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl mt-1">اشترك في الأساسية</button>
+                <button onclick="openPaymentRequest('الأساسية', 79, 'شهرياً')" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl mt-1" data-i18n="pricing.auto10Text">اشترك في الأساسية</button>
             </div>
             <div class="rounded-xl p-3.5 space-y-2 border-2 border-slate-400 relative bg-[#20252c]">
-                <span class="absolute top-0 left-0 bg-slate-300 text-slate-950 text-[9px] font-bold px-2 py-0.5 rounded-br-lg rounded-tl-xl">الأكثر طلباً</span>
-                <h4 class="text-xs font-bold text-slate-100">الاحترافية</h4>
-                <p class="text-lg font-bold text-white">179 ج.م <span class="text-[10px] text-slate-500">/ شهرياً</span></p>
+                <span class="absolute top-0 left-0 bg-slate-300 text-slate-950 text-[9px] font-bold px-2 py-0.5 rounded-br-lg rounded-tl-xl" data-i18n="pricing.auto11Text">الأكثر طلباً</span>
+                <h4 class="text-xs font-bold text-slate-100" data-i18n="pricing.auto12Text">الاحترافية</h4>
+                <p class="text-lg font-bold text-white">179 ج.م <span class="text-[10px] text-slate-500" data-i18n="pricing.auto13Text">/ شهرياً</span></p>
                 <ul class="text-[10.5px] text-slate-300 space-y-1.5">
-                    <li><i class="fa-solid fa-check text-slate-300"></i> 150 طلب ذكاء اصطناعي شهرياً (يكفي تدريب شبه يومي)</li>
-                    <li><i class="fa-solid fa-check text-slate-300"></i> تقارير أداء تفصيلية بعد كل مقابلة</li>
-                    <li><i class="fa-solid fa-check text-slate-300"></i> خطط تطور مهني مخصصة</li>
-                    <li><i class="fa-solid fa-check text-slate-300"></i> بورتفوليو + تدقيق أكاديمي</li>
-                    <li><i class="fa-solid fa-check text-slate-300"></i> تفريغ صوتي بكل اللغات المتاحة</li>
-                    <li><i class="fa-solid fa-check text-slate-300"></i> أولوية دعم فني</li>
+                    <li data-i18n="pricing.auto14Text"><i class="fa-solid fa-check text-slate-300"></i> 150 طلب ذكاء اصطناعي شهرياً (يكفي تدريب شبه يومي)</li>
+                    <li data-i18n="pricing.auto15Text"><i class="fa-solid fa-check text-slate-300"></i> تقارير أداء تفصيلية بعد كل مقابلة</li>
+                    <li data-i18n="pricing.auto16Text"><i class="fa-solid fa-check text-slate-300"></i> خطط تطور مهني مخصصة</li>
+                    <li data-i18n="pricing.auto17Text"><i class="fa-solid fa-check text-slate-300"></i> بورتفوليو + تدقيق أكاديمي</li>
+                    <li data-i18n="pricing.auto18Text"><i class="fa-solid fa-check text-slate-300"></i> تفريغ صوتي بكل اللغات المتاحة</li>
+                    <li data-i18n="pricing.auto19Text"><i class="fa-solid fa-check text-slate-300"></i> أولوية دعم فني</li>
                 </ul>
-                <button onclick="openPaymentRequest('الاحترافية', 179, 'شهرياً')" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl mt-1">اشترك في الاحترافية</button>
+                <button onclick="openPaymentRequest('الاحترافية', 179, 'شهرياً')" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl mt-1" data-i18n="pricing.auto20Text">اشترك في الاحترافية</button>
             </div>
             <div class="rounded-xl p-3.5 space-y-2 border-2 border-amber-400/70 relative bg-[#221d12]">
-                <span class="absolute top-0 left-0 bg-amber-400 text-slate-950 text-[9px] font-bold px-2 py-0.5 rounded-br-lg rounded-tl-xl">أعلى فئة</span>
-                <h4 class="text-xs font-bold text-amber-200">النخبة</h4>
-                <p class="text-lg font-bold text-white">349 ج.م <span class="text-[10px] text-slate-500">/ شهرياً</span></p>
+                <span class="absolute top-0 left-0 bg-amber-400 text-slate-950 text-[9px] font-bold px-2 py-0.5 rounded-br-lg rounded-tl-xl" data-i18n="pricing.auto21Text">أعلى فئة</span>
+                <h4 class="text-xs font-bold text-amber-200" data-i18n="pricing.auto22Text">النخبة</h4>
+                <p class="text-lg font-bold text-white">349 ج.م <span class="text-[10px] text-slate-500" data-i18n="pricing.auto23Text">/ شهرياً</span></p>
                 <ul class="text-[10.5px] text-slate-300 space-y-1.5">
-                    <li><i class="fa-solid fa-check text-amber-300"></i> طلبات ذكاء اصطناعي غير محدودة تماماً، بلا أي سقف شهري</li>
-                    <li><i class="fa-solid fa-check text-amber-300"></i> كل أدوات المنصة بلا استثناء</li>
-                    <li><i class="fa-solid fa-check text-amber-300"></i> أعلى أولوية في الرد من فريق الدعم</li>
+                    <li data-i18n="pricing.auto24Text"><i class="fa-solid fa-check text-amber-300"></i> طلبات ذكاء اصطناعي غير محدودة تماماً، بلا أي سقف شهري</li>
+                    <li data-i18n="pricing.auto25Text"><i class="fa-solid fa-check text-amber-300"></i> كل أدوات المنصة بلا استثناء</li>
+                    <li data-i18n="pricing.auto26Text"><i class="fa-solid fa-check text-amber-300"></i> أعلى أولوية في الرد من فريق الدعم</li>
                 </ul>
-                <button onclick="openPaymentRequest('النخبة', 349, 'شهرياً')" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl mt-1">اشترك في النخبة</button>
+                <button onclick="openPaymentRequest('النخبة', 349, 'شهرياً')" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl mt-1" data-i18n="pricing.auto27Text">اشترك في النخبة</button>
             </div>
             <div class="panel-2 rounded-xl p-3.5 space-y-2">
-                <h4 class="text-xs font-bold text-slate-200">السنوية</h4>
-                <p class="text-lg font-bold text-white">1790 ج.م <span class="text-[10px] text-slate-500">/ سنوياً</span></p>
+                <h4 class="text-xs font-bold text-slate-200" data-i18n="pricing.auto28Text">السنوية</h4>
+                <p class="text-lg font-bold text-white">1790 ج.م <span class="text-[10px] text-slate-500" data-i18n="pricing.auto29Text">/ سنوياً</span></p>
                 <ul class="text-[10.5px] text-slate-400 space-y-1.5">
-                    <li><i class="fa-solid fa-check text-slate-400"></i> كل مزايا الاحترافية (150 طلب شهرياً طول السنة)</li>
-                    <li><i class="fa-solid fa-check text-slate-400"></i> وفّر تقريباً شهرين مقارنةً بالاشتراك الشهري</li>
-                    <li><i class="fa-solid fa-check text-slate-400"></i> استشارة تطوير مسار مهني مرة سنوياً</li>
+                    <li data-i18n="pricing.auto30Text"><i class="fa-solid fa-check text-slate-400"></i> كل مزايا الاحترافية (150 طلب شهرياً طول السنة)</li>
+                    <li data-i18n="pricing.auto31Text"><i class="fa-solid fa-check text-slate-400"></i> وفّر تقريباً شهرين مقارنةً بالاشتراك الشهري</li>
+                    <li data-i18n="pricing.auto32Text"><i class="fa-solid fa-check text-slate-400"></i> استشارة تطوير مسار مهني مرة سنوياً</li>
                 </ul>
-                <button onclick="openPaymentRequest('السنوية', 1790, 'سنوياً')" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl mt-1">اشترك في السنوية</button>
+                <button onclick="openPaymentRequest('السنوية', 1790, 'سنوياً')" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl mt-1" data-i18n="pricing.auto33Text">اشترك في السنوية</button>
             </div>
         </div>
 
-        <button onclick="closePricingModal()" class="w-full text-xs text-slate-500 hover:text-white py-1">إغلاق</button>
+        <button onclick="closePricingModal()" class="w-full text-xs text-slate-500 hover:text-white py-1" data-i18n="pricing.auto34Text">إغلاق</button>
     </div>
 </div>
 
 <!-- Modal: CV link for interview -->
 <div id="cv-modal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center p-4 z-50">
     <div class="panel modal-pop max-w-md w-full rounded-2xl p-5 space-y-3">
-        <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2"><i class="fa-solid fa-id-card"></i> ربط بيانات الـ CV بالمقابلة</h3>
-        <p class="text-xs text-slate-400">الصق نص خبراتك عشان الأسئلة تتخصص على أساسها:</p>
-        <textarea id="cv-text-input" rows="4" placeholder="أدخل نص خبراتك هنا..." class="w-full input-field rounded-xl p-2.5 text-xs"></textarea>
+        <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2" data-i18n="cvBuildModal.auto1Text"><i class="fa-solid fa-id-card"></i> ربط بيانات الـ CV بالمقابلة</h3>
+        <p class="text-xs text-slate-400" data-i18n="cvBuildModal.auto2Text">الصق نص خبراتك عشان الأسئلة تتخصص على أساسها:</p>
+        <textarea id="cv-text-input" rows="4" data-i18n-ph="cvBuildModal.cvTextInputPh" placeholder="أدخل نص خبراتك هنا..." class="w-full input-field rounded-xl p-2.5 text-xs"></textarea>
         <div class="flex gap-2">
-            <button onclick="saveCvData()" class="flex-1 py-2 btn-primary font-bold rounded-xl text-xs">حفظ</button>
-            <button onclick="closeCvModal()" class="py-2 px-3 btn-ghost rounded-xl text-xs">إلغاء</button>
+            <button onclick="saveCvData()" class="flex-1 py-2 btn-primary font-bold rounded-xl text-xs" data-i18n="cvBuildModal.auto3Text">حفظ</button>
+            <button onclick="closeCvModal()" class="py-2 px-3 btn-ghost rounded-xl text-xs" data-i18n="cvBuildModal.auto4Text">إلغاء</button>
         </div>
     </div>
 </div>
@@ -2190,8 +2190,8 @@
 <div id="report-modal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center p-4 z-50">
     <div class="panel modal-pop max-w-xl w-full max-h-[85vh] rounded-2xl p-5 flex flex-col space-y-3">
         <div class="flex justify-between items-center border-b border-[var(--border)] pb-2 shrink-0">
-            <h3 class="text-sm font-bold text-amber-300 flex items-center gap-2"><i class="fa-solid fa-chart-line"></i> تقرير الأداء التفصيلي</h3>
-            <button onclick="closeReportModal()" class="text-slate-500 hover:text-white text-sm" aria-label="إغلاق"><i class="fa-solid fa-xmark"></i></button>
+            <h3 class="text-sm font-bold text-amber-300 flex items-center gap-2" data-i18n="reportModal.auto1Text"><i class="fa-solid fa-chart-line"></i> تقرير الأداء التفصيلي</h3>
+            <button onclick="closeReportModal()" class="text-slate-500 hover:text-white text-sm" data-i18n-aria="reportModal.auto2Aria" aria-label="إغلاق"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div id="report-body" class="text-xs sm:text-sm text-slate-200 leading-relaxed overflow-y-auto pr-1"></div>
     </div>
@@ -2201,13 +2201,13 @@
 <div id="terms-gate-modal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center p-4 z-[60]">
     <div class="panel modal-pop max-w-md w-full rounded-2xl p-5 space-y-3 text-right">
         <div class="w-12 h-12 rounded-full bg-[var(--grad1)]/20 text-[var(--accent-strong)] flex items-center justify-center mx-auto text-xl"><i class="fa-solid fa-file-contract"></i></div>
-        <h3 class="text-sm font-bold text-slate-100 text-center">قبل ما تبدأ</h3>
+        <h3 class="text-sm font-bold text-slate-100 text-center" data-i18n="termsGate.auto1Text">قبل ما تبدأ</h3>
         <p class="text-xs text-slate-400 leading-relaxed">باستخدامك منصة "يُسْر Pro" إنت بتوافق على <a href="javascript:void(0)" onclick="switchViewByName('terms'); closeTermsGate(true);" class="text-[var(--accent-strong)] underline">شروط الاستخدام</a> وسياسة الخصوصية بتاعتنا، وعلى إن الردود مولّدة بالذكاء الاصطناعي وبتُعتبر مساعدة استرشادية مش ضمان لنتيجة أو قبول وظيفي.</p>
         <label class="flex items-start gap-2 text-[11px] text-slate-300 cursor-pointer select-none">
             <input type="checkbox" id="terms-gate-checkbox" class="mt-0.5">
-            <span>قرأت ووافقت على شروط الاستخدام وسياسة الخصوصية.</span>
+            <span data-i18n="termsGate.auto2Text">قرأت ووافقت على شروط الاستخدام وسياسة الخصوصية.</span>
         </label>
-        <button id="terms-gate-continue" onclick="acceptTermsGate()" disabled class="w-full py-2.5 btn-primary font-bold text-xs rounded-xl opacity-50 cursor-not-allowed">متابعة</button>
+        <button id="terms-gate-continue" onclick="acceptTermsGate()" disabled class="w-full py-2.5 btn-primary font-bold text-xs rounded-xl opacity-50 cursor-not-allowed" data-i18n="termsGate.termsGateContinueText">متابعة</button>
     </div>
 </div>
 
@@ -2215,25 +2215,25 @@
 <div id="payment-request-modal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center p-4 z-50">
     <div class="panel modal-pop max-w-md w-full rounded-2xl p-5 space-y-3 text-right max-h-[90vh] overflow-y-auto">
         <div class="flex justify-between items-center">
-            <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2"><i class="fa-solid fa-money-bill-transfer"></i> إتمام الاشتراك</h3>
-            <button onclick="closePaymentRequestModal()" class="text-slate-500 hover:text-white text-sm" aria-label="إغلاق"><i class="fa-solid fa-xmark"></i></button>
+            <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2" data-i18n="paymentRequest.auto1Text"><i class="fa-solid fa-money-bill-transfer"></i> إتمام الاشتراك</h3>
+            <button onclick="closePaymentRequestModal()" class="text-slate-500 hover:text-white text-sm" data-i18n-aria="paymentRequest.auto2Aria" aria-label="إغلاق"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div id="payment-request-summary" class="panel-2 rounded-xl p-3 text-xs text-slate-300"></div>
         <div class="panel-2 rounded-xl p-3 space-y-2">
-            <p class="text-[11px] text-slate-400">حوّل قيمة الباقة عن طريق Vodafone Cash أو InstaPay على رقم:</p>
+            <p class="text-[11px] text-slate-400" data-i18n="paymentRequest.auto3Text">حوّل قيمة الباقة عن طريق Vodafone Cash أو InstaPay على رقم:</p>
             <div class="flex items-center justify-between panel rounded-lg px-3 py-2">
                 <span class="font-bold text-slate-100 text-sm" dir="ltr">01279383843</span>
-                <button onclick="copyPlainText('01279383843', this)" class="chip" aria-label="نسخ الرقم"><i class="fa-solid fa-copy"></i></button>
+                <button onclick="copyPlainText('01279383843', this)" class="chip" data-i18n-aria="paymentRequest.auto4Aria" aria-label="نسخ الرقم"><i class="fa-solid fa-copy"></i></button>
             </div>
-            <p class="text-[10px] text-slate-500">بعد التحويل، املا بياناتك تحت وابعت الطلب — هيتم تفعيل الباقة على حسابك يدوياً خلال ساعات قليلة بعد مراجعة التحويل.</p>
+            <p class="text-[10px] text-slate-500" data-i18n="paymentRequest.auto5Text">بعد التحويل، املا بياناتك تحت وابعت الطلب — هيتم تفعيل الباقة على حسابك يدوياً خلال ساعات قليلة بعد مراجعة التحويل.</p>
         </div>
         <div class="space-y-2">
-            <input id="pr-name" type="text" placeholder="الاسم" class="w-full input-field rounded-xl px-3 py-2.5 text-xs">
-            <input id="pr-phone" type="tel" placeholder="رقم الموبايل اللي حوّلت منه" class="w-full input-field rounded-xl px-3 py-2.5 text-xs" dir="ltr">
-            <input id="pr-ref" type="text" placeholder="آخر أرقام العملية أو ملاحظة (اختياري)" class="w-full input-field rounded-xl px-3 py-2.5 text-xs">
+            <input id="pr-name" type="text" data-i18n-ph="paymentRequest.prNamePh" placeholder="الاسم" class="w-full input-field rounded-xl px-3 py-2.5 text-xs">
+            <input id="pr-phone" type="tel" data-i18n-ph="paymentRequest.prPhonePh" placeholder="رقم الموبايل اللي حوّلت منه" class="w-full input-field rounded-xl px-3 py-2.5 text-xs" dir="ltr">
+            <input id="pr-ref" type="text" data-i18n-ph="paymentRequest.prRefPh" placeholder="آخر أرقام العملية أو ملاحظة (اختياري)" class="w-full input-field rounded-xl px-3 py-2.5 text-xs">
             <input id="pr-website" type="text" name="website" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true">
         </div>
-        <button id="pr-submit-btn" onclick="submitPaymentRequest()" class="w-full py-2.5 btn-primary font-bold text-xs rounded-xl disabled:opacity-60 disabled:cursor-not-allowed">تم التحويل، ابعت الطلب</button>
+        <button id="pr-submit-btn" onclick="submitPaymentRequest()" class="w-full py-2.5 btn-primary font-bold text-xs rounded-xl disabled:opacity-60 disabled:cursor-not-allowed" data-i18n="paymentRequest.prSubmitBtnText">تم التحويل، ابعت الطلب</button>
         <p id="payment-request-status" class="text-[11px] text-center text-emerald-400 hidden"></p>
     </div>
 </div>
@@ -2246,11 +2246,11 @@
         </div>
         <div class="text-center space-y-1.5">
             <h3 class="text-sm font-bold text-slate-100">إلغاء باقة <span id="cancel-sub-plan-name">-</span>؟</h3>
-            <p class="text-[11.5px] text-slate-400 leading-relaxed">هيتم إيقاف التجديد التلقائي بس - هتفضل مستفيد من كل مميزات باقتك الحالية عادي لحد آخر يوم في الفترة دي، وبعدها هترجع تلقائيًا للباقة المجانية. تقدر تتراجع عن الإلغاء في أي وقت قبل ما الفترة تخلص.</p>
+            <p class="text-[11.5px] text-slate-400 leading-relaxed" data-i18n="cancelSub.auto1Text">هيتم إيقاف التجديد التلقائي بس - هتفضل مستفيد من كل مميزات باقتك الحالية عادي لحد آخر يوم في الفترة دي، وبعدها هترجع تلقائيًا للباقة المجانية. تقدر تتراجع عن الإلغاء في أي وقت قبل ما الفترة تخلص.</p>
         </div>
         <div class="flex gap-2 pt-1">
-            <button onclick="closeCancelSubscriptionModal()" class="flex-1 py-2.5 chip justify-center hover:bg-[var(--panel-2)]">تراجع</button>
-            <button id="cancel-sub-confirm-btn" onclick="confirmCancelSubscription()" class="flex-1 py-2.5 font-bold text-xs rounded-xl disabled:opacity-60" style="background:rgba(248,113,113,.12); border:1px solid rgba(248,113,113,.4); color:#f87171;">تأكيد الإلغاء</button>
+            <button onclick="closeCancelSubscriptionModal()" class="flex-1 py-2.5 chip justify-center hover:bg-[var(--panel-2)]" data-i18n="cancelSub.auto2Text">تراجع</button>
+            <button id="cancel-sub-confirm-btn" onclick="confirmCancelSubscription()" class="flex-1 py-2.5 font-bold text-xs rounded-xl disabled:opacity-60" style="background:rgba(248,113,113,.12); border:1px solid rgba(248,113,113,.4); color:#f87171;" data-i18n="cancelSub.cancelSubConfirmBtnText">تأكيد الإلغاء</button>
         </div>
     </div>
 </div>
