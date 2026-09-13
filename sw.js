@@ -107,18 +107,19 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     caches.open(CACHE_NAME).then((cache) =>
       cache.match(req).then((cached) => {
-        const networkFetch = fetch(req, req.mode === "no-cors" ? req : undefined)
+        const networkFetch = fetch(req)
           .then((networkRes) => {
             if (networkRes && (networkRes.ok || networkRes.type === "opaque")) {
-              cache.put(req, networkRes.clone());
+              const copy = networkRes.clone();
+              cache.put(req, copy).catch(() => {});
             }
             return networkRes;
           })
           .catch(() => null);
-        return cached || networkFetch || new Response(
+        return cached || networkFetch.then((res) => res || new Response(
           "الموقع محتاج اتصال بالإنترنت أول مرة تفتحه فيها.",
           { status: 503, headers: { "Content-Type": "text/plain; charset=utf-8" } }
-        );
+        ));
       })
     )
   );
