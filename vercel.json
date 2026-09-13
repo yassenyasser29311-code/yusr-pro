@@ -4,7 +4,11 @@
       "source": "/(.*)",
       "headers": [
         { "key": "Cross-Origin-Opener-Policy", "value": "same-origin-allow-popups" },
-        { "key": "Cross-Origin-Embedder-Policy", "value": "credentialless" }
+        { "key": "Cross-Origin-Embedder-Policy", "value": "credentialless" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; frame-src https://accounts.google.com; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://accounts.google.com https://cdnjs.cloudflare.com https://www.gstatic.com https://cdn.jsdelivr.net https://www.google.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://yusr-worker.yassen-yasser29311.workers.dev https://yusr-d054e-default-rtdb.firebaseio.com wss://yusr-d054e-default-rtdb.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.google.com https://www.googleapis.com https://oauth2.googleapis.com" }
       ]
     },
     {
