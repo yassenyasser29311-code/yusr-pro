@@ -1,5 +1,5 @@
 
-const CACHE_VERSION = "v12";
+const CACHE_VERSION = "v13";
 const CACHE_NAME = `yusr-pro-shell-${CACHE_VERSION}`;
 
 const SAME_ORIGIN_FILES = [
@@ -17,29 +17,16 @@ const SAME_ORIGIN_FILES = [
   "/og-image.png",
 ];
 
-const CDN_FILES = [
-  "https://cdn.tailwindcss.com",
-  "https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js",
-  "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js",
-  "https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js",
-  "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js",
-];
-
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) =>
-      Promise.all([
-        ...SAME_ORIGIN_FILES.map((url) =>
+      Promise.all(
+        SAME_ORIGIN_FILES.map((url) =>
           fetch(url).then((res) => {
             if (res && res.ok) return cache.put(url, res);
           }).catch((err) => console.warn("SW: تعذر تخزين", url, err))
-        ),
-        ...CDN_FILES.map((url) =>
-          fetch(url, { mode: "no-cors" }).then((res) => {
-            if (res) return cache.put(url, res);
-          }).catch((err) => console.warn("SW: تعذر تخزين CDN", url, err))
-        ),
-      ])
+        )
+      )
     ).then(() => self.skipWaiting())
   );
 });
