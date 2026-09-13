@@ -1470,7 +1470,7 @@ window.__H = {
     function openCancelSubscriptionModal() {
         const p = getProfile();
         const planEl = document.getElementById('cancel-sub-plan-name');
-        if (planEl) planEl.textContent = p.plan || 'مجاني';
+        if (planEl) planEl.textContent = getCurrentPlanName();
         document.getElementById('cancel-subscription-modal').classList.remove('hidden');
     }
     function closeCancelSubscriptionModal() {
@@ -1538,7 +1538,7 @@ window.__H = {
         const planLimit = PLAN_MONTHLY_LIMITS[getCurrentPlanName()];
         document.getElementById('profile-stat-usage').innerText = getEffectiveUsageCount() + (planLimit === Infinity ? '' : ' / ' + planLimit);
         document.getElementById('profile-stat-device').innerText = getDeviceId().replace('DEV-', '').slice(0, 10) + '…';
-        const planName = p.plan || 'مجاني';
+        const planName = getCurrentPlanName();
         document.getElementById('profile-stat-plan').innerText = planName;
         document.getElementById('profile-current-plan').innerText = planName;
         const membershipPlanEl = document.getElementById('profile-membership-plan');

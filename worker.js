@@ -556,7 +556,14 @@ async function tryChatProvider(baseUrl, apiKey, model, cleanMessages) {
   if (!r.ok || !data.choices || !data.choices[0] || !data.choices[0].message) {
     return { ok: false, reason: JSON.stringify(data).slice(0, 300) };
   }
-  return { ok: true, content: stripThinkTags(data.choices[0].message.content) };
+  const cleanedContent = stripThinkTags(data.choices[0].message.content);
+  if (typeof cleanedContent !== "string" || cleanedContent.trim().length === 0) {
+    // مهم: لو رجع رد فاضي، متعتبروش نجاح - لأن الرد الفاضي ده بيتحفظ في سجل
+    // المحادثة وبعدين يفشّل أي رسالة جايه بعده (invalid_content). امنعه من الأول
+    // وجرّب المزوّد اللي بعده بدل ما نرجّع رد فاضي للمستخدم.
+    return { ok: false, reason: "empty_content" };
+  }
+  return { ok: true, content: cleanedContent };
 }
 
 function stripThinkTags(text) {
