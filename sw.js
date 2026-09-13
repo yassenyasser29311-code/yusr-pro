@@ -1,5 +1,5 @@
 
-const CACHE_VERSION = "v13";
+const CACHE_VERSION = "v14";
 const CACHE_NAME = `yusr-pro-shell-${CACHE_VERSION}`;
 
 const SAME_ORIGIN_FILES = [
@@ -59,7 +59,7 @@ self.addEventListener("fetch", (event) => {
       url.pathname.startsWith("/groqTranscribe") || url.pathname.startsWith("/edgeTtsSpeak") ||
       url.hostname === "www.gstatic.com" || url.hostname === "cdnjs.cloudflare.com" ||
       url.hostname === "fonts.googleapis.com" || url.hostname === "fonts.gstatic.com" ||
-      url.hostname === "cdn.tailwindcss.com") {
+      url.hostname === "cdn.tailwindcss.com" || url.hostname === "accounts.google.com") {
     return;
   }
 
