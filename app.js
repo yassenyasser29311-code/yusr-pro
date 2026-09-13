@@ -1,3 +1,228 @@
+// ==== Auto-generated: inline event-handler registry ====
+// Replaces onclick/onchange/oninput/onkeydown/onkeypress HTML attributes
+// so CSP script-src no longer needs 'unsafe-inline'. Each entry is the
+// original inline JS, now run as a real function with the same
+// `this` (the element) / `event` binding it had as an inline attribute.
+window.__H = {
+  h0: function(event) { toggleSupportChat() },
+  h1: function(event) { if(event.key==='Enter'){event.preventDefault();sendSupportChatMessage();} },
+  h2: function(event) { sendSupportChatMessage() },
+  h3: function(event) { triggerGoogleSignIn() },
+  h4: function(event) { switchAuthGateTab('login') },
+  h5: function(event) { switchAuthGateTab('signup') },
+  h6: function(event) { togglePasswordVisibility('auth-gate-password', this) },
+  h7: function(event) { openForgotPasswordModal() },
+  h8: function(event) { togglePasswordVisibility('auth-gate-confirm', this) },
+  h9: function(event) { submitEmailAuth() },
+  h10: function(event) { submitForgotPassword() },
+  h11: function(event) { closeForgotPasswordModal() },
+  h12: function(event) { requestPasswordChange() },
+  h13: function(event) { logoutFromSuspended() },
+  h14: function(event) { togglePasswordVisibility('admin-gate-password', this) },
+  h15: function(event) { adminGateSubmitLogin() },
+  h16: function(event) { adminGateSubmitConfirm() },
+  h17: function(event) { adminGateClose() },
+  h18: function(event) { adminOpenAllChats() },
+  h19: function(event) { adminBackupNow() },
+  h20: function(event) { adminExportUsersCsv() },
+  h21: function(event) { adminRefreshAll() },
+  h22: function(event) { adminLogout() },
+  h23: function(event) { adminRenderTrendChart() },
+  h24: function(event) { adminRecordStatsNow() },
+  h25: function(event) { adminSendBroadcast() },
+  h26: function(event) { adminLoadSubscriptionRequests() },
+  h27: function(event) { adminLoadFeedback() },
+  h28: function(event) { adminRenderUsers() },
+  h29: function(event) { adminLoadMoreUsers() },
+  h30: function(event) { adminCreateAccount() },
+  h31: function(event) { adminLoadActivityLog() },
+  h32: function(event) { adminExportActivityLogCsv() },
+  h33: function(event) { adminCloseAllChats() },
+  h34: function(event) { if(event.key==='Enter'){event.preventDefault();adminAllChatsSend();} },
+  h35: function(event) { adminAllChatsSend() },
+  h36: function(event) { adminCloseUserModal() },
+  h37: function(event) { adminModalUserAction('setPlan', this.value) },
+  h38: function(event) { adminModalUserAction('setCustomLimit', this.value === '' ? null : this.value) },
+  h39: function(event) { adminModalToggleSuspend() },
+  h40: function(event) { adminModalUserAction('resetUsage') },
+  h41: function(event) { adminModalSendPasswordReset() },
+  h42: function(event) { adminModalSavePermissions() },
+  h43: function(event) { if(event.key==='Enter'){event.preventDefault();adminModalSendChat();} },
+  h44: function(event) { adminModalSendChat() },
+  h45: function(event) { adminModalDeleteUser() },
+  h46: function(event) { adminGateSecretTap() },
+  h47: function(event) { toggleSidebar() },
+  h48: function(event) { filterSidebarNav(this.value) },
+  h49: function(event) { clearSidebarSearch() },
+  h50: function(event) { switchView('assistant', this) },
+  h51: function(event) { switchView('interview', this) },
+  h52: function(event) { switchView('faq', this) },
+  h53: function(event) { switchView('career', this) },
+  h54: function(event) { switchView('video', this) },
+  h55: function(event) { switchView('salary', this) },
+  h56: function(event) { switchView('progress', this) },
+  h57: function(event) { switchView('cv', this) },
+  h58: function(event) { switchView('match', this) },
+  h59: function(event) { switchView('cover', this) },
+  h60: function(event) { switchView('portfolio', this) },
+  h61: function(event) { switchView('writing', this) },
+  h62: function(event) { switchView('summarizer', this) },
+  h63: function(event) { switchView('transcribe', this) },
+  h64: function(event) { switchView('pitch', this) },
+  h65: function(event) { switchView('about', this) },
+  h66: function(event) { switchView('history', this) },
+  h67: function(event) { switchView('profile', this) },
+  h68: function(event) { switchView('subscriptions', this) },
+  h69: function(event) { switchView('donations', this) },
+  h70: function(event) { switchView('support', this) },
+  h71: function(event) { switchView('terms', this) },
+  h72: function(event) { switchView('privacy', this) },
+  h73: function(event) { dismissPwaInstallBanner(event) },
+  h74: function(event) { triggerPwaInstall() },
+  h75: function(event) { dismissApkPromo(event) },
+  h76: function(event) { switchViewByName('profile') },
+  h77: function(event) { openPricingModal() },
+  h78: function(event) { switchViewByName('support') },
+  h79: function(event) { toggleTheme() },
+  h80: function(event) { setAppLanguage(this.value) },
+  h81: function(event) { resendVerificationEmail() },
+  h82: function(event) { recheckEmailVerification() },
+  h83: function(event) { openCvModal() },
+  h84: function(event) { resumeInterviewSession() },
+  h85: function(event) { discardInterviewSession() },
+  h86: function(event) { setVoiceGender('male') },
+  h87: function(event) { setVoiceGender('female') },
+  h88: function(event) { startInterviewSession() },
+  h89: function(event) { copyChatTranscript() },
+  h90: function(event) { screenshotElement('chat-history', 'yusr-interview-chat.png') },
+  h91: function(event) { downloadChatTranscript() },
+  h92: function(event) { endInterviewSession() },
+  h93: function(event) { stopSpeaking() },
+  h94: function(event) { toggleMic() },
+  h95: function(event) { handleKeyPress(event) },
+  h96: function(event) { sendUserAnswer() },
+  h97: function(event) { generatePerformanceReport() },
+  h98: function(event) { runFaqGenerator() },
+  h99: function(event) { runCareerPlanner() },
+  h100: function(event) { generateVideoMockPrompt() },
+  h101: function(event) { startVideoMockCamera() },
+  h102: function(event) { toggleVideoMockRecording() },
+  h103: function(event) { stopVideoMockCamera() },
+  h104: function(event) { generateSchedulingEmail() },
+  h105: function(event) { reviewSchedulingReply() },
+  h106: function(event) { generateSalaryFollowupQuestions() },
+  h107: function(event) { generateDressTips() },
+  h108: function(event) { setVoiceGender(voiceGenderPref === 'female' ? 'male' : 'female') },
+  h109: function(event) { toggleAssistantVoice() },
+  h110: function(event) { clearAssistantChat() },
+  h111: function(event) { removeAssistantImage() },
+  h112: function(event) { handleAssistantImageSelect(event) },
+  h113: function(event) { document.getElementById('assistant-image-input').click() },
+  h114: function(event) { toggleAssistantMic() },
+  h115: function(event) { handleAssistantInputKey(event) },
+  h116: function(event) { sendAssistantMessage() },
+  h117: function(event) { runSalaryInsights() },
+  h118: function(event) { setInterviewReminder() },
+  h119: function(event) { requestReminderNotificationPermission(true) },
+  h120: function(event) { runProgressSummaryReport() },
+  h121: function(event) { clearProgressHistory() },
+  h122: function(event) { runProgressCompare() },
+  h123: function(event) { switchCvTab('plain') },
+  h124: function(event) { switchCvTab('linkedin') },
+  h125: function(event) { runCvBuilder('plain') },
+  h126: function(event) { previewCvLiPhoto(event) },
+  h127: function(event) { runCvBuilder('linkedin') },
+  h128: function(event) { fillMatchResumeFromSaved() },
+  h129: function(event) { runCvJobMatch() },
+  h130: function(event) { extractCvFromFile(event) },
+  h131: function(event) { runCoverLetterGenerator() },
+  h132: function(event) { startPortfolioChat() },
+  h133: function(event) { copyPfTranscript() },
+  h134: function(event) { screenshotElement('pf-chat-history', 'yusr-portfolio-chat.png') },
+  h135: function(event) { if(event.key==='Enter') sendPortfolioAnswer() },
+  h136: function(event) { sendPortfolioAnswer() },
+  h137: function(event) { runPortfolioBuilder() },
+  h138: function(event) { runWritingReview() },
+  h139: function(event) { runWritingAbstract() },
+  h140: function(event) { runWritingVocabBooster() },
+  h141: function(event) { runSummarizer() },
+  h142: function(event) { handleAudioFileUpload(event) },
+  h143: function(event) { toggleTranscribeMic() },
+  h144: function(event) { runTranscribeCleanup() },
+  h145: function(event) { importPitchFromProfile() },
+  h146: function(event) { runElevatorPitch() },
+  h147: function(event) { previewPitchAudio() },
+  h148: function(event) { switchViewByName('cv') },
+  h149: function(event) { switchViewByName('interview') },
+  h150: function(event) { if(event.key==='Enter'||event.key===' '){event.preventDefault();this.querySelector('input,~input')||document.getElementById('profile-photo-input').click();} },
+  h151: function(event) { handleProfilePhotoUpload(event) },
+  h152: function(event) { saveProfileInfo() },
+  h153: function(event) { switchViewByName('portfolio') },
+  h154: function(event) { switchViewByName('progress') },
+  h155: function(event) { switchViewByName('subscriptions') },
+  h156: function(event) { logoutAccount() },
+  h157: function(event) { undoCancelSubscription() },
+  h158: function(event) { openCancelSubscriptionModal() },
+  h159: function(event) { clearLocalAppData() },
+  h160: function(event) { deleteAccountPermanently() },
+  h161: function(event) { copyPlainText('01279383905', this) },
+  h162: function(event) { copyPlainText('01279383843', this) },
+  h163: function(event) { submitFeedback() },
+  h164: function(event) { clearAllHistory() },
+  h165: function(event) { if(event.target===this) closeIosInstallModal() },
+  h166: function(event) { event.stopPropagation() },
+  h167: function(event) { closeIosInstallModal() },
+  h168: function(event) { closePricingModal() },
+  h169: function(event) { openPaymentRequest('الأساسية', 79, 'شهرياً') },
+  h170: function(event) { openPaymentRequest('الاحترافية', 179, 'شهرياً') },
+  h171: function(event) { openPaymentRequest('النخبة', 349, 'شهرياً') },
+  h172: function(event) { openPaymentRequest('السنوية', 1790, 'سنوياً') },
+  h173: function(event) { saveCvData() },
+  h174: function(event) { closeCvModal() },
+  h175: function(event) { closeReportModal() },
+  h176: function(event) { switchViewByName('terms'); closeTermsGate(true); },
+  h177: function(event) { acceptTermsGate() },
+  h178: function(event) { closePaymentRequestModal() },
+  h179: function(event) { submitPaymentRequest() },
+  h180: function(event) { closeCancelSubscriptionModal() },
+  h181: function(event) { confirmCancelSubscription() },
+  h182: function(event) { dismissOnboarding('profile') },
+  h183: function(event) { dismissOnboarding('interview') },
+  h184: function(event) { dismissOnboarding('cv') },
+  h185: function(event) { dismissOnboarding() },
+  hFeedbackToggle: function(event) { adminFeedbackAction(this.getAttribute('data-fb-id'), this.getAttribute('data-fb-action')) },
+  hSubReviewApprove: function(event) { adminReviewSubscriptionRequest(this.getAttribute('data-req-id'), 'approve') },
+  hSubReviewReject: function(event) { adminReviewSubscriptionRequest(this.getAttribute('data-req-id'), 'reject') },
+  hFeedbackDelete: function(event) { adminFeedbackAction(this.getAttribute('data-fb-id'), 'delete') },
+  hAllChatsOpen: function(event) { adminAllChatsOpen(this.getAttribute('data-chat-uid')) },
+  hAdminOpenUserModal: function(event) { adminOpenUserModal(this.getAttribute('data-user-uid')) },
+  hAdminSetPlan: function(event) { adminUserAction(this.getAttribute('data-user-uid'), 'setPlan', this.value) },
+  hAdminSetCustomLimit: function(event) { adminUserAction(this.getAttribute('data-user-uid'), 'setCustomLimit', this.value === '' ? null : this.value) },
+  hCopyResult: function(event) { copyResult(this) },
+  hDownloadResult: function(event) { downloadResult(this, this.getAttribute('data-filename')) },
+  hToggleHistoryEntry: function(event) { toggleHistoryEntry(parseInt(this.getAttribute('data-idx'), 10)) },
+  hCopyHistoryEntry: function(event) { event.stopPropagation(); copyHistoryEntry(parseInt(this.getAttribute('data-idx'), 10), this) },
+  hDownloadHistoryEntry: function(event) { event.stopPropagation(); downloadHistoryEntry(parseInt(this.getAttribute('data-idx'), 10)) },
+  hDeleteHistoryEntry: function(event) { event.stopPropagation(); deleteHistoryEntry(parseInt(this.getAttribute('data-idx'), 10)) },
+  hDownloadResultLinkedin: function(event) { downloadResult(this, 'cv-linkedin-style.txt') },
+  hExportCvLinkedInImage: function(event) { exportCvLinkedInImage() },
+  hToggleProgressDetail: function(event) { document.getElementById('progress-detail-' + this.getAttribute('data-idx')).classList.toggle('hidden') },
+};
+
+(function () {
+  function fire(attr, e) {
+    var el = e.target.closest && e.target.closest('[data-x-' + attr + ']');
+    if (!el) return;
+    var key = el.getAttribute('data-x-' + attr);
+    var fn = window.__H[key];
+    if (typeof fn === 'function') fn.call(el, e);
+  }
+  ['click', 'keydown', 'keypress', 'change', 'input'].forEach(function (evtName) {
+    var attr = 'on' + evtName;
+    document.addEventListener(evtName, function (e) { fire(attr, e); });
+  });
+})();
+
     function showToast(message, type = 'info') {
         const container = document.getElementById('toast-container');
         if (!container) { console.warn(message); return; }
@@ -1702,8 +1927,8 @@
         box.classList.remove('hidden');
         box.classList.remove('reveal-in'); void box.offsetWidth; box.classList.add('reveal-in'); // حركة دخول ناعمة لكل نتيجة جديدة
         box.innerHTML = `<div class="flex justify-end gap-2 mb-2">
-            <button onclick="copyResult(this)" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-copy"></i> <span>${I18N[currentUiLang].copy}</span></button>
-            <button onclick="downloadResult(this, '${filename}')" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-download"></i> <span>${I18N[currentUiLang].download}</span></button>
+            <button data-x-onclick="hCopyResult" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-copy"></i> <span>${I18N[currentUiLang].copy}</span></button>
+            <button data-x-onclick="hDownloadResult" data-filename="${filename}" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-download"></i> <span>${I18N[currentUiLang].download}</span></button>
         </div>` + formatReportText(text);
         try { saveToHistory((filename || 'result').replace(/\.[^.]+$/, ''), text); } catch (e) { console.warn('تعذر حفظ النتيجة في السجل الموحّد', e); }
     }
@@ -1828,7 +2053,7 @@
             const preview = escapeHtml(previewSrc.slice(0, 90)) + (previewSrc.length > 90 ? '…' : '');
             return `
             <div class="panel-2 rounded-xl overflow-hidden">
-                <div class="p-3 flex items-center gap-2 cursor-pointer" onclick="toggleHistoryEntry(${i})">
+                <div class="p-3 flex items-center gap-2 cursor-pointer" data-x-onclick="hToggleHistoryEntry" data-idx="${i}">
                     <div class="flex-1 min-w-0">
                         <p class="text-xs font-bold text-slate-200 truncate">${escapeHtml(historyToolLabel(e.tool))}</p>
                         <p class="text-[10px] text-slate-500 truncate">${preview}</p>
@@ -1838,9 +2063,9 @@
                 </div>
                 <div id="history-body-${i}" class="hidden border-t border-[var(--border)] p-3 space-y-2">
                     <div class="flex justify-end gap-2">
-                        <button onclick="event.stopPropagation(); copyHistoryEntry(${i}, this)" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-copy"></i> <span>${I18N[currentUiLang].copy}</span></button>
-                        <button onclick="event.stopPropagation(); downloadHistoryEntry(${i})" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-download"></i> <span>${I18N[currentUiLang].download}</span></button>
-                        <button onclick="event.stopPropagation(); deleteHistoryEntry(${i})" class="chip hover:bg-red-500/10 hover:text-red-300 hover:border-red-500/30"><i class="fa-solid fa-trash"></i></button>
+                        <button data-x-onclick="hCopyHistoryEntry" data-idx="${i}" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-copy"></i> <span>${I18N[currentUiLang].copy}</span></button>
+                        <button data-x-onclick="hDownloadHistoryEntry" data-idx="${i}" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-download"></i> <span>${I18N[currentUiLang].download}</span></button>
+                        <button data-x-onclick="hDeleteHistoryEntry" data-idx="${i}" class="chip hover:bg-red-500/10 hover:text-red-300 hover:border-red-500/30"><i class="fa-solid fa-trash"></i></button>
                     </div>
                     <div class="text-xs sm:text-sm leading-relaxed max-h-[320px] overflow-y-auto">${formatReportText(e.text)}</div>
                 </div>
@@ -2802,9 +3027,9 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         box.dataset.raw = text;
         box.classList.remove('hidden');
         box.innerHTML = `<div class="flex flex-wrap justify-end gap-2 mb-2">
-            <button onclick="copyResult(this)" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-copy"></i> <span>${I18N[currentUiLang].copy}</span></button>
-            <button onclick="downloadResult(this, 'cv-linkedin-style.txt')" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-download"></i> نص فقط</button>
-            <button onclick="exportCvLinkedInImage()" class="chip hover:bg-[var(--panel-2)]"><i class="fa-brands fa-linkedin"></i> احفظ كصورة (ستايل لينكد إن)</button>
+            <button data-x-onclick="hCopyResult" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-copy"></i> <span>${I18N[currentUiLang].copy}</span></button>
+            <button data-x-onclick="hDownloadResultLinkedin" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-download"></i> نص فقط</button>
+            <button data-x-onclick="hExportCvLinkedInImage" class="chip hover:bg-[var(--panel-2)]"><i class="fa-brands fa-linkedin"></i> احفظ كصورة (ستايل لينكد إن)</button>
         </div>` + formatReportText(text);
     }
 
@@ -3584,7 +3809,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
                 : '';
             return `
             <div class="panel-2 rounded-xl p-3">
-                <div class="flex justify-between items-center gap-2 cursor-pointer" onclick="document.getElementById('progress-detail-${i}').classList.toggle('hidden')">
+                <div class="flex justify-between items-center gap-2 cursor-pointer" data-x-onclick="hToggleProgressDetail" data-idx="${i}">
                     <div class="flex items-center gap-2 min-w-0">
                         <i class="fa-solid fa-box-archive text-[10px] text-slate-500 shrink-0" title="محفوظة بشكل دائم"></i>
                         <span class="text-[10px] text-slate-500 shrink-0">${new Date(e.date).toLocaleDateString('ar-EG')}</span>
@@ -3919,3 +4144,38 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
     checkInterviewResumeBanner();
     checkAndFireReminderNotification();
     setInterval(checkAndFireReminderNotification, 60 * 1000);
+
+// ==== Moved from inline <script> in index.html (for CSP compliance) ====
+(function () {
+    // ============ تسجيل Service Worker (يخلي الموقع نفسه يفتح أوفلاين) ============
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js').catch(err => {
+                console.warn('تعذر تسجيل Service Worker (الموقع هيفضل شغال أونلاين عادي):', err);
+            });
+        });
+        // لو نسخة SW جديدة اتفعّلت وإحنا فاتحين الصفحة دلوقتي، اعمل ريفريش
+        // تلقائي مرة واحدة عشان نشوف آخر تحديث فورًا من غير ما نحتاج نقفل
+        // التاب ونفتحه تاني.
+        navigator.serviceWorker.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'YUSR_SW_UPDATED' && !sessionStorage.getItem('yusr_sw_reloaded')) {
+                sessionStorage.setItem('yusr_sw_reloaded', '1');
+                window.location.reload();
+            }
+        });
+    }
+
+    // ============ تنبيه بسيط لما النت يقطع/يرجع ============
+    // مش بيمنع استخدام الموقع، بس بيوضّح للمستخدم إن أدوات الذكاء الاصطناعي
+    // مش هتشتغل دلوقتي بدل ما ياخد رسالة خطأ غامضة أو الأداة تعلّق.
+    window.addEventListener('offline', () => {
+        if (typeof showToast === 'function') {
+            showToast('مفيش اتصال بالإنترنت دلوقتي. تقدر تتصفح الموقع، بس أدوات الذكاء الاصطناعي محتاجة نت.', 'error');
+        }
+    });
+    window.addEventListener('online', () => {
+        if (typeof showToast === 'function') {
+            showToast('النت رجع تاني، تقدر تكمل عادي.', 'success');
+        }
+    });
+})();
