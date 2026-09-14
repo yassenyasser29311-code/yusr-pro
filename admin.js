@@ -182,7 +182,58 @@
         }
     };
 
+    // ---- حساب حالة الأونلاين محليًا من lastSeen بدل الاعتماد على قيمة "online" الجامدة
+    // اللي بتيجي من أول تحميل بس - كده الحالة بترجع "غير متصل" لوحدها بمجرد ما المستخدم
+    // يقفل التطبيق (أو ينقطع)، من غير ما تفضل عالقة على "أونلاين" لحد ما تعمل ريفريش يدوي ----
+    const ADMIN_ONLINE_THRESHOLD_MS = 2 * 60 * 1000;
+    function adminIsOnline(u) {
+        return typeof u.lastSeen === "number" && (Date.now() - u.lastSeen) < ADMIN_ONLINE_THRESHOLD_MS;
+    }
+
+    let adminOnlineTickTimer = null;
+    let adminOnlineRefreshTimer = null;
+    function startAdminOnlineAutoRefresh() {
+        stopAdminOnlineAutoRefresh();
+        // كل 15 ثانية: إعادة رسم الجدول بس (من غير طلب شبكة) عشان أي حد عدّى عليه
+        // تلات دقايق من غير نبضة يتحول لـ"غير متصل" بصريًا فورًا.
+        adminOnlineTickTimer = setInterval(() => {
+            if (!window.__adminDashboardOpen) return;
+            adminRenderUsers();
+            if (adminUserModalUid) {
+                const u = adminFindUser(adminUserModalUid);
+                if (u) refreshAdminUserModalStatusBadge(u);
+            }
+        }, 15000);
+        // كل 30 ثانية: تحديث بيانات lastSeen فعليًا من السيرفر للمستخدمين المحمّلين حاليًا
+        adminOnlineRefreshTimer = setInterval(async () => {
+            if (!window.__adminDashboardOpen || !adminUsersCache.length) return;
+            try {
+                const list = await adminFetch("/adminListUsers", { method: "POST", body: JSON.stringify({ limit: adminUsersCache.length }) });
+                const byUid = {};
+                (list.users || []).forEach(u => { byUid[u.uid] = u; });
+                adminUsersCache = adminUsersCache.map(u => byUid[u.uid] ? Object.assign({}, u, { lastSeen: byUid[u.uid].lastSeen, online: byUid[u.uid].online }) : u);
+                adminRenderUsers();
+                if (adminUserModalUid) {
+                    const u = adminFindUser(adminUserModalUid);
+                    if (u) refreshAdminUserModalStatusBadge(u);
+                }
+            } catch (e) { /* صامت - مش هيأثر على باقي اللوحة */ }
+        }, 30000);
+    }
+    function stopAdminOnlineAutoRefresh() {
+        clearInterval(adminOnlineTickTimer); adminOnlineTickTimer = null;
+        clearInterval(adminOnlineRefreshTimer); adminOnlineRefreshTimer = null;
+    }
+    function refreshAdminUserModalStatusBadge(u) {
+        const badge = document.getElementById("admin-user-modal-status-badge");
+        if (!badge) return;
+        badge.innerHTML = u.suspended
+            ? '<span class="admin-badge admin-badge-suspended">الحساب موقوف</span>'
+            : (adminIsOnline(u) ? '<span class="admin-badge admin-badge-online"><span class="dot"></span>أونلاين دلوقتي</span>' : '<span class="admin-badge admin-badge-offline">غير متصل حاليًا</span>');
+    }
+
     window.adminLogout = function () {
+        stopAdminOnlineAutoRefresh();
         adminToken = null;
         adminRole = null;
         sessionStorage.removeItem("yusr_admin_token");
@@ -216,6 +267,7 @@
     // ---- تحميل الإحصائيات + أول صفحة مستخدمين + سجل النشاط ----
     let adminUsersNextCursor = null;
     window.adminRefreshAll = async function () {
+        startAdminOnlineAutoRefresh();
         try {
             const [stats, list] = await Promise.all([
                 adminFetch("/adminStats"),
@@ -697,7 +749,7 @@
         const headers = ["UID", "الإيميل", "الاسم", "الباقة", "سقف مخصص", "الاستخدام الشهري", "موقوف", "أونلاين"];
         const rows = adminUsersCache.map(u => [
             u.uid, u.email || "", u.displayName || "", u.plan || "",
-            u.customLimit ?? "", u.usageThisMonth ?? 0, u.suspended ? "نعم" : "لا", u.online ? "نعم" : "لا"
+            u.customLimit ?? "", u.usageThisMonth ?? 0, u.suspended ? "نعم" : "لا", adminIsOnline(u) ? "نعم" : "لا"
         ]);
         const csvEscape = v => `"${String(v).replace(/"/g, '""')}"`;
         const csv = "\uFEFF" + [headers, ...rows].map(r => r.map(csvEscape).join(",")).join("\r\n");
@@ -788,7 +840,7 @@
                 <td class="text-center">${u.usageThisMonth ?? 0}</td>
                 <td><input type="number" min="0" class="admin-mini-input" placeholder="افتراضي" value="${u.customLimit ?? ""}" ${readOnly ? "disabled" : ""} data-x-onchange="hAdminSetCustomLimit" data-user-uid="${u.uid}"></td>
                 <td>
-                    ${u.suspended ? '<span class="admin-badge admin-badge-suspended">موقوف</span>' : (u.online ? '<span class="admin-badge admin-badge-online"><span class="dot"></span>أونلاين</span>' : '<span class="admin-badge admin-badge-offline">غير متصل</span>')}
+                    ${u.suspended ? '<span class="admin-badge admin-badge-suspended">موقوف</span>' : (adminIsOnline(u) ? '<span class="admin-badge admin-badge-online"><span class="dot"></span>أونلاين</span>' : '<span class="admin-badge admin-badge-offline">غير متصل</span>')}
                 </td>
                 <td>
                     <button class="admin-mini-btn" data-x-onclick="hAdminOpenUserModal" data-user-uid="${u.uid}"><i class="fa-solid fa-gear"></i> ${readOnly ? "عرض" : "إدارة"}</button>
@@ -847,7 +899,7 @@
         document.getElementById("admin-user-modal-email").textContent = u.email || u.uid;
         document.getElementById("admin-user-modal-status-badge").innerHTML = u.suspended
             ? '<span class="admin-badge admin-badge-suspended">الحساب موقوف</span>'
-            : (u.online ? '<span class="admin-badge admin-badge-online"><span class="dot"></span>أونلاين دلوقتي</span>' : '<span class="admin-badge admin-badge-offline">غير متصل حاليًا</span>');
+            : (adminIsOnline(u) ? '<span class="admin-badge admin-badge-online"><span class="dot"></span>أونلاين دلوقتي</span>' : '<span class="admin-badge admin-badge-offline">غير متصل حاليًا</span>');
 
         const planSel = document.getElementById("admin-user-modal-plan");
         planSel.innerHTML = PLAN_NAMES.map(p => `<option value="${p}" ${p === u.plan ? "selected" : ""}>${p}</option>`).join("");

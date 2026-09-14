@@ -970,6 +970,7 @@ window.__H = {
             attachCloudPurchasesListener(user.uid);
             attachCloudPointsListener(user.uid);
             attachSuspensionListener(user.uid);
+            attachAccountDeletionWatcher(user.uid);
             startOnlinePing();
             logActivity('login', 'دخول للحساب - ' + (user.email || user.uid));
             showSupportChatFab();
@@ -984,6 +985,7 @@ window.__H = {
         stopSupportChatPolling();
         hideSupportChatFab();
         detachSuspensionListener();
+        detachAccountDeletionWatcher();
         if (cloudCustomLimitRef) { cloudCustomLimitRef.off(); cloudCustomLimitRef = null; }
         if (cloudPermissionsRef) { cloudPermissionsRef.off(); cloudPermissionsRef = null; }
         if (cloudPlanRef) { cloudPlanRef.off(); cloudPlanRef = null; }
@@ -1484,6 +1486,37 @@ window.__H = {
     function logoutFromSuspended() {
         detachSuspensionListener();
         hideSuspendedGate();
+        fbAuth.signOut().catch(() => {});
+    }
+
+    // ---- مراقبة حذف الحساب: لو الأدمن مسح المستخدم من لوحة التحكم وهو لسه فاتح
+    // الموقع، بنطلعه فورًا لصفحة تسجيل الدخول - حتى لو عنده صلاحيات كاملة (unlimitedUsage/
+    // moderator/إلخ)، لأن العقدة كلها users/{uid} بتتمسح فمفيش حاجة تفرّق بينهم. ----
+    let accountExistsRef = null;
+    let accountExistsSeen = false;
+    function attachAccountDeletionWatcher(uid) {
+        detachAccountDeletionWatcher();
+        accountExistsRef = db.ref('users/' + uid);
+        accountExistsRef.on('value', snap => {
+            if (snap.exists()) { accountExistsSeen = true; return; }
+            // أول قراءة ممكن تيجي فاضية لحظة الدخول قبل ما بروفايل المستخدم يتزامن -
+            // مش هنعتبرها حذف إلا لو كنا شفنا الحساب موجود فعلاً قبل كده.
+            if (accountExistsSeen) forceLogoutDeletedAccount();
+        }, err => console.warn('تعذر متابعة وجود الحساب', err));
+    }
+    function detachAccountDeletionWatcher() {
+        if (accountExistsRef) { accountExistsRef.off(); accountExistsRef = null; }
+        accountExistsSeen = false;
+    }
+    function forceLogoutDeletedAccount() {
+        detachAccountDeletionWatcher();
+        detachSuspensionListener();
+        hideSuspendedGate();
+        try {
+            const keysToRemove = Object.keys(localStorage).filter(k => k.startsWith('yusr_'));
+            keysToRemove.forEach(k => localStorage.removeItem(k));
+        } catch (e) {}
+        showToast('تم حذف هذا الحساب من قبل الإدارة، تم تسجيل خروجك.', 'error');
         fbAuth.signOut().catch(() => {});
     }
 
