@@ -857,6 +857,12 @@
         limitInput.value = u.customLimit ?? "";
         limitInput.disabled = readOnly;
 
+        const pointsInput = document.getElementById("admin-user-modal-points");
+        if (pointsInput) {
+            pointsInput.value = u.points ?? 0;
+            pointsInput.disabled = readOnly;
+        }
+
         document.getElementById("admin-user-modal-usage").textContent = u.usageThisMonth ?? 0;
 
         const suspendBtn = document.getElementById("admin-user-modal-suspend-btn");

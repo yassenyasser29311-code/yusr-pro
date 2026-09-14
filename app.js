@@ -189,6 +189,7 @@ window.__H = {
   h182: function(event) { dismissOnboarding('profile') },
   h183: function(event) { dismissOnboarding('interview') },
   h184: function(event) { dismissOnboarding('cv') },
+  h186: function(event) { adminModalUserAction('setPoints', this.value === '' ? 0 : this.value) },
   h185: function(event) { dismissOnboarding() },
   hFeedbackToggle: function(event) { adminFeedbackAction(this.getAttribute('data-fb-id'), this.getAttribute('data-fb-action')) },
   hSubReviewApprove: function(event) { adminReviewSubscriptionRequest(this.getAttribute('data-req-id'), 'approve') },
@@ -681,6 +682,30 @@ window.__H = {
         return getLocalUsageCache().count; // لحد ما يوصل رد السيرفر أول مرة
     }
 
+    // ---- سقف الاستخدام المخصص (بيتحدّد من لوحة الأدمن) + صلاحية "استخدام غير محدود" ----
+    // ده كان بيتخزن ويتحفظ صح من الأدمن، بس الواجهة هنا كانت بتتجاهله تمامًا وبتحسب
+    // الحد بس من PLAN_MONTHLY_LIMITS الثابت حسب اسم الباقة - فكان "سقف مخصص" مالوش أي تأثير
+    // فعلي على المستخدم. دلوقتي بنتابعهم لايف من نفس مكان تخزينهم في الأدمن.
+    let cloudCustomLimit = null; // رقم أو null (يعني مفيش سقف مخصص، استخدم حد الباقة العادي)
+    let cloudUnlimitedUsage = false;
+    let cloudCustomLimitRef = null;
+    let cloudPermissionsRef = null;
+    function attachCloudLimitListener(uid) {
+        if (cloudCustomLimitRef) cloudCustomLimitRef.off();
+        if (cloudPermissionsRef) cloudPermissionsRef.off();
+        cloudCustomLimitRef = db.ref('users/' + uid + '/customLimit');
+        cloudCustomLimitRef.on('value', snap => {
+            const v = snap.val();
+            cloudCustomLimit = (typeof v === 'number' && v >= 0) ? v : null;
+            checkDeviceTrial();
+        }, err => console.warn('تعذر متابعة السقف المخصص من السيرفر', err));
+        cloudPermissionsRef = db.ref('users/' + uid + '/permissions/unlimitedUsage');
+        cloudPermissionsRef.on('value', snap => {
+            cloudUnlimitedUsage = snap.val() === true;
+            checkDeviceTrial();
+        }, err => console.warn('تعذر متابعة صلاحيات الاستخدام من السيرفر', err));
+    }
+
     let cloudPlanRef = null;
     function attachCloudPlanListener(uid) {
         if (cloudPlanRef) cloudPlanRef.off();
@@ -704,6 +729,42 @@ window.__H = {
                 showToast(uiStr('subscriptionActivated', { plan: newPlan }), 'success');
             }
         }, err => console.warn('تعذر متابعة الباقة من السيرفر', err));
+    }
+
+    // نفس فكرة متابعة الباقة لايف (فوق)، لكن لسجل الاشتراكات/المشتريات (اللي بيتحدث
+    // في نفس اللحظة اللي الأدمن بيوافق فيها على طلب الدفع). من غيرها، لو المستخدم
+    // فاتح الموقع وقت الموافقة، الباقة كانت بتتحدث بس صفحة "الاشتراكات" وكارت
+    // "إجمالي المدفوع" كانوا بيفضلوا واقفين على القديم لحد ما يعمل تسجيل خروج ودخول
+    // تاني - عشان كانوا بيتقروا مرة واحدة بس (once) وقت تسجيل الدخول.
+    let cloudPurchasesRef = null;
+    function attachCloudPurchasesListener(uid) {
+        if (cloudPurchasesRef) cloudPurchasesRef.off();
+        cloudPurchasesRef = db.ref('users/' + uid + '/purchases');
+        cloudPurchasesRef.on('value', snap => {
+            const val = snap.val();
+            const list = Array.isArray(val) ? val : (val && typeof val === 'object' ? Object.values(val) : []);
+            savePurchases(list);
+            renderPurchasesOverview();
+        }, err => console.warn('تعذر متابعة سجل الاشتراكات من السيرفر', err));
+    }
+
+    // نفس المبدأ للنقط: لو الأدمن عدّل نقط المستخدم من لوحة التحكم، لازم تتحدث
+    // فورًا عنده من غير ما يحتاج يعمل رفرش، بدل ما تفضل واقفة على آخر قيمة اتحفظت
+    // محليًا وقت الدخول.
+    let cloudPointsRef = null;
+    function attachCloudPointsListener(uid) {
+        if (cloudPointsRef) cloudPointsRef.off();
+        cloudPointsRef = db.ref('users/' + uid + '/points');
+        cloudPointsRef.on('value', snap => {
+            const v = snap.val();
+            if (typeof v !== 'number') return;
+            const p = getProfile();
+            if (p.points === v) return;
+            p.points = v;
+            saveProfile(p);
+            const el = document.getElementById('profile-points-count');
+            if (el) el.innerText = v;
+        }, err => console.warn('تعذر متابعة النقط من السيرفر', err));
     }
     function getTrialWarnState() {
         const monthKey = getCurrentMonthKey();
@@ -753,9 +814,14 @@ window.__H = {
             state.low = true; setTrialWarnState(state);
         }
     }
-    function checkDeviceTrial() {
+    function getEffectiveMonthlyLimit() {
+        if (cloudUnlimitedUsage) return Infinity; // صلاحية "استخدام غير محدود" من الأدمن
+        if (typeof cloudCustomLimit === 'number' && cloudCustomLimit >= 0) return cloudCustomLimit; // "سقف مخصص" من الأدمن
         const plan = getCurrentPlanName();
-        const limit = PLAN_MONTHLY_LIMITS[plan];
+        return PLAN_MONTHLY_LIMITS[plan];
+    }
+    function checkDeviceTrial() {
+        const limit = getEffectiveMonthlyLimit();
         const count = getEffectiveUsageCount();
         const remaining = (limit === Infinity) ? Infinity : Math.max(0, limit - count);
         updateTrialUsageUI(remaining, limit, count);
@@ -899,6 +965,9 @@ window.__H = {
             loadProfileFromCloud(user.uid);
             attachCloudUsageListener(user.uid);
             attachCloudPlanListener(user.uid);
+            attachCloudLimitListener(user.uid);
+            attachCloudPurchasesListener(user.uid);
+            attachCloudPointsListener(user.uid);
             attachSuspensionListener(user.uid);
             startOnlinePing();
             showSupportChatFab();
@@ -913,6 +982,13 @@ window.__H = {
         stopSupportChatPolling();
         hideSupportChatFab();
         detachSuspensionListener();
+        if (cloudCustomLimitRef) { cloudCustomLimitRef.off(); cloudCustomLimitRef = null; }
+        if (cloudPermissionsRef) { cloudPermissionsRef.off(); cloudPermissionsRef = null; }
+        if (cloudPlanRef) { cloudPlanRef.off(); cloudPlanRef = null; }
+        if (cloudPurchasesRef) { cloudPurchasesRef.off(); cloudPurchasesRef = null; }
+        if (cloudPointsRef) { cloudPointsRef.off(); cloudPointsRef = null; }
+        cloudCustomLimit = null;
+        cloudUnlimitedUsage = false;
         hideSuspendedGate();
         showAuthGate();
     });

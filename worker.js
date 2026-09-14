@@ -1219,6 +1219,7 @@ async function handleAdminListUsers(request, env, corsHeaders) {
         displayName: u.displayName || u.name || null,
         plan: planName,
         customLimit: typeof u.customLimit === "number" ? u.customLimit : null,
+        points: typeof u.points === "number" ? u.points : 0,
         suspended: u.suspended === true,
         permissions: (u.permissions && typeof u.permissions === "object") ? u.permissions : {},
         adminNote: typeof u.adminNote === "string" ? u.adminNote : "",
@@ -1492,6 +1493,7 @@ const ADMIN_VALID_ACTIONS = new Set([
   "activate",
   "setPlan",
   "setCustomLimit",
+  "setPoints",
   "resetUsage",
   "setPermissions",
   "setNote",
@@ -1542,6 +1544,13 @@ async function handleAdminUserAction(request, env, corsHeaders, ctx) {
       value = n;
     }
     path = `users/${uid}/customLimit`;
+  } else if (action === "setPoints") {
+    const n = Number(body.value);
+    if (!Number.isFinite(n) || n < 0) {
+      return json({ error: "invalid_points" }, 400, corsHeaders);
+    }
+    path = `users/${uid}/points`;
+    value = Math.round(n);
   } else if (action === "resetUsage") {
     path = `users/${uid}/usage/${getCurrentMonthKey()}`;
     value = 0;
