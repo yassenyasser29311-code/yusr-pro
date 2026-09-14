@@ -662,6 +662,21 @@
         adminAllChatsCurrentUid = null;
     };
 
+    // ---- نسخة خفيفة بتحدّث بس بادج عدد الرسايل الغير مقروءة في الشريط العلوي، من غير
+    // ما تفتح/تحمّل مودال المحادثات كله - دي كانت متنادية من adminRefreshAll من غير ما
+    // تتعرّف أصلاً، فكانت بترمي ReferenceError كل مرة تعمل فيها تحديث للوحة. ----
+    async function adminRefreshAllChatsBadge() {
+        const badge = document.getElementById("admin-allchats-badge");
+        if (!badge) return;
+        try {
+            const data = await adminFetch("/adminListChats");
+            const conversations = data.conversations || [];
+            const totalUnread = conversations.reduce((sum, c) => sum + (c.unreadFromUser || 0), 0);
+            badge.classList.toggle("hidden", totalUnread === 0);
+            badge.textContent = totalUnread;
+        } catch (e) { /* صامت - بادج بسيطة مش لازم توقف حاجة تانية لو فشلت */ }
+    }
+
     window.adminAllChatsLoadList = async function () {
         const listEl = document.getElementById("admin-allchats-list");
         const emptyEl = document.getElementById("admin-allchats-empty");
