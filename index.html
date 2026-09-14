@@ -573,6 +573,12 @@
         </div>
 
         
+        <div class="panel-2 rounded-xl p-3 space-y-2.5">
+            <p class="section-eyebrow mb-0"><i class="fa-solid fa-clock-rotate-left"></i> سجل نشاط الحساب</p>
+            <p class="text-[10px] text-slate-500 -mt-1.5">كل حركة عملها المستخدم ده (دخول/خروج/طلب تغيير باسورد/تعديل بروفايل...) بترتيب الأحدث الأول.</p>
+            <div id="admin-user-modal-activity-log" class="space-y-1 rounded-lg p-2 text-[11px]" style="max-height:220px; overflow-y:auto; background:var(--panel);"></div>
+        </div>
+
         <div class="rounded-xl p-3 space-y-2 border border-red-500/25 bg-red-500/5">
             <p class="section-eyebrow mb-0 text-red-300"><i class="fa-solid fa-triangle-exclamation"></i> منطقة خطر</p>
             <p class="text-[10px] text-slate-500">حذف المستخدم نهائيًا بيشيل كل بياناته (الاسم/الصورة/النقط/الباقة/سجل الاستخدام/الصلاحيات) من قاعدة البيانات، ومينفعش يترجع. الووركر هيحاول كمان يمسح حساب الدخول نفسه (Firebase Auth) فعليًا؛ لو نجحت هتظهر لك رسالة تأكيد بكده، ولو فشلت هتتنبّه إن الحساب لسه ممكن يسجّل دخول بنفس الإيميل/جوجل.</p>

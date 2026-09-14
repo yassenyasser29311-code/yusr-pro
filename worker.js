@@ -147,6 +147,12 @@ export default {
     if (url.pathname === "/onlinePing") {
       return handleOnlinePing(request, env, corsHeaders);
     }
+    if (url.pathname === "/logUserActivity") {
+      return handleLogUserActivity(request, env, corsHeaders);
+    }
+    if (url.pathname === "/adminUserActivity") {
+      return handleAdminUserActivity(request, env, corsHeaders);
+    }
 
     if (url.pathname === "/logClientError") {
       return handleLogClientError(request, env, corsHeaders);
@@ -2057,6 +2063,80 @@ async function handleOnlinePing(request, env, corsHeaders) {
     console.warn("handleOnlinePing فشل:", e);
   }
   return json({ ok: true }, 200, corsHeaders);
+}
+
+// ---- سجل نشاط كل مستخدم: أي حركة يعملها المستخدم (دخول/خروج/تغيير باسورد/تغيير باقة...)
+// بتتسجل هنا تحت userActivity/{uid} عشان الأدمن يقدر يشوفها في مساحة إدارة الحساب ----
+const USER_ACTIVITY_MAX_DETAILS_LEN = 500;
+
+async function handleLogUserActivity(request, env, corsHeaders) {
+  const auth = await verifyFirebaseToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, corsHeaders);
+  if (!env.FIREBASE_SERVICE_ACCOUNT_JSON) return json({ ok: true }, 200, corsHeaders);
+
+  let body = {};
+  try { body = await request.json(); } catch (e) { body = {}; }
+  const type = typeof body?.type === "string" && body.type.trim() ? body.type.trim().slice(0, 60) : "unknown";
+  let details = body?.details;
+  if (details && typeof details === "object") {
+    try { details = JSON.stringify(details); } catch (e) { details = String(details); }
+  } else if (details !== undefined && details !== null) {
+    details = String(details);
+  } else {
+    details = "";
+  }
+  details = details.slice(0, USER_ACTIVITY_MAX_DETAILS_LEN);
+
+  const ip = request.headers.get("CF-Connecting-IP") || "";
+  const ua = (request.headers.get("User-Agent") || "").slice(0, 200);
+
+  try {
+    const authQS = `auth=${encodeURIComponent(auth.idToken)}`;
+    await fetch(`${FIREBASE_DB_URL}/userActivity/${auth.uid}.json?${authQS}`, {
+      method: "POST",
+      body: JSON.stringify({
+        type,
+        details,
+        ip,
+        ua,
+        time: Date.now()
+      })
+    });
+  } catch (e) {
+    console.warn("handleLogUserActivity فشل:", e);
+  }
+  return json({ ok: true }, 200, corsHeaders);
+}
+
+const ADMIN_USER_ACTIVITY_DEFAULT_LIMIT = 200;
+const ADMIN_USER_ACTIVITY_MAX_LIMIT = 2000;
+
+async function handleAdminUserActivity(request, env, corsHeaders) {
+  const admin = await requireAdminSession(request, env);
+  if (!admin.ok) return json({ error: admin.error }, 401, corsHeaders);
+  if (!env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    return json({ error: "firebase_service_account_not_configured" }, 500, corsHeaders);
+  }
+
+  let body = {};
+  try { body = await request.json(); } catch (e) { body = {}; }
+  const uid = typeof body?.uid === "string" ? body.uid.trim() : "";
+  if (!uid) return json({ error: "missing_uid" }, 400, corsHeaders);
+  let limit = parseInt(body?.limit, 10);
+  if (!Number.isFinite(limit) || limit <= 0) limit = ADMIN_USER_ACTIVITY_DEFAULT_LIMIT;
+  limit = Math.min(limit, ADMIN_USER_ACTIVITY_MAX_LIMIT);
+
+  try {
+    const raw = (await fbAdminGet(`userActivity/${uid}`, env)) || {};
+    let entries = Object.entries(raw).map(([id, e]) => ({ id, ...(e || {}) }));
+    entries.sort((a, b) => (b.time || 0) - (a.time || 0));
+    const total = entries.length;
+    entries = entries.slice(0, limit);
+    return json({ ok: true, activity: entries, total }, 200, corsHeaders);
+  } catch (e) {
+    console.error("handleAdminUserActivity فشل:", e);
+    return json({ error: "internal_error" }, 500, corsHeaders);
+  }
 }
 
 function truncateField(v, max) {

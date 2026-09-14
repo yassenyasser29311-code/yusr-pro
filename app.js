@@ -829,12 +829,13 @@ window.__H = {
         if (limit !== Infinity && count >= limit) { openPricingModal(); return false; }
         return true;
     }
-    function incrementDeviceUsage() {
+    function incrementDeviceUsage(toolLabel) {
         const user = fbAuth.currentUser;
         setLocalUsageCache(getEffectiveUsageCount() + 1);
         checkDeviceTrial();
         if (user && !user.isAnonymous) {
             addPoints(10);
+            logActivity('tool_use', toolLabel || 'استخدام أداة');
         }
     }
 
@@ -970,6 +971,7 @@ window.__H = {
             attachCloudPointsListener(user.uid);
             attachSuspensionListener(user.uid);
             startOnlinePing();
+            logActivity('login', 'دخول للحساب - ' + (user.email || user.uid));
             showSupportChatFab();
             startSupportChatPolling();
             refreshEmailVerificationBanner(user);
@@ -1021,10 +1023,28 @@ window.__H = {
     function stopOnlinePing() {
         if (onlinePingInterval) { clearInterval(onlinePingInterval); onlinePingInterval = null; }
     }
+    // ملحوظة: قبل كده كنا بنوقف نبضة الأونلاين لما التاب يبقى مخفي (background)،
+    // وده كان بيخلي المستخدم يظهر "غير متصل" في لوحة الأدمن رغم إن الموقع لسه فاتح
+    // عنده (مجرد تاب تاني فاتح أو الموبايل قافل الشاشة). دلوقتي النبضة بتفضل شغالة
+    // طول ما فيه مستخدم مسجل دخول، بغض النظر عن visibility، عشان حالة "أونلاين"
+    // في الأدمن تبقى دقيقة فعلاً.
+    async function logActivity(type, details) {
+        try {
+            if (!fbAuth.currentUser || fbAuth.currentUser.isAnonymous) return;
+            await fetch(`${CLOUD_FUNCTIONS_BASE}/logUserActivity`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...(await getAuthHeader()) },
+                body: JSON.stringify({ type, details: details || '' })
+            });
+        } catch (e) { console.warn('تعذر تسجيل نشاط المستخدم', type, e); }
+    }
+    window.logActivity = logActivity;
     document.addEventListener('visibilitychange', () => {
         if (!fbAuth.currentUser || fbAuth.currentUser.isAnonymous) return;
-        if (document.visibilityState === 'visible') startOnlinePing();
-        else stopOnlinePing();
+        // النبضة فضلت شغالة سواء التاب ظاهر أو مخفي (طالما فيه مستخدم داخل)، فبنبعت
+        // نبضة فورية لما يرجع يظهر بس عشان يبان أونلاين بسرعة، ومنوقفش الإنترفال خالص.
+        if (document.visibilityState === 'visible') sendOnlinePing();
+        if (!onlinePingInterval) startOnlinePing();
     });
 
     let supportChatMessages = [];
@@ -1384,6 +1404,7 @@ window.__H = {
                 try { user.updateProfile({ displayName: name }); } catch (e) {}
                 syncProfileToCloud(getProfile());
                 try { user.sendEmailVerification(); } catch (e) { console.warn('تعذر إرسال إيميل التأكيد الأول', e); }
+                logActivity('signup', 'إنشاء حساب جديد بالإيميل - ' + email);
             }
         };
 
@@ -1438,6 +1459,7 @@ window.__H = {
         statusEl.className = 'text-[11px] text-center text-emerald-400';
         statusEl.classList.remove('hidden');
         btn.disabled = false; btn.classList.remove('opacity-60');
+        logActivity('password_reset_request', 'طلب استعادة كلمة المرور (من شاشة الدخول) - ' + email);
     }
 
     let suspensionRef = null;
@@ -1682,11 +1704,13 @@ window.__H = {
                 body: JSON.stringify({ email })
             });
         } catch (e) { console.warn('تعذر إرسال طلب تغيير الباسورد', e); }
+        logActivity('password_change_request', 'طلب رابط تغيير كلمة المرور من داخل الحساب');
         showToast('لو الإيميل ده متسجل عندنا، وصلك رابط لتغيير كلمة المرور.', 'success');
     }
     function logoutAccount() {
         const sure = confirm(uiStr('logoutConfirm'));
         if (!sure) return;
+        logActivity('logout', 'تسجيل خروج من الحساب');
         const p = getProfile();
         p.google = null;
         saveProfile(p);
@@ -1825,6 +1849,7 @@ window.__H = {
         return true;
     }
     async function deleteAccountCore(user) {
+        await logActivity('account_delete', 'حذف الحساب نهائيًا بمعرفة صاحبه');
         await db.ref('users/' + user.uid).remove();
         await user.delete();
         try {
@@ -1878,6 +1903,7 @@ window.__H = {
         saveProfile(p);
         syncProfileToCloud(p);
         updateAccountChip(p);
+        logActivity('profile_update', 'تعديل بيانات الملف الشخصي (الاسم/المسمى)');
         showToast(uiStr('savedToast'), 'success');
     }
     const GOOGLE_CLIENT_ID = "1088995951323-c6aeisqni683ishtav76e33vcbjdve7c.apps.googleusercontent.com";
@@ -2250,7 +2276,7 @@ window.__H = {
                 const text = await transcribeAudioBlob(blob, 'mic-recording.webm', false, 'general');
                 document.getElementById('transcribe-raw').value = (previous ? previous + ' ' : '') + text;
                 status.innerText = "✓ اتفرّغ بنجاح. راجع النص تحت واضغط \"نظّف وحسّن التنسيق\".";
-                incrementDeviceUsage();
+                incrementDeviceUsage('تفريغ صوتي عن طريق المايك');
             } catch (e) {
                 console.warn('Mic transcription failed:', e);
                 status.innerText = "تعذر تفريغ التسجيل. جرب تاني أو الصق النص يدوياً.";
@@ -2527,7 +2553,7 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
 
         chatHistory = [{ role: "system", content: systemPrompt }];
         appendChatMessage("ai", "جاري الاتصال بالمحاور...");
-        incrementDeviceUsage();
+        incrementDeviceUsage('بدء جلسة مقابلة تجريبية');
 
         try {
             const aiResponse = await callGroqConversation(chatHistory);
@@ -2564,7 +2590,7 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
         chatHistory.push({ role: "user", content: userMsg });
         try {
             const aiResponse = await callGroqConversation(chatHistory);
-            incrementDeviceUsage();
+            incrementDeviceUsage('إرسال إجابة في المقابلة التجريبية');
             indicator.classList.add('hidden');
             chatHistory.push({ role: "assistant", content: aiResponse });
             prefetchTtsAudio(aiResponse); // نبدأ نجهّز الصوت فورًا قبل حتى ما نكتب الرسالة في الشاشة
@@ -2860,7 +2886,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         const sendBtn = document.getElementById('assistant-chat-send-btn');
         if (sendBtn) sendBtn.disabled = true;
         setAssistantTyping(true);
-        incrementDeviceUsage();
+        incrementDeviceUsage('محادثة مع المساعد الذكي');
         try {
             assistantChatHistory[0] = { role: 'system', content: getAssistantSystemPrompt() };
             const trimmed = [assistantChatHistory[0], ...assistantChatHistory.slice(1).slice(-16)];
@@ -2995,7 +3021,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         const level = document.getElementById('faq-level').value;
         const box = document.getElementById('faq-result');
         box.classList.remove('hidden'); box.innerHTML = spinnerHTML("جاري تجهيز الأسئلة...");
-        incrementDeviceUsage();
+        incrementDeviceUsage('توليد أسئلة شائعة');
         const messages = [
             { role: "system", content: `أنت مدير توظيف (HR) بخبرة 15 سنة في تعيين لوظيفة "${role}" تحديداً على مستوى "${level}"، وعارف فعلاً إيه اللي بيتسأل في المقابلات الحقيقية للوظيفة دي في سوق العمل (سواء أسئلة عامة، أو أسئلة سلوكية/موقفية، أو أسئلة تقنية/مهنية خاصة بمجال الوظيفة نفسه لو الوظيفة فنية).
 جهّز بالظبط ${count} سؤال، بالمعايير دي:
@@ -3020,7 +3046,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         const isSummary = document.getElementById('career-length').value === 'summary';
         const box = document.getElementById('career-result');
         box.classList.remove('hidden'); box.innerHTML = spinnerHTML(isSummary ? "جاري تجهيز الملخص..." : "جاري بناء خطتك...");
-        incrementDeviceUsage();
+        incrementDeviceUsage('تخطيط المسار المهني');
         const detailedInstruction = `ابنِ خطة عملية واقعية بمراحل زمنية تقريبية (مثلاً أول 3 شهور، 6 شهور، سنة) توصل الشخص من وضعه الحالي لهدفه، تشمل: المهارات المطلوب اكتسابها، مصادر تعلم عامة (نوع الدورة/الشهادة مش رابط محدد)، خطوات عملية، ونصيحة لبناء بورتفوليو أو خبرة عملية في المجال الجديد.`;
         const summaryInstruction = `ملخص سريع جداً وواضح، بحد أقصى 6-8 أسطر: 1) جملة توضح الفجوة بين وضعه وهدفه 2) أهم 3-4 مهارات لازم يركز عليها بالترتيب 3) جدول زمني تقريبي واحد بسيط (مثلاً "3 شهور: كذا، 6 شهور: كذا") 4) خطوة عملية واحدة يبدأ بيها من بكرة. من غير حشو أو تكرار، وكل جملة تفيد فعلاً.`;
         const messages = [
@@ -3073,7 +3099,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         const skills = document.getElementById(prefix + 'skills').value.trim();
         const box = document.getElementById(variant === 'linkedin' ? 'cv-result-linkedin' : 'cv-result-plain');
         box.classList.remove('hidden'); box.innerHTML = spinnerHTML("جاري صياغة سيرتك الذاتية...");
-        incrementDeviceUsage();
+        incrementDeviceUsage('إنشاء سيرة ذاتية');
 
         let messages;
         if (variant === 'linkedin') {
@@ -3213,7 +3239,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         if (!checkDeviceTrial()) return;
         const box = document.getElementById('portfolio-result');
         box.classList.remove('hidden'); box.innerHTML = spinnerHTML("جاري تجهيز محتوى البورتفوليو...");
-        incrementDeviceUsage();
+        incrementDeviceUsage('إنشاء بورتفوليو');
         const convo = pfChatHistory.filter(m => m.role !== 'system').map(m => (m.role === 'assistant' ? 'سؤال: ' : 'إجابة: ') + m.content).join('\n');
         const messages = [
             { role: "system", content: `أنت مستشار بناء بورتفوليوهات احترافية. بناءً على الحوار المرفق مع المستخدم، جهّز محتوى نصي منظم لصفحة بورتفوليو شخصي: نبذة تعريفية جذابة (About)، وصف احترافي مقنع لكل مشروع بأسلوب يبرز النتيجة والقيمة مش بس الوصف التقني، واقتراح لعناوين الأقسام الرئيسية للصفحة. بدون رموز markdown.${aiToolLangDirective()}` },
@@ -3231,7 +3257,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         const topic = document.getElementById('writing-topic').value.trim();
         const box = document.getElementById('writing-result');
         box.classList.remove('hidden'); box.innerHTML = spinnerHTML("جاري المراجعة...");
-        incrementDeviceUsage();
+        incrementDeviceUsage('مراجعة نص مكتوب');
         const messages = [
             { role: "system", content: `أنت مدقق لغوي وأكاديمي محترف جداً، دقيق ومنهجي، بمستوى مراجع في مجلة علمية محكّمة. مهمتك: ${mode}.
 اتبع المنهجية دي بالحرف، وراجع النص جملة جملة بعناية شديدة قبل ما ترد، من غير ما تتسرع أو تتجاهل أخطاء بسيطة:
@@ -3252,7 +3278,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         const topic = document.getElementById('writing-topic').value.trim();
         const box = document.getElementById('writing-abstract-result');
         box.classList.remove('hidden'); box.innerHTML = spinnerHTML("جاري توليد الملخص الأكاديمي...");
-        incrementDeviceUsage();
+        incrementDeviceUsage('تلخيص أكاديمي');
         const messages = [
             { role: "system", content: `أنت خبير كتابة أكاديمية. اكتب "Abstract" أكاديمي احترافي واحد فقط للنص المُعطى، بطول 150-220 كلمة، بأسلوب أكاديمي رسمي ومكثّف (بدون إنشاء زائد)، يغطي بالترتيب: هدف البحث/المقال، المنهجية أو الطريقة المتبعة لو مذكورة أو مفهومة من النص، أهم النتائج أو الأفكار الرئيسية، والخلاصة أو الأهمية. اكتبه فقرة واحدة متصلة زي أي Abstract حقيقي في بحث علمي، من غير عناوين فرعية ومن غير رموز markdown. اكتبه بنفس لغة النص الأصلي.` },
             { role: "user", content: `${topic ? 'موضوع البحث: ' + topic + '\\n\\n' : ''}النص:\\n${text}` }
@@ -3267,7 +3293,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         if (!checkDeviceTrial()) return;
         const box = document.getElementById('writing-vocab-result');
         box.classList.remove('hidden'); box.innerHTML = spinnerHTML("جاري تقوية الأسلوب...");
-        incrementDeviceUsage();
+        incrementDeviceUsage('تحسين المفردات');
         const messages = [
             { role: "system", content: `أنت مدقق أسلوب أكاديمي متخصص في رفع مستوى الصياغة. اقرأ النص وحدد فقط الجمل أو الكلمات اللي أسلوبها عامي/إنشائي/ضعيف أكاديمياً (تكرار كلمات، عبارات فضفاضة، جمل طويلة مبهمة)، واكتب لكل حالة: "الأصل: [النص] ← بديل أقوى: [صياغة أكاديمية أدق وأكثر احترافية بنفس المعنى بالظبط]". لو النص فيه تكرار ملحوظ لنفس الكلمة أو المصطلح، اقترح مرادفات أكاديمية متنوعة له. اختم بـ"ملاحظة عامة عن الأسلوب" من سطرين. ممنوع تغيير المعنى أو تلفيق محتوى جديد، وممنوع تعليق على أخطاء إملائية/نحوية (دي مسؤولية أداة التدقيق التانية). بدون رموز markdown.` },
             { role: "user", content: text }
@@ -3283,7 +3309,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         const styleKey = document.getElementById('summary-style').value;
         const box = document.getElementById('summarizer-result');
         box.classList.remove('hidden'); box.innerHTML = spinnerHTML("جاري التلخيص...");
-        incrementDeviceUsage();
+        incrementDeviceUsage('تلخيص نص');
         const STYLE_INSTRUCTIONS = {
             short: 'اكتب ملخص قصير جداً وواضح في 2-3 جمل بس (أقصى حاجة 50 كلمة)، يوصّل جوهر الموضوع بسرعة لحد مستعجل ومحتاج يفهم الفكرة العامة بس من غير أي تفاصيل جانبية.',
             bullets: 'لخّص في شكل نقاط مختصرة (5 نقاط كحد أقصى)، كل نقطة سطر واحد بس يحمل فكرة رئيسية واحدة، من غير حشو.',
@@ -3311,7 +3337,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         if (!checkDeviceTrial()) return;
         const box = document.getElementById('cv-match-result');
         box.classList.remove('hidden'); box.innerHTML = spinnerHTML("جاري تحليل نسبة التوافق...");
-        incrementDeviceUsage();
+        incrementDeviceUsage('مطابقة السيرة الذاتية مع وظيفة');
         const messages = [
             { role: "system", content: `أنت خبير توظيف وتحليل أنظمة ATS. قارن بين السيرة الذاتية ووصف الوظيفة المرفقين، واكتب تقريراً بالترتيب: 1) نسبة توافق تقريبية من 100 مع سطر شرح مختصر للسبب (اكتب الرقم بصيغة "نسبة التوافق: XX/100") 2) أهم نقاط التطابق الموجودة فعلاً في السيرة الذاتية 3) أهم نقاط الضعف أو الخبرات الناقصة مقارنة بمتطلبات الوظيفة 4) قائمة كلمات مفتاحية مهمة موجودة في وصف الوظيفة وغير موجودة في السيرة الذاتية، ينصح بإضافتها بصياغة صحيحة لزيادة فرصة القبول في الفلترة الآلية. بدون رموز markdown.${aiToolLangDirective()}` },
             { role: "user", content: `وصف الوظيفة:\n${jobDesc}\n\nالسيرة الذاتية:\n${resume}` }
@@ -3339,7 +3365,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         try {
             const dataUrl = await compressImageFile(file, 1400, 0.82);
             statusEl.textContent = 'جاري قراءة بيانات الـ CV بالذكاء الاصطناعي...';
-            incrementDeviceUsage();
+            incrementDeviceUsage('استخراج بيانات من ملف سيرة ذاتية');
             const messages = [
                 { role: "system", content: `أنت أداة استخراج بيانات من صور السير الذاتية (CV). هيوصلك صورة سيرة ذاتية، اقرأها بدقة واستخرج منها: الاسم، المسمى الوظيفي الحالي أو المستهدف، أهم 3-5 نقاط خبرة عملية (باختصار شديد)، أبرز المهارات، وآخر مؤهل دراسي. رجّع النتيجة كنص منظم بعناوين قصيرة وبنقاط، بدون رموز markdown. لو الصورة مش واضحة أو مفيهاش سيرة ذاتية واضحة، قول ذلك صراحة بدل ما تخترع بيانات.${aiToolLangDirective()}` },
                 { role: "user", content: [
@@ -3368,7 +3394,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         const cvExtract = (cvExtractEl && !cvExtractEl.classList.contains('hidden')) ? cvExtractEl.value.trim() : '';
         const box = document.getElementById('cover-result');
         box.classList.remove('hidden'); box.innerHTML = spinnerHTML("جاري صياغة الرسالة...");
-        incrementDeviceUsage();
+        incrementDeviceUsage('كتابة خطاب تقديم (Cover Letter)');
         let sys;
         if (type === 'thanks') sys = `أنت خبير مراسلات توظيف. اكتب رسالة شكر ومتابعة قصيرة واحترافية بعد مقابلة عمل، تشكر المحاور على وقته، تؤكد حماسك للوظيفة، وتذكر نقطة واحدة مهمة اتكلمتوا عنها في المقابلة لو موجودة في الملاحظات. بدون رموز markdown، جاهزة للنسخ في إيميل.`;
         else if (type === 'salary') sys = `أنت خبير تفاوض على الرواتب. اكتب رد احترافي ومهذب على عرض راتب من شركة، يوضح تقدير المتقدم للعرض، ويطلب بأدب مراجعة الرقم أو يوضح توقعاته بناءً على خبرته ومهاراته، بأسلوب واثق غير متعنت. بدون رموز markdown.`;
@@ -3626,7 +3652,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
                     status.innerText = "✓ اتسجل المقطع ونزل تلقائياً، راجعه واحكم على نفسك بعين ناقدة. وجاري تجهيز تحليل الأداء تحت...";
                     const audioBlob = new Blob(videoMockAudioChunks, { type: 'audio/webm' });
                     if (checkDeviceTrial()) {
-                        incrementDeviceUsage();
+                        incrementDeviceUsage('تسجيل مقابلة فيديو تجريبية');
                         runVideoMockAnalysisReport(audioBlob, durationSec);
                     } else {
                         status.innerText = "✓ اتسجل المقطع ونزل تلقائياً. المحاولات الشهرية خلصت، محتاج ترقية عشان تحليل الأداء بالذكاء الاصطناعي.";
@@ -3672,7 +3698,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         const tone = document.getElementById('video-email-tone').value;
         const box = document.getElementById('video-email-result');
         box.classList.remove('hidden'); box.innerHTML = spinnerHTML("جاري تجهيز الإيميل...");
-        incrementDeviceUsage();
+        incrementDeviceUsage('صياغة إيميل تحديد ميعاد');
         const messages = [
             { role: "system", content: `أنت مسؤول توظيف (HR) في شركة حقيقية بتكتب إيميل فعلي لمتقدم على وظيفة "${role}". نوع الإيميل: ${type}. نبرة الإيميل: ${tone}. اكتب إيميل واقعي 100% زي اللي بيتبعت فعلاً: يبدأ باسم الشركة (اختراع اسم مناسب) وتحية باسم المتقدم بشكل عام، فيه توقيت/تفاصيل محددة (يوم وساعة مثلاً، أو مدة الفيديو كول)، وسؤال واحد واضح محتاج المتقدم يرد عليه بقرار (تأكيد/اقتراح بديل/رقم). اختم بتوقيع باسم ومسمى وظيفي وهمي واقعي (مثلاً "سارة أحمد - مسؤولة التوظيف"). بدون رموز markdown، وبدون أي شرح أو تعليق خارج الإيميل نفسه.${aiToolLangDirective()}` },
             { role: "user", content: `الوظيفة: ${role}` }
@@ -3691,7 +3717,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         const originalEmail = emailBox.dataset.raw || '';
         const box = document.getElementById('video-email-review-result');
         box.classList.remove('hidden'); box.innerHTML = spinnerHTML("جاري تقييم ردّك...");
-        incrementDeviceUsage();
+        incrementDeviceUsage('مراجعة رد خاص بتحديد ميعاد');
         const messages = [
             { role: "system", content: `أنت خبير مراسلات مهنية صريح. قيّم رد المتقدم على إيميل الشركة بالترتيب ده: 1) إجابة مباشرة بـ"جاوب على المطلوب: نعم/لأ جزئياً/لأ" مع سبب سطر واحد 2) تقييم الاحترافية والوضوح واللباقة من 10 مع السبب 3) أي أخطاء صياغة أو نبرة غير مناسبة (زي رد جاف جداً أو غير رسمي) بأمثلة من نص الرد نفسه 4) نسخة مُحسّنة كاملة وجاهزة للنسخ من الرد، حتى لو الرد الأصلي كويس، تكون فعلاً أفضل نسخة ممكنة منه. بدون رموز markdown.${aiToolLangDirective()}` },
             { role: "user", content: `الإيميل الأصلي:\n${originalEmail}\n\nرد المتقدم:\n${reply}` }
@@ -3705,7 +3731,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         if (!checkDeviceTrial()) return;
         const box = document.getElementById('video-salary-q-result');
         box.classList.remove('hidden'); box.innerHTML = spinnerHTML("جاري تجهيز الأسئلة...");
-        incrementDeviceUsage();
+        incrementDeviceUsage('أسئلة متابعة التفاوض على الراتب');
         const messages = [
             { role: "system", content: `أنت مستشار توظيف بيدرّب المتقدمين على التفاوض. جهّز 6-8 أسئلة متابعة حقيقية لوظيفة "${role}" تحديداً (مش عامة)، مقسّمة لمجموعات واضحة بعنوان قبل كل مجموعة: "أسئلة عن الراتب الأساسي"، "أسئلة عن المزايا" (تأمين صحي، بونص، زيادات سنوية)، "أسئلة عن بيئة العمل" (ساعات، عمل عن بعد/هايبرد، إجازات). كل سؤال بصياغة لبقة ومهنية جاهزة يقولها بالظبط، ومعاه سطر واحد يوضح "الوقت الصح تسأله فيه" (قبل العرض/بعد العرض/في نهاية المقابلة). بدون رموز markdown.${aiToolLangDirective()}` },
             { role: "user", content: `الوظيفة: ${role}` }
@@ -3724,7 +3750,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
                 : 'اكتب نصايح للرجل والمرأة، كل واحد في قسم منفصل بعنوان واضح.';
         const box = document.getElementById('video-dress-result');
         box.classList.remove('hidden'); box.innerHTML = spinnerHTML("جاري تجهيز النصائح...");
-        incrementDeviceUsage();
+        incrementDeviceUsage('نصائح الزي المناسب للمقابلة');
         const messages = [
             { role: "system", content: `أنت مستشار صورة مهنية بتقدّم نصايح ملموسة مش عامة. اكتب نصايح للبس والمظهر لمقابلة في البيئة دي: "${sector}". ${genderInstruction} بالترتيب: 1) قطع الملابس بالتحديد (نوع القميص/البنطلون/الجاكيت أو الفستان/البدلة حسب الحالة) والألوان المحددة الأنسب 2) 3 حاجات ممنوع تعملها في المظهر في البيئة دي بالذات 3) لمسة واحدة بسيطة (اكسسوار/تفصيلة) بتدي انطباع احترافي زيادة 4) نصيحة واحدة سريعة عن تسريحة الشعر/العناية الشخصية المناسبة للبيئة دي. لو البيئة "مقابلة أونلاين"، ركّز كمان على إيه اللي بيبان في الكاميرا بس (من نص الجسم لفوق) وخلفية الكاميرا المناسبة. بدون رموز markdown.${aiToolLangDirective()}` },
             { role: "user", content: `البيئة: ${sector}` }
@@ -3764,7 +3790,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         const region = document.getElementById('salary-region').value;
         const box = document.getElementById('salary-result');
         box.classList.remove('hidden'); box.innerHTML = spinnerHTML("جاري جلب بيانات حية من السوق دلوقتي...");
-        incrementDeviceUsage();
+        incrementDeviceUsage('تحليل بيانات الراتب');
         const lookupTime = new Date();
         const liveContext = await fetchLiveSalaryContext(role, exp, region);
         box.innerHTML = spinnerHTML("جاري تقدير الراتب المناسب...");
@@ -3912,7 +3938,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         if (!checkDeviceTrial()) return;
         const box = document.getElementById('progress-compare-result');
         box.classList.remove('hidden'); box.innerHTML = spinnerHTML("جاري المقارنة...");
-        incrementDeviceUsage();
+        incrementDeviceUsage('مقارنة التقدم');
         const a = list[i], b = list[j];
         const messages = [
             { role: "system", content: `أنت مدرب مقابلات. قارن بين تقريري أداء نفس الشخص في جلستين تدريبيتين مختلفتين، ووضّح: هل تحسّن أو تراجع وفي إيه بالتحديد، وإيه اللي لسه محتاج شغل عليه. بدون رموز markdown.${aiToolLangDirective()}` },
@@ -3927,7 +3953,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         if (!checkDeviceTrial()) return;
         const box = document.getElementById('progress-summary-result');
         box.classList.remove('hidden'); box.innerHTML = spinnerHTML("جاري بناء تقرير التقدم...");
-        incrementDeviceUsage();
+        incrementDeviceUsage('تقرير ملخص التقدم');
         const combined = list.slice(0, 10).map(e => `جلسة ${new Date(e.date).toLocaleDateString('ar-EG')} (${e.role})${e.score !== null ? ' - تقييم ' + e.score + '/100' : ''}:\n${e.report}`).join('\n\n---\n\n');
         const messages = [
             { role: "system", content: `أنت مدرب مقابلات محترف. لخّص تقدم شخص عبر مجموعة جلسات تدريب مقابلات مرفقة في تقرير مختصر واحد: الاتجاه العام (تحسّن/ثبات/تراجع)، أكتر نقطة اتحسنت، أكتر نقطة لسه محتاجة شغل، ونصيحة واحدة للجلسة الجاية. بدون رموز markdown.${aiToolLangDirective()}` },
@@ -4055,7 +4081,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
             const text = await transcribeAudioBlob(file, file.name, false, 'general');
             document.getElementById('transcribe-raw').value = text;
             status.innerText = uiStr('transcribedSuccess');
-            incrementDeviceUsage();
+            incrementDeviceUsage('رفع ملف صوتي للتفريغ');
         } catch (e) {
             console.warn('Whisper transcription failed:', e);
             status.innerText = uiStr('transcriptionFailed');
@@ -4069,7 +4095,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         const targetLang = document.getElementById('transcribe-target-lang').value;
         const box = document.getElementById('transcribe-result');
         box.classList.remove('hidden'); box.innerHTML = spinnerHTML("جاري التنظيف والتنسيق...");
-        incrementDeviceUsage();
+        incrementDeviceUsage('تنظيف نص مُفرَّغ');
         const instruction = targetLang
             ? `نظّف علامات الترقيم وصحح الأخطاء الإملائية الواضحة فقط في النص، وترجمه بالكامل إلى ${targetLang} بجودة عالية ودقة كاملة في المعنى.`
             : `نظّف علامات الترقيم وصحح الأخطاء الإملائية الواضحة فقط في النص من غير ما تغير اللغة أو المعنى.`;
@@ -4115,7 +4141,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         const box = document.getElementById('pitch-result');
         box.classList.remove('hidden'); box.innerHTML = spinnerHTML('جاري صياغة نص التقديم...');
         document.getElementById('pitch-audio-box').classList.add('hidden');
-        incrementDeviceUsage();
+        incrementDeviceUsage('صياغة Elevator Pitch');
         const profile = getProfile();
         const messages = [
             { role: "system", content: `أنت كوتش تقديم ذاتي (Personal Pitch / Elevator Pitch) محترف جداً. اكتب نص تقديم ذاتي بصيغة المتكلم (أنا)، مكتوب عشان يتقال بصوت عادي غير مستعجل خلال حوالي 30 ثانية بالظبط (يعني تقريباً 75-90 كلمة مش أكتر ولا أقل بشكل واضح). النص يشمل: مقدمة قصيرة عن مين هو/هي، أهم خبرة أو مهارة تخدم الهدف المطلوب، وخاتمة قوية تربطه بالهدف من التقديم. الأسلوب: ${tone}. الهدف من التقديم: ${purpose}. اكتب فقرة واحدة متصلة (من غير عناوين أو نقاط أو رموز markdown)، وفي آخر السطر ضيف على سطر منفصل بس: "عدد الكلمات التقريبي: X كلمة".${aiToolLangDirective()}` },

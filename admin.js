@@ -889,7 +889,49 @@
         adminModalLoadChat();
         clearInterval(adminModalChatPollTimer);
         adminModalChatPollTimer = setInterval(adminModalLoadChat, 15000);
+        adminLoadUserActivity(uid);
     };
+
+    // ---- سجل نشاط الحساب: كل حركة عملها المستخدم ده (دخول/خروج/تغيير باسورد/تعديل بروفايل...) ----
+    const ADMIN_ACTIVITY_TYPE_LABELS = {
+        login: "دخول للحساب",
+        signup: "إنشاء حساب جديد",
+        logout: "تسجيل خروج",
+        password_change_request: "طلب تغيير كلمة المرور",
+        password_reset_request: "طلب استعادة كلمة المرور",
+        account_delete: "حذف الحساب",
+        profile_update: "تعديل بيانات البروفايل",
+        tool_use: "استخدام أداة في الموقع"
+    };
+    function adminActivityTypeLabel(t) { return ADMIN_ACTIVITY_TYPE_LABELS[t] || t || "حركة غير معروفة"; }
+    async function adminLoadUserActivity(uid) {
+        const wrap = document.getElementById("admin-user-modal-activity-log");
+        if (!wrap) return;
+        wrap.innerHTML = '<p class="text-[10px] text-slate-500">جاري التحميل...</p>';
+        try {
+            const data = await adminFetch("/adminUserActivity", { method: "POST", body: JSON.stringify({ uid, limit: 300 }) });
+            const items = data.activity || [];
+            if (!items.length) {
+                wrap.innerHTML = '<p class="text-[10px] text-slate-500">مفيش نشاط مسجّل لهذا الحساب لسه.</p>';
+                return;
+            }
+            wrap.innerHTML = items.map(it => {
+                const d = it.time ? new Date(it.time).toLocaleString("ar-EG") : "-";
+                return `
+                <div class="flex items-start justify-between gap-2 border-b border-white/5 py-1.5 last:border-0">
+                    <div>
+                        <p class="text-[11px] text-slate-200 font-bold">${escapeHtml(adminActivityTypeLabel(it.type))}</p>
+                        ${it.details ? `<p class="text-[10px] text-slate-500">${escapeHtml(it.details)}</p>` : ""}
+                        ${it.ip ? `<p class="text-[9px] text-slate-600" dir="ltr">${escapeHtml(it.ip)}</p>` : ""}
+                    </div>
+                    <span class="text-[9px] text-slate-500 whitespace-nowrap">${d}</span>
+                </div>`;
+            }).join("");
+        } catch (e) {
+            wrap.innerHTML = '<p class="text-[10px] text-red-400">تعذر تحميل سجل النشاط.</p>';
+        }
+    }
+    window.adminLoadUserActivity = adminLoadUserActivity;
 
     window.adminCloseUserModal = function () {
         document.getElementById("admin-user-modal").classList.add("hidden");
