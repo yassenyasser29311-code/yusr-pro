@@ -2355,7 +2355,7 @@ window.__H = {
             if (!checkDeviceTrial()) { status.innerText = ''; return; }
             const previous = document.getElementById('transcribe-raw').value;
             try {
-                const text = await transcribeAudioBlob(blob, 'mic-recording.webm', false, 'general');
+                const text = await transcribeAudioBlob(blob, 'mic-recording.webm', false, 'transcribeTool');
                 document.getElementById('transcribe-raw').value = (previous ? previous + ' ' : '') + text;
                 status.innerText = "✓ اتفرّغ بنجاح. راجع النص تحت واضغط \"نظّف وحسّن التنسيق\".";
                 incrementDeviceUsage('تفريغ صوتي عن طريق المايك');
@@ -4143,8 +4143,17 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         form.append('model', 'whisper-large-v3');
         form.append('temperature', '0');
         form.append('response_format', 'verbose_json');
-        const langSelEl = document.getElementById('transcribe-source-lang');
-        const langSel = langSelEl ? langSelEl.value.split('-')[0] : ((currentAppLang || 'ar').split('-')[0]);
+        // اللغة الافتراضية دايماً هي لغة الموقع المختارة برة (currentAppLang)، سواء للبوت
+        // المساعد أو المقابلة الصوتية أو أي حتة تانية. بس أداة "تفريغ الصوت إلى نص" نفسها
+        // (context === 'transcribeTool') هي الوحيدة اللي بتحترم اختيار المستخدم الصريح من
+        // القائمة المنسدلة بتاعتها (tr.sourceLangLabel)، عشان المستخدم ممكن يفرّغ صوت بلغة
+        // مختلفة عن لغة واجهة الموقع.
+        let langSel = (currentAppLang || 'ar').split('-')[0];
+        if (context === 'transcribeTool') {
+            const langSelEl = document.getElementById('transcribe-source-lang');
+            if (langSelEl && langSelEl.value) langSel = langSelEl.value.split('-')[0];
+            else langSel = ''; // "🔎 الكشف التلقائي للغة" - المستخدم اختار الكشف التلقائي صراحة
+        }
         if (langSel) form.append('language', langSel);
         const prompt = context === 'interview'
             ? 'نص مفرّغ بدقة عالية جداً من مقابلة عمل أو تدريب مهني، بعلامات ترقيم صحيحة وتقسيم فقرات منطقي، حتى لو في ضوضاء خلفية أو تلعثم بسيط أو تسارع في الكلام. حافظ على المصطلحات المهنية والوظيفية زي ما اتقالت بالظبط.'
@@ -4183,7 +4192,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         status.innerText = uiStr('uploadingTranscribing') + ' ' + file.name + ' …';
         if (!checkDeviceTrial()) { status.innerText = ''; return; }
         try {
-            const text = await transcribeAudioBlob(file, file.name, false, 'general');
+            const text = await transcribeAudioBlob(file, file.name, false, 'transcribeTool');
             document.getElementById('transcribe-raw').value = text;
             status.innerText = uiStr('transcribedSuccess');
             incrementDeviceUsage('رفع ملف صوتي للتفريغ');
