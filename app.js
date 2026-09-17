@@ -4163,13 +4163,15 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
             else langSel = ''; // "🔎 الكشف التلقائي للغة" - المستخدم اختار الكشف التلقائي صراحة
         }
         if (langSel) form.append('language', langSel);
-        // ملحوظة: الـ prompt اللي بيتبعت لـ Whisper بيأثر في "أسلوب" الكتابة مش بس في المحتوى —
-        // لو كتبناه بالفصحى الرسمية، الموديل بيميل يحوّل كلام العامية اللي بيسمعه لصيغة فصحى
-        // "مصحّحة" وده اللي بيحس المستخدم إنه "سمع غلط". عشان كده الـ prompt نفسه مكتوب
-        // بالعامية المصرية عشان يظبط سياق الكتابة على نفس لهجة الكلام المتوقع.
+        // ملحوظة (معدّلة): الـ prompt بتاع Whisper مش قناة "تعليمات" — الموديل بيتعامل معاه
+        // كأنه "كلام سابق" وبيكمل بنفس أسلوبه وأدائه، مش بينفّذه كأمر. عشان كده لو حطينا فيه
+        // جملة أمرية زي "اكتب اللي هيتقال بالظبط..." الموديل ممكن يحاول "يفهم ويلخّص" الأمر
+        // نفسه بدل ما ياخده كمرجع لهجة، وده بيقلل الدقة. الحل: نحط جملة عادية بصوت المتكلم
+        // نفسه (أول شخص) فيها نفس اللهجة المصرية والمصطلحات المتوقعة، عشان الموديل "يقلّد"
+        // نفس الأسلوب والمفردات من غير ما يحاول يفهم أي تعليمات.
         const prompt = context === 'interview'
-            ? 'يلا نكتب اللي هيتقال في المقابلة بالظبط زي ما هو، بالعامية المصرية زي ما اتقالت من غير ما نصلّحها أو نحوّلها فصحى، وحافظ على المصطلحات المهنية والوظيفية زي ما هي بالظبط حتى لو في ضوضاء خلفية أو تلعثم أو سرعة في الكلام.'
-            : 'يلا نكتب اللي هنسمعه بالظبط زي ما اتقال، بالعامية المصرية لو الكلام عامي، من غير ما نغيّر ولا نصلّح ولا نحوّل حاجة لفصحى، حتى لو في ضوضاء خلفية أو تلعثم أو سرعة في الكلام.';
+            ? 'أيوه، تمام، يعني بص، أنا اشتغلت على المشروع ده مع الفريق وكنت مسؤول عن المتابعة والتنفيذ وحل المشاكل اللي بتظهر أول بأول.'
+            : 'طيب، هقول اللي في دماغي عادي زي ما بتكلم بالظبط، بصوتي وبنفس كلامي، من غير ما حد يغيّر فيه حاجة.';
         form.append('prompt', prompt);
         let lastErr;
         for (let attempt = 0; attempt < 2; attempt++) {
@@ -4181,7 +4183,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
                 });
                 if (!res.ok) throw new Error(await res.text());
                 const data = await res.json();
-                return returnFullData ? data : (data.text || '').trim();
+                return returnFullData ? data : cleanTranscriptionText(data);
             } catch (e) {
                 lastErr = e;
                 if (attempt === 0) await new Promise(r => setTimeout(r, 1200));
@@ -4191,6 +4193,24 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
             throw new Error("مفيش اتصال بالإنترنت دلوقتي. التفريغ الصوتي محتاج نت عشان يشتغل — جرب تاني لما النت يرجع.");
         }
         throw lastErr;
+    }
+    // فلترة "هلوسة" Whisper (hallucination): لما جزء من التسجيل يكون سكوت أو ضوضاء بس من
+    // غير كلام واضح، Whisper أحياناً بيخترع كلام مش موجود بالمرة (ده سبب شائع جداً إن
+    // المستخدم يحس إنه "سمع غلط"). بما إننا طلبنا response_format=verbose_json، كل جزء
+    // (segment) بييجي معاه no_speech_prob (احتمال إنه سكوت) و avg_logprob (ثقة الموديل)
+    // و compression_ratio (تكرار غريب في النص = علامة هلوسة معروفة). بنستبعد أي جزء
+    // شكله هلوسة ونجمّع الباقي بس.
+    function cleanTranscriptionText(data) {
+        if (!data) return '';
+        if (!Array.isArray(data.segments) || !data.segments.length) return (data.text || '').trim();
+        const kept = data.segments.filter(seg => {
+            const noSpeech = typeof seg.no_speech_prob === 'number' ? seg.no_speech_prob : 0;
+            const avgLogprob = typeof seg.avg_logprob === 'number' ? seg.avg_logprob : 0;
+            const compressionRatio = typeof seg.compression_ratio === 'number' ? seg.compression_ratio : 1;
+            const looksLikeHallucination = (noSpeech > 0.6 && avgLogprob < -1) || compressionRatio > 2.4;
+            return !looksLikeHallucination;
+        });
+        return kept.map(s => (s.text || '').trim()).filter(Boolean).join(' ').trim();
     }
     async function handleAudioFileUpload(event) {
         const file = event.target.files[0]; if (!file) return;
