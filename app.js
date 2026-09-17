@@ -4194,17 +4194,15 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         }
         throw lastErr;
     }
-    // فلترة "هلوسة" Whisper (hallucination): لما جزء من التسجيل يكون سكوت أو ضوضاء بس من
-    // غير كلام واضح، Whisper أحياناً بيخترع كلام مش موجود بالمرة (ده سبب شائع جداً إن
-    // المستخدم يحس إنه "سمع غلط"). بما إننا طلبنا response_format=verbose_json، كل جزء
-    // (segment) بييجي معاه no_speech_prob (احتمال إنه سكوت) و avg_logprob (ثقة الموديل)
-    // و compression_ratio (تكرار غريب في النص = علامة هلوسة معروفة). بنستبعد أي جزء
-    // شكله هلوسة ونجمّع الباقي بس.
+    // ملحوظة: شلنا فلترة "الهلوسة" اللي كانت بتحاول تخمّن وتستبعد أجزاء من الكلام بناءً
+    // على احتمالات (no_speech_prob / avg_logprob / compression_ratio)، لأنها ممكن تفصّل
+    // برضه كلام حقيقي اتقال فعلاً غلط. دلوقتي بنكتب كل حرف اتسمع بالظبط زي ما Whisper رجعه
+    // من غير أي تخمين أو حذف من عندنا — الحاجة الوحيدة اللي بتتشال هي أوصاف الصوت اللي مش
+    // كلام أصلاً (زي [موسيقى] أو (كحة))، لأنها مش حروف منطوقة من الأساس.
     //
-    // وبعدين بنشيل أي "وصف لصوت مش كلام" — Whisper أحياناً بيكتب أحداث صوتية زي
-    // [موسيقى] أو (تصفيق) أو (كحة) أو رموز نوتة موسيقية ♪ لما يسمع صوت مش كلام (سعال،
-    // ضحك، موسيقى خلفية، ضوضاء...). دي مش "هلوسة" بمعنى كلام مخترع، لكنها مش كلام المستخدم
-    // برضه، فبنشيلها عشان النص النهائي يبقى كلام منطوق بس من غير أي وصف بين قوسين أو رموز.
+    // بنشيل أي "وصف لصوت مش كلام" — Whisper أحياناً بيكتب أحداث صوتية زي [موسيقى] أو
+    // (تصفيق) أو (كحة) أو رموز نوتة موسيقية ♪ لما يسمع صوت مش كلام (سعال، ضحك، موسيقى
+    // خلفية، ضوضاء...). دي مش حروف منطوقة، فبنشيلها والباقي كله بيتكتب حرفياً زي ما جه.
     function stripNonVerbalTags(text) {
         if (!text) return '';
         return text
@@ -4215,15 +4213,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
     }
     function cleanTranscriptionText(data) {
         if (!data) return '';
-        if (!Array.isArray(data.segments) || !data.segments.length) return stripNonVerbalTags((data.text || '').trim());
-        const kept = data.segments.filter(seg => {
-            const noSpeech = typeof seg.no_speech_prob === 'number' ? seg.no_speech_prob : 0;
-            const avgLogprob = typeof seg.avg_logprob === 'number' ? seg.avg_logprob : 0;
-            const compressionRatio = typeof seg.compression_ratio === 'number' ? seg.compression_ratio : 1;
-            const looksLikeHallucination = (noSpeech > 0.6 && avgLogprob < -1) || compressionRatio > 2.4;
-            return !looksLikeHallucination;
-        });
-        return stripNonVerbalTags(kept.map(s => (s.text || '').trim()).filter(Boolean).join(' ').trim());
+        return stripNonVerbalTags((data.text || '').trim());
     }
     async function handleAudioFileUpload(event) {
         const file = event.target.files[0]; if (!file) return;
