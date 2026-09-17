@@ -123,7 +123,7 @@ window.__H = {
   h116: function(event) { sendAssistantMessage() },
   h117: function(event) { runSalaryInsights() },
   h118: function(event) { setInterviewReminder() },
-  h119: function(event) { requestReminderNotificationPermission(true) },
+  h119: function(event) { openNotifPermissionModal() },
   h120: function(event) { runProgressSummaryReport() },
   h121: function(event) { clearProgressHistory() },
   h122: function(event) { runProgressCompare() },
@@ -191,6 +191,8 @@ window.__H = {
   h184: function(event) { dismissOnboarding('cv') },
   h186: function(event) { adminModalUserAction('setPoints', this.value === '' ? 0 : this.value) },
   h185: function(event) { dismissOnboarding() },
+  h187: function(event) { confirmNotifPermissionModal() },
+  h188: function(event) { closeNotifPermissionModal() },
   hFeedbackToggle: function(event) { adminFeedbackAction(this.getAttribute('data-fb-id'), this.getAttribute('data-fb-action')) },
   hSubReviewApprove: function(event) { adminReviewSubscriptionRequest(this.getAttribute('data-req-id'), 'approve') },
   hSubReviewReject: function(event) { adminReviewSubscriptionRequest(this.getAttribute('data-req-id'), 'reject') },
@@ -4051,6 +4053,23 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         });
     }
 
+    function openNotifPermissionModal() {
+        if (('Notification' in window) && Notification.permission !== 'default') {
+            // الإذن اتاخد قرار فيه قبل كده (سمح أو رفض) — منعرضش البوب أب تاني، نكمل بنفس المسار القديم
+            requestReminderNotificationPermission(true);
+            return;
+        }
+        const modal = document.getElementById('notif-permission-modal');
+        if (modal) modal.classList.remove('hidden');
+    }
+    function closeNotifPermissionModal() {
+        const modal = document.getElementById('notif-permission-modal');
+        if (modal) modal.classList.add('hidden');
+    }
+    function confirmNotifPermissionModal() {
+        closeNotifPermissionModal();
+        requestReminderNotificationPermission(true);
+    }
     function requestReminderNotificationPermission(fromButton, cb) {
         if (!('Notification' in window)) {
             if (fromButton) showToast("المتصفح ده مش بيدعم إشعارات push.", 'error');

@@ -2160,6 +2160,23 @@
 </div>
 
 
+<div id="notif-permission-modal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center p-4 z-[70]">
+    <div class="panel modal-pop max-w-sm w-full rounded-2xl p-5 space-y-4 text-center">
+        <div class="w-14 h-14 rounded-full bg-[var(--grad1)]/20 text-[var(--accent-strong)] flex items-center justify-center mx-auto text-2xl">
+            <i class="fa-solid fa-bell"></i>
+        </div>
+        <div class="space-y-1.5">
+            <h3 class="text-sm font-bold text-slate-100" data-i18n="notifPermission.title">فعّل إشعارات المقابلات</h3>
+            <p class="text-xs text-slate-400 leading-relaxed" data-i18n="notifPermission.desc">هنبعتلك إشعار push حقيقي من المتصفح قبل موعد مقابلتك بيومين، وإشعار تاني بالظبط وقت المقابلة نفسها — عشان متفوتش أي جلسة تدريب مهمة.</p>
+        </div>
+        <div class="flex flex-col gap-2 pt-1">
+            <button data-x-onclick="h187" class="w-full py-2.5 btn-accent acc-progress font-bold text-xs rounded-xl" data-i18n="notifPermission.agree">موافق، فعّل الإشعارات</button>
+            <button data-x-onclick="h188" class="w-full py-2 btn-ghost text-xs rounded-xl text-slate-400" data-i18n="notifPermission.later">لأ، يمكن بعدين</button>
+        </div>
+    </div>
+</div>
+
+
 <div id="cv-modal" class="hidden fixed inset-0 modal-backdrop flex items-center justify-center p-4 z-50">
     <div class="panel modal-pop max-w-md w-full rounded-2xl p-5 space-y-3">
         <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2" data-i18n="cvBuildModal.auto1Text"><i class="fa-solid fa-id-card"></i> ربط بيانات الـ CV بالمقابلة</h3>
