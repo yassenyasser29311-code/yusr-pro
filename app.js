@@ -1674,6 +1674,21 @@ window.__H = {
         document.getElementById('profile-current-plan').innerText = planName;
         const membershipPlanEl = document.getElementById('profile-membership-plan');
         if (membershipPlanEl) membershipPlanEl.innerText = planName;
+        const membershipPriceEl = document.getElementById('profile-membership-price');
+        if (membershipPriceEl) {
+            const isFreePlan = !planName || planName === 'مجاني' || planName === 'Free';
+            const purchasesForPrice = getPurchases();
+            const latestForPlan = [...purchasesForPrice].reverse().find(item => item && item.name === planName);
+            if (!isFreePlan && latestForPlan) {
+                const priceNum = Number(latestForPlan.price) || 0;
+                const periodLabel = latestForPlan.period ? ` / ${latestForPlan.period}` : '';
+                membershipPriceEl.innerText = `${priceNum.toLocaleString('ar-EG')} ج.م${periodLabel}`;
+                membershipPriceEl.classList.remove('hidden');
+            } else {
+                membershipPriceEl.innerText = '';
+                membershipPriceEl.classList.add('hidden');
+            }
+        }
         const membershipIdEl = document.getElementById('profile-membership-id');
         if (membershipIdEl) {
             const idTail = getDeviceId().replace('DEV-', '').slice(-4).toUpperCase() || '0000';
@@ -2255,7 +2270,7 @@ window.__H = {
         }
         isInterviewMicStarting = true;
         try {
-            interviewStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+            interviewStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1, sampleRate: 48000, sampleSize: 16 } });
         } catch (e) {
             isInterviewMicStarting = false;
             showToast("محتاج إذن الوصول للمايك عشان التسجيل يشتغل.", 'error'); return;
@@ -2265,7 +2280,7 @@ window.__H = {
         await new Promise(resolve => setTimeout(resolve, 400));
         interviewAudioChunks = [];
         const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : (MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '');
-        interviewMediaRecorder = mimeType ? new MediaRecorder(interviewStream, { mimeType }) : new MediaRecorder(interviewStream);
+        interviewMediaRecorder = mimeType ? new MediaRecorder(interviewStream, { mimeType, audioBitsPerSecond: 128000 }) : new MediaRecorder(interviewStream);
         interviewMediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) interviewAudioChunks.push(e.data); };
         interviewMediaRecorder.onstop = async () => {
             interviewStream.getTracks().forEach(t => t.stop());
@@ -2321,7 +2336,7 @@ window.__H = {
         }
         try {
             transcribeStream = await navigator.mediaDevices.getUserMedia({
-                audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+                audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1, sampleRate: 48000, sampleSize: 16 }
             });
         } catch (e) {
             isTranscribeStarting = false;
@@ -2331,7 +2346,7 @@ window.__H = {
         await new Promise(resolve => setTimeout(resolve, 450));
         transcribeChunks = [];
         const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : (MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '');
-        transcribeMediaRecorder = mimeType ? new MediaRecorder(transcribeStream, { mimeType }) : new MediaRecorder(transcribeStream);
+        transcribeMediaRecorder = mimeType ? new MediaRecorder(transcribeStream, { mimeType, audioBitsPerSecond: 128000 }) : new MediaRecorder(transcribeStream);
         transcribeMediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) transcribeChunks.push(e.data); };
         transcribeMediaRecorder.onstop = async () => {
             transcribeStream.getTracks().forEach(t => t.stop());
@@ -2905,7 +2920,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
             showToast('المتصفح لا يدعم التسجيل الصوتي المباشر.', 'error'); return;
         }
         try {
-            assistantStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+            assistantStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1, sampleRate: 48000, sampleSize: 16 } });
         } catch (e) {
             isAssistantMicStarting = false;
             showToast('محتاج إذن الوصول للمايك عشان تكلم يسر Pro Bot بصوتك.', 'error'); return;
@@ -2915,7 +2930,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         await new Promise(resolve => setTimeout(resolve, 400));
         assistantAudioChunks = [];
         const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : (MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '');
-        assistantMediaRecorder = mimeType ? new MediaRecorder(assistantStream, { mimeType }) : new MediaRecorder(assistantStream);
+        assistantMediaRecorder = mimeType ? new MediaRecorder(assistantStream, { mimeType, audioBitsPerSecond: 128000 }) : new MediaRecorder(assistantStream);
         assistantMediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) assistantAudioChunks.push(e.data); };
         assistantMediaRecorder.onstop = async () => {
             assistantStream.getTracks().forEach(t => t.stop());
