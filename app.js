@@ -2740,14 +2740,19 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
             if (DELIBERATE_DENIAL_STATUSES.has(response.status)) {
                 throw new Error("usage_limit_or_auth_denied");
             }
-            throw new Error("groq_service_error");
+            // DEBUG_TEMP: بنحط تفاصيل الفشل الحقيقية جوه رسالة الخطأ نفسها (بدل ما تتخبى
+            // في الـ console بس) عشان تقدر تشوفها في التليفون من غير Developer Tools.
+            // شيل الجزء ده (رجّع "throw new Error('groq_service_error')" وبس) بعد ما تخلص تشخيص.
+            throw new Error("groq_service_error :: status " + response.status + " :: " + (errBody || "").slice(0, 500));
         } catch (e) {
             if (e && e.message === "usage_limit_or_auth_denied") throw e;
             console.warn("مسار AI Processing Service تعذر:", e);
             if (typeof navigator !== 'undefined' && navigator.onLine === false) {
                 throw new Error("مفيش اتصال بالإنترنت دلوقتي. أدوات الذكاء الاصطناعي محتاجة نت عشان تشتغل — جرب تاني لما النت يرجع.");
             }
-            throw new Error("فشل الاتصال بالذكاء الاصطناعي، حاول تاني بعد شوية.");
+            // DEBUG_TEMP: بنسيب رسالة الخطأ الأصلية (اللي فيها التفاصيل) تعدي زي ما هي
+            // بدل استبدالها برسالة عامة، لحد ما تشخّص المشكلة.
+            throw new Error((e && e.message) || "فشل الاتصال بالذكاء الاصطناعي، حاول تاني بعد شوية.");
         }
     }
 
@@ -2981,9 +2986,12 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
             assistantChatHistory.push({ role: 'assistant', content: reply });
             if (assistantVoiceEnabled) { try { speakTextChunked(reply); } catch (e) {} }
         } catch (e) {
+            // DEBUG_TEMP: بنوري تفاصيل الخطأ الحقيقية جوه رسالة البوت نفسها عشان تشوفها
+            // من التليفون من غير Developer Tools. لما تخلص تشخيص، رجّع السطر ده لـ:
+            // : 'تعذر الرد دلوقتي، جرب تاني بعد شوية.';
             const msg = (e && e.message === 'usage_limit_or_auth_denied')
                 ? 'وصلت لحد الاستخدام المسموح في باقتك الحالية.'
-                : 'تعذر الرد دلوقتي، جرب تاني بعد شوية.';
+                : ('تعذر الرد دلوقتي (تفاصيل للتشخيص: ' + ((e && e.message) || 'unknown') + ')');
             assistantChatHistory.push({ role: 'assistant', content: msg, error: true });
         } finally {
             setAssistantTyping(false);
