@@ -4200,9 +4200,22 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
     // (segment) بييجي معاه no_speech_prob (احتمال إنه سكوت) و avg_logprob (ثقة الموديل)
     // و compression_ratio (تكرار غريب في النص = علامة هلوسة معروفة). بنستبعد أي جزء
     // شكله هلوسة ونجمّع الباقي بس.
+    //
+    // وبعدين بنشيل أي "وصف لصوت مش كلام" — Whisper أحياناً بيكتب أحداث صوتية زي
+    // [موسيقى] أو (تصفيق) أو (كحة) أو رموز نوتة موسيقية ♪ لما يسمع صوت مش كلام (سعال،
+    // ضحك، موسيقى خلفية، ضوضاء...). دي مش "هلوسة" بمعنى كلام مخترع، لكنها مش كلام المستخدم
+    // برضه، فبنشيلها عشان النص النهائي يبقى كلام منطوق بس من غير أي وصف بين قوسين أو رموز.
+    function stripNonVerbalTags(text) {
+        if (!text) return '';
+        return text
+            .replace(/[\(\[（【][^\)\]）】]{0,60}[\)\]）】]/g, ' ') // [موسيقى] (كحة) （笑） إلخ
+            .replace(/[♪♫🎵🎶]/g, ' ')
+            .replace(/\s{2,}/g, ' ')
+            .trim();
+    }
     function cleanTranscriptionText(data) {
         if (!data) return '';
-        if (!Array.isArray(data.segments) || !data.segments.length) return (data.text || '').trim();
+        if (!Array.isArray(data.segments) || !data.segments.length) return stripNonVerbalTags((data.text || '').trim());
         const kept = data.segments.filter(seg => {
             const noSpeech = typeof seg.no_speech_prob === 'number' ? seg.no_speech_prob : 0;
             const avgLogprob = typeof seg.avg_logprob === 'number' ? seg.avg_logprob : 0;
@@ -4210,7 +4223,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
             const looksLikeHallucination = (noSpeech > 0.6 && avgLogprob < -1) || compressionRatio > 2.4;
             return !looksLikeHallucination;
         });
-        return kept.map(s => (s.text || '').trim()).filter(Boolean).join(' ').trim();
+        return stripNonVerbalTags(kept.map(s => (s.text || '').trim()).filter(Boolean).join(' ').trim());
     }
     async function handleAudioFileUpload(event) {
         const file = event.target.files[0]; if (!file) return;
