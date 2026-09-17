@@ -118,7 +118,6 @@ window.__H = {
   h111: function(event) { removeAssistantImage() },
   h112: function(event) { handleAssistantImageSelect(event) },
   h113: function(event) { document.getElementById('assistant-image-input').click() },
-  h114: function(event) { toggleAssistantMic() },
   h115: function(event) { handleAssistantInputKey(event) },
   h116: function(event) { sendAssistantMessage() },
   h117: function(event) { runSalaryInsights() },
@@ -2904,61 +2903,6 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         localStorage.setItem('yusr_assistant_voice', assistantVoiceEnabled ? 'on' : 'off');
         updateAssistantVoiceBtn();
         if (!assistantVoiceEnabled && typeof stopSpeaking === 'function') { try { stopSpeaking(); } catch (e) {} }
-    }
-
-    let assistantMediaRecorder = null, assistantAudioChunks = [], assistantStream = null, isAssistantRecording = false, isAssistantMicStarting = false;
-    async function toggleAssistantMic() {
-        const btn = document.getElementById('assistant-mic-btn');
-        const status = document.getElementById('assistant-mic-status');
-        if (isAssistantRecording) {
-            isAssistantRecording = false;
-            btn.classList.remove('is-recording');
-            status.classList.remove('hidden');
-            status.innerText = 'بيحوّل كلامك لنص دلوقتي...';
-            if (assistantMediaRecorder && assistantMediaRecorder.state !== 'inactive') assistantMediaRecorder.stop();
-            return;
-        }
-        if (isAssistantMicStarting || assistantChatBusy) return;
-        isAssistantMicStarting = true;
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            isAssistantMicStarting = false;
-            showToast('المتصفح لا يدعم التسجيل الصوتي المباشر.', 'error'); return;
-        }
-        try {
-            assistantStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1, sampleRate: 48000, sampleSize: 16 } });
-        } catch (e) {
-            isAssistantMicStarting = false;
-            showToast('محتاج إذن الوصول للمايك عشان تكلم يسر Pro Bot بصوتك.', 'error'); return;
-        }
-        status.classList.remove('hidden');
-        status.innerText = 'المايك بيتظبط... اتكلم بعد لحظة.';
-        await new Promise(resolve => setTimeout(resolve, 400));
-        assistantAudioChunks = [];
-        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : (MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '');
-        assistantMediaRecorder = mimeType ? new MediaRecorder(assistantStream, { mimeType, audioBitsPerSecond: 128000 }) : new MediaRecorder(assistantStream);
-        assistantMediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) assistantAudioChunks.push(e.data); };
-        assistantMediaRecorder.onstop = async () => {
-            assistantStream.getTracks().forEach(t => t.stop());
-            const blob = new Blob(assistantAudioChunks, { type: assistantMediaRecorder.mimeType || 'audio/webm' });
-            if (blob.size < 800) { status.innerText = 'معلش، مسجّلش صوت كفاية. جرب تاني.'; return; }
-            try {
-                const text = await transcribeAudioBlob(blob, 'assistant-mic.webm', false, 'general');
-                status.classList.add('hidden');
-                const input = document.getElementById('assistant-chat-input');
-                if (text && text.trim()) {
-                    input.value = text.trim();
-                    sendAssistantMessage(); // إرسال تلقائي فور ما الكلام يتفرّغ - إحساس محادثة صوتية حقيقية
-                }
-            } catch (e) {
-                console.warn('Assistant mic transcription failed:', e);
-                status.innerText = 'تعذر فهم الصوت، جرب تاني أو اكتب سؤالك.';
-            }
-        };
-        assistantMediaRecorder.start();
-        isAssistantRecording = true;
-        isAssistantMicStarting = false;
-        btn.classList.add('is-recording');
-        status.innerText = 'بيسجل دلوقتي... اضغط تاني عشان توقف.';
     }
 
     async function sendAssistantMessage() {
