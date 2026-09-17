@@ -290,7 +290,7 @@ window.__H = {
     let isVoiceEnabled = true;
     let interviewRole = "", selectedNationality = "", chatHistory = [], cvContent = "";
     let currentInterviewerName = "أحمد"; // بيتغيّر لـ"مريم" تلقائياً لو المستخدم اختار صوت الست
-    let recognition = null, isRecording = false, recordStartTime = 0;
+    let isRecording = false, recordStartTime = 0;
     let speakingStats = [];
     let currentAppLang = 'ar-EG';
 
@@ -529,7 +529,6 @@ window.__H = {
     }
     function setAppLanguage(lang) {
         currentAppLang = lang;
-        if (recognition) recognition.lang = lang;
         const code = lang.slice(0, 2);
         currentUiLang = I18N[code] ? code : 'ar';
         document.documentElement.lang = currentUiLang;
@@ -2226,27 +2225,11 @@ window.__H = {
         triggerDownload(text, 'interview-transcript.txt');
     }
 
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-        recognition = new SR();
-        recognition.lang = currentAppLang;
-        recognition.continuous = false;
-        recognition.onstart = () => {
-            isRecording = true; recordStartTime = Date.now();
-            const micBtn = document.getElementById('mic-btn');
-            micBtn.classList.add('bg-red-500/20', 'text-red-400', 'recording-pulse');
-            micBtn.setAttribute('aria-label', 'إيقاف التسجيل');
-            document.getElementById('user-chat-input').placeholder = "جاري الاستماع إليك...";
-        };
-        recognition.onresult = (e) => {
-            const t = e.results[0][0].transcript;
-            recordSpeakingStats(t);
-            document.getElementById('user-chat-input').value = t;
-            stopMic(); sendUserAnswer();
-        };
-        recognition.onerror = () => stopMic();
-        recognition.onend = () => stopMic();
-    }
+    // ملحوظة: التعرف الصوتي هنا بيستخدم نفس محرك Whisper (groqTranscribe) اللي شغال في باقي أدوات
+    // الموقع، بدل التعرف الصوتي المدمج في المتصفح (webkitSpeechRecognition) اللي دقته ضعيفة
+    // ومش بيحدد اللغة صح. كده السماع بيبقى أدق بكتير، واللغة بتتحدد بالظبط حسب لغة الموقع
+    // المختارة برة (currentAppLang) بدل ما المتصفح يخمّن.
+    let interviewMediaRecorder = null, interviewAudioChunks = [], interviewStream = null, isInterviewMicStarting = false;
     function recordSpeakingStats(t) {
         const dur = Math.max(0.5, (Date.now() - recordStartTime) / 1000);
         const wc = t.trim().split(/\s+/).filter(Boolean).length;
@@ -2254,10 +2237,60 @@ window.__H = {
         const fillers = (t.match(/(يعني|امم+|إمم+|اه+|آه+|خلاص بس|يعني كده)/g) || []).length;
         speakingStats.push({ t, dur: Math.round(dur), wc, wpm, fillers });
     }
-    function toggleMic() {
-        if (!recognition) return showToast("المتصفح لا يدعم التسجيل الصوتي المباشر.", 'error');
-        if (isRecording) recognition.stop();
-        else { stopSpeaking(); recognition.start(); }
+    async function toggleMic() {
+        const micBtn = document.getElementById('mic-btn');
+        const inputEl = document.getElementById('user-chat-input');
+        if (isRecording) {
+            isRecording = false;
+            micBtn.classList.remove('bg-red-500/20', 'text-red-400', 'recording-pulse');
+            micBtn.setAttribute('aria-label', 'جاري تحويل كلامك لنص');
+            inputEl.placeholder = "بيحوّل كلامك لنص دلوقتي...";
+            if (interviewMediaRecorder && interviewMediaRecorder.state !== 'inactive') interviewMediaRecorder.stop();
+            return;
+        }
+        if (isInterviewMicStarting) return;
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            showToast("المتصفح لا يدعم التسجيل الصوتي المباشر.", 'error'); return;
+        }
+        isInterviewMicStarting = true;
+        try {
+            interviewStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+        } catch (e) {
+            isInterviewMicStarting = false;
+            showToast("محتاج إذن الوصول للمايك عشان التسجيل يشتغل.", 'error'); return;
+        }
+        stopSpeaking();
+        inputEl.placeholder = "المايك بيتظبط... اتكلم بعد لحظة.";
+        await new Promise(resolve => setTimeout(resolve, 400));
+        interviewAudioChunks = [];
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : (MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '');
+        interviewMediaRecorder = mimeType ? new MediaRecorder(interviewStream, { mimeType }) : new MediaRecorder(interviewStream);
+        interviewMediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) interviewAudioChunks.push(e.data); };
+        interviewMediaRecorder.onstop = async () => {
+            interviewStream.getTracks().forEach(t => t.stop());
+            const blob = new Blob(interviewAudioChunks, { type: interviewMediaRecorder.mimeType || 'audio/webm' });
+            stopMic();
+            if (blob.size < 800) { showToast("معلش، مسجّلش صوت كفاية. جرب تاني.", 'error'); return; }
+            try {
+                const t = await transcribeAudioBlob(blob, 'interview-answer.webm', false, 'interview');
+                if (t && t.trim()) {
+                    recordSpeakingStats(t);
+                    inputEl.value = t;
+                    sendUserAnswer();
+                } else {
+                    showToast("معلش، ما اتسمعش كلام واضح. جرب تاني.", 'error');
+                }
+            } catch (e) {
+                console.warn('Interview mic transcription failed:', e);
+                showToast("تعذر فهم الصوت، جرب تاني أو اكتب إجابتك.", 'error');
+            }
+        };
+        interviewMediaRecorder.start();
+        isRecording = true; recordStartTime = Date.now();
+        isInterviewMicStarting = false;
+        micBtn.classList.add('bg-red-500/20', 'text-red-400', 'recording-pulse');
+        micBtn.setAttribute('aria-label', 'إيقاف التسجيل');
+        inputEl.placeholder = "جاري الاستماع إليك... دوس تاني عشان توقف";
     }
     function stopMic() {
         isRecording = false;
@@ -2579,10 +2612,11 @@ window.__H = {
 الشخصية المطلوب المحاكاة بها: (${selectedNationality}).
 ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
 تعليمات:
-1. اتكلم بطبيعية وسلاسة كأنك محاور حقيقي.
+1. اتكلم بطبيعية وسلاسة كأنك محاور حقيقي بيقابل حد وشه في وش، مش بوت.
 2. وجه سؤالاً واحداً مختصراً في كل مرة (سطرين كحد أقصى).
 3. ابدأ فوراً بالتحية وسؤاله عن نفسه بخبرته.
-4. لو ردك بالعربي، اكتبه بالفصحى مشكولاً بالكامل بعلامات التشكيل (فتحة/ضمة/كسرة/سكون/شدة) على كل كلمة عشان النطق الصوتي يبقى مضبوط. لو ردك بالإنجليزي، اكتبه بإنجليزية واضحة وسليمة النطق.`;
+4. أسلوب الكلام (أهم قاعدة هنا، لازم تتبعها في كل رد من غير ما تنسى): لو الشخصية المطلوبة (${selectedNationality}) مصرية أو مفيش تحديد للهجة تانية، اتكلم بعامية مصرية طبيعية وبسيطة زي أي حد بيتكلم عادي في مقابلة شغل حقيقية — ممنوع الفصحى الكلاسيكية أو الأسلوب الرسمي المصطنع (تجنب كلمات زي "إنّ، لذا، بالتالي، يجدر، ينبغي" واستخدم بدلها "علشان، يبقى، لازم، كده"). حافظ على احترافيتك كمحاور، بس بصوت إنسان طبيعي مش بوت بيقرا نشرة أخبار. لو الشخصية مطلوبة بلهجة أو لغة تانية، اتبعها بنفس المنطق: كلام طبيعي منطوق، مش مكتوب رسمي.
+5. لو ردك بالعربي، اكتب كل كلمة مشكولة بالكامل (فتحة/ضمة/كسرة/سكون/شدة) لكن التشكيل يعكس النطق العامي الطبيعي بالظبط زي ما بيتقال بصوت عادي، مش النطق الفصيح الرسمي — التشكيل هنا للنطق الصوتي بس مش لتغيير أسلوب الكلام نفسه. لو ردك بالإنجليزي، اكتبه بإنجليزية واضحة وسليمة النطق.`;
 
         chatHistory = [{ role: "system", content: systemPrompt }];
         appendChatMessage("ai", "جاري الاتصال بالمحاور...");
