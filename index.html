@@ -904,25 +904,108 @@
                         <p class="text-[10px] text-slate-500 -mt-1.5 text-center"><i class="fa-solid fa-circle-info"></i> <span data-i18n="interview.endHint">إنهاء المقابلة إجراء نهائي — الجلسة دي مش هيتم استكمالها بعد كده. لو عايز لغة أو محاور مختلف، ابدأ مقابلة جديدة.</span></p>
                         <div id="ai-avatar-wrap" class="ai-avatar-wrap hidden">
                             <div class="ai-avatar-bg"></div>
-                            <svg id="ai-avatar-svg" viewBox="0 0 200 200" class="ai-avatar-svg" aria-hidden="true">
+                            <svg id="ai-avatar-svg" viewBox="0 0 400 260" preserveAspectRatio="xMidYMid meet" class="ai-avatar-svg" aria-hidden="true">
                                 <defs>
-                                    <radialGradient id="avatarFaceGrad" cx="35%" cy="30%" r="75%">
-                                        <stop offset="0%" stop-color="#ffe0c2"/>
-                                        <stop offset="100%" stop-color="#e8a97a"/>
+                                    <linearGradient id="avatarWallGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                        <stop offset="0%" stop-color="#241a3d"/>
+                                        <stop offset="100%" stop-color="#171224"/>
+                                    </linearGradient>
+                                    <linearGradient id="avatarWindowGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                        <stop offset="0%" stop-color="#7b4fd8"/>
+                                        <stop offset="100%" stop-color="#22d3ee"/>
+                                    </linearGradient>
+                                    <linearGradient id="avatarDeskGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                        <stop offset="0%" stop-color="#4a3626"/>
+                                        <stop offset="100%" stop-color="#2c2018"/>
+                                    </linearGradient>
+                                    <radialGradient id="avatarFaceGrad" cx="38%" cy="28%" r="80%">
+                                        <stop offset="0%" stop-color="#ffe3c7"/>
+                                        <stop offset="60%" stop-color="#f0bd93"/>
+                                        <stop offset="100%" stop-color="#c98f65" stop-opacity="0"/>
                                     </radialGradient>
+                                    <linearGradient id="avatarBlazerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                        <stop offset="0%" stop-color="#3a3252"/>
+                                        <stop offset="100%" stop-color="#221c36"/>
+                                    </linearGradient>
                                 </defs>
-                                <path d="M15,200 Q100,125 185,200 Z" fill="#241c33"/>
-                                <circle cx="100" cy="88" r="52" fill="url(#avatarFaceGrad)"/>
-                                <path id="avatar-hair-female" class="avatar-hair hidden" d="M48,85 Q38,26 100,22 Q162,26 152,85 Q150,38 100,40 Q50,38 48,85 Z M46,88 Q38,132 56,152 Q48,110 60,88 Z M154,88 Q162,132 144,152 Q152,110 140,88 Z" fill="#3a2416"/>
-                                <path id="avatar-hair-male" class="avatar-hair" d="M44,80 Q36,26 100,22 Q164,26 156,80 Q150,44 100,40 Q50,44 44,80 Z" fill="#1c1626"/>
-                                <ellipse cx="78" cy="88" rx="5.5" ry="7" fill="#241c2e"/>
-                                <ellipse cx="122" cy="88" rx="5.5" ry="7" fill="#241c2e"/>
-                                <path d="M70,72 Q78,66 86,72" stroke="#241c2e" stroke-width="3" fill="none" stroke-linecap="round"/>
-                                <path d="M114,72 Q122,66 130,72" stroke="#241c2e" stroke-width="3" fill="none" stroke-linecap="round"/>
-                                <ellipse id="avatar-mouth" cx="100" cy="118" rx="16" ry="3" fill="#8a3a3a"/>
+
+                                <!-- خلفية المكتب -->
+                                <rect x="0" y="0" width="400" height="260" fill="url(#avatarWallGrad)"/>
+                                <rect x="286" y="18" width="96" height="118" rx="4" fill="url(#avatarWindowGrad)" opacity="0.55"/>
+                                <g stroke="#171224" stroke-width="4" opacity="0.5">
+                                    <line x1="286" y1="36" x2="382" y2="36"/>
+                                    <line x1="286" y1="54" x2="382" y2="54"/>
+                                    <line x1="286" y1="72" x2="382" y2="72"/>
+                                    <line x1="286" y1="90" x2="382" y2="90"/>
+                                    <line x1="286" y1="108" x2="382" y2="108"/>
+                                    <line x1="286" y1="126" x2="382" y2="126"/>
+                                </g>
+                                <!-- لوحة شعار يُسر Pro على الحيطة -->
+                                <rect x="122" y="16" width="156" height="46" rx="10" fill="#0f0a1c" opacity="0.55" stroke="url(#avatarWindowGrad)" stroke-width="1.5"/>
+                                <foreignObject x="122" y="16" width="156" height="46">
+                                    <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;direction:rtl;font-weight:800;font-size:18px;color:#fff;font-family:inherit;letter-spacing:.5px;">
+                                        <span style="background:linear-gradient(90deg,#e879f9,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent;">يُسر</span>&nbsp;Pro
+                                    </div>
+                                </foreignObject>
+                                <!-- المكتب -->
+                                <path d="M0,205 L400,205 L400,260 L0,260 Z" fill="url(#avatarDeskGrad)"/>
+                                <rect x="0" y="200" width="400" height="7" fill="#5a4230"/>
+                                <rect x="150" y="182" width="60" height="26" rx="3" fill="#12101c" opacity="0.9"/>
+                                <rect x="153" y="185" width="54" height="17" rx="2" fill="#2a2440"/>
+                                <rect x="205" y="207" width="50" height="4" fill="#1a1428" opacity="0.7"/>
+
+                                <!-- الشخصية -->
+                                <g id="avatar-headgroup">
+                                    <path d="M55,262 Q75,178 148,172 L252,172 Q325,178 345,262 Z" fill="url(#avatarBlazerGrad)"/>
+                                    <path d="M180,178 L200,200 L220,178 L210,172 L190,172 Z" fill="#f4f0ff"/>
+                                    <path d="M186,176 Q200,190 214,176 L214,160 L186,160 Z" fill="#e9c9a3"/>
+
+                                    <ellipse cx="152" cy="140" rx="7" ry="13" fill="#e9c9a3"/>
+                                    <ellipse cx="248" cy="140" rx="7" ry="13" fill="#e9c9a3"/>
+
+                                    <path id="avatar-hair-male" class="avatar-hair" d="M144,110 Q138,58 200,52 Q262,58 256,110 Q250,72 200,68 Q150,72 144,110 Z" fill="#1d1626"/>
+
+                                    <ellipse cx="200" cy="132" rx="50" ry="58" fill="url(#avatarFaceGrad)"/>
+                                    <ellipse cx="200" cy="172" rx="34" ry="14" fill="#f0bd93" opacity="0.55"/>
+
+                                    <path id="avatar-hair-female" class="avatar-hair hidden" d="M140,108 Q132,52 200,46 Q268,52 260,108 Q256,64 200,60 Q144,64 140,108 Z M136,112 Q124,175 148,205 Q136,155 152,112 Z M264,112 Q276,175 252,205 Q264,155 248,112 Z" fill="#3d2818"/>
+
+                                    <path d="M168,102 Q180,92 194,100" stroke="#5a4530" stroke-width="4" fill="none" stroke-linecap="round"/>
+                                    <path d="M206,100 Q220,92 232,102" stroke="#5a4530" stroke-width="4" fill="none" stroke-linecap="round"/>
+
+                                    <ellipse cx="180" cy="128" rx="9.5" ry="6.5" fill="#fff"/>
+                                    <ellipse cx="220" cy="128" rx="9.5" ry="6.5" fill="#fff"/>
+                                    <circle cx="181" cy="129" r="4.6" fill="#4a3220"/>
+                                    <circle cx="219" cy="129" r="4.6" fill="#4a3220"/>
+                                    <circle cx="182" cy="127" r="1.7" fill="#120c08"/>
+                                    <circle cx="220" cy="127" r="1.7" fill="#120c08"/>
+                                    <circle cx="179.5" cy="126.5" r="1" fill="#fff" opacity="0.9"/>
+                                    <circle cx="217.5" cy="126.5" r="1" fill="#fff" opacity="0.9"/>
+
+                                    <path d="M198,138 Q194,150 199,156 Q200,158 203,156" stroke="#d9a877" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.7"/>
+
+                                    <g id="avatar-mouth">
+                                        <path id="avatar-mouth-0" class="avatar-mouth-state" opacity="1" d="M182,168 Q200,173 218,168" stroke="#8a4a3a" stroke-width="3" fill="none" stroke-linecap="round"/>
+                                        <g id="avatar-mouth-1" class="avatar-mouth-state" opacity="0">
+                                            <ellipse cx="200" cy="169" rx="10" ry="4" fill="#7a3530"/>
+                                            <rect x="193" y="166" width="14" height="2.4" rx="1" fill="#fff" opacity="0.85"/>
+                                        </g>
+                                        <g id="avatar-mouth-2" class="avatar-mouth-state" opacity="0">
+                                            <ellipse cx="200" cy="170" rx="14" ry="7.5" fill="#6e2c28"/>
+                                            <rect x="189" y="164" width="22" height="3.2" rx="1.4" fill="#fff" opacity="0.9"/>
+                                            <ellipse cx="200" cy="175" rx="7" ry="2.5" fill="#c9635c" opacity="0.8"/>
+                                        </g>
+                                        <g id="avatar-mouth-3" class="avatar-mouth-state" opacity="0">
+                                            <ellipse cx="200" cy="172" rx="17" ry="11.5" fill="#611f1c"/>
+                                            <rect x="186" y="163" width="28" height="3.6" rx="1.6" fill="#fff" opacity="0.95"/>
+                                            <ellipse cx="200" cy="180" rx="9" ry="3.6" fill="#c9635c" opacity="0.85"/>
+                                        </g>
+                                    </g>
+                                </g>
                             </svg>
                         </div>
                         <div id="chat-history" class="h-[320px] sm:h-[380px] overflow-y-auto space-y-3 p-3 panel-2 rounded-xl flex-1"></div>
+
                         <div id="ai-speaking-indicator" class="hidden flex items-center justify-between gap-2 text-[11px] text-slate-300 panel-2 py-1.5 px-2.5 rounded-lg">
                             <div class="flex items-center gap-2">
                                 <span class="w-2 h-2 rounded-full bg-slate-300 pulse-voice"></span>

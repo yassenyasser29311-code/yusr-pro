@@ -2440,6 +2440,22 @@ window.__H = {
         return avatarAudioCtx;
     }
 
+    // 4 أشكال بق (مقفول / صغير / متوسط / واسع) بنبدّل بينهم بالـ opacity حسب مستوى الصوت، بدل فتحة واحدة بتتمدد
+    let avatarCurrentViseme = -1;
+    let avatarFallbackIntervalId = null;
+    function setAvatarViseme(index) {
+        if (index === avatarCurrentViseme) return;
+        avatarCurrentViseme = index;
+        for (let i = 0; i < 4; i++) {
+            const el = document.getElementById('avatar-mouth-' + i);
+            if (el) el.style.opacity = (i === index) ? '1' : '0';
+        }
+    }
+    function setAvatarTalkingBob(on) {
+        const head = document.getElementById('avatar-headgroup');
+        if (head) head.classList.toggle('avatar-talking-bob', !!on);
+    }
+
     // بيوصل الصوت اللي شغال (edge-tts) بمحلل صوتي، وبيحرك بق الأفتار حسب مستوى الصوت الفعلي لحظة بلحظة
     function startAvatarLipSync(audioEl) {
         if (!avatarEnabled) return;
@@ -2454,17 +2470,18 @@ window.__H = {
             source.connect(avatarAnalyser);
             avatarAnalyser.connect(ctx.destination); // لازم نوصله للسماعة تاني عشان الصوت يفضل مسموع
             avatarSourceEl = audioEl;
-            const mouth = document.getElementById('avatar-mouth');
+            setAvatarTalkingBob(true);
             const loop = () => {
                 if (!avatarAnalyser) return;
                 avatarAnalyser.getByteFrequencyData(avatarFreqData);
                 let sum = 0;
                 for (let i = 0; i < avatarFreqData.length; i++) sum += avatarFreqData[i];
                 const avg = sum / avatarFreqData.length; // 0..255 تقريبًا
-                if (mouth) {
-                    const scaleY = 1 + Math.min(avg / 40, 4.2);
-                    mouth.style.transform = `scaleY(${scaleY})`;
-                }
+                let viseme = 0;
+                if (avg > 55) viseme = 3;
+                else if (avg > 30) viseme = 2;
+                else if (avg > 10) viseme = 1;
+                setAvatarViseme(viseme);
                 avatarRafId = requestAnimationFrame(loop);
             };
             avatarRafId = requestAnimationFrame(loop);
@@ -2474,21 +2491,30 @@ window.__H = {
         }
     }
 
+    // لما نضطر نستخدم صوت المتصفح الاحتياطي (مفيش ملف صوت نقدر نحلله)، بنعمل حركة بق تقريبية بدورة زمنية
     function startAvatarFallbackTalkAnim() {
-        const mouth = document.getElementById('avatar-mouth');
-        if (mouth) mouth.classList.add('avatar-mouth-talking-fallback');
+        stopAvatarFallbackTalkAnim();
+        setAvatarTalkingBob(true);
+        const pattern = [1, 2, 3, 2, 1, 0];
+        let step = 0;
+        avatarFallbackIntervalId = setInterval(() => {
+            setAvatarViseme(pattern[step % pattern.length]);
+            step++;
+        }, 130);
+    }
+    function stopAvatarFallbackTalkAnim() {
+        if (avatarFallbackIntervalId) { clearInterval(avatarFallbackIntervalId); avatarFallbackIntervalId = null; }
     }
 
     function stopAvatarLipSync() {
         if (avatarRafId) { cancelAnimationFrame(avatarRafId); avatarRafId = null; }
+        stopAvatarFallbackTalkAnim();
         avatarAnalyser = null;
         avatarSourceEl = null;
-        const mouth = document.getElementById('avatar-mouth');
-        if (mouth) {
-            mouth.classList.remove('avatar-mouth-talking-fallback');
-            mouth.style.transform = 'scaleY(1)';
-        }
+        setAvatarViseme(0);
+        setAvatarTalkingBob(false);
     }
+
 
     const FEMALE_VOICE_HINTS = ['female', 'woman', 'salma', 'zeina', 'laila', 'hoda', 'amira', 'fatima', 'samantha', 'victoria', 'zira', 'susan', 'karen', 'moira', 'tessa', 'fiona', 'amal'];
     const MALE_VOICE_HINTS = ['male', 'man', 'naayf', 'hamed', 'majed', 'tarik', 'fred', 'daniel', 'david', 'george', 'mark', 'alex'];
