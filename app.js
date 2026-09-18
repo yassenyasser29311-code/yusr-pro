@@ -192,6 +192,7 @@ window.__H = {
   h185: function(event) { dismissOnboarding() },
   h187: function(event) { confirmNotifPermissionModal() },
   h188: function(event) { closeNotifPermissionModal() },
+  hToggleAvatar: function(event) { toggleAvatarPref(this.checked) },
   hFeedbackToggle: function(event) { adminFeedbackAction(this.getAttribute('data-fb-id'), this.getAttribute('data-fb-action')) },
   hSubReviewApprove: function(event) { adminReviewSubscriptionRequest(this.getAttribute('data-req-id'), 'approve') },
   hSubReviewReject: function(event) { adminReviewSubscriptionRequest(this.getAttribute('data-req-id'), 'reject') },
@@ -307,6 +308,8 @@ window.__H = {
         "fa-IR": { male: "fa-IR-FaridNeural", female: "fa-IR-DilaraNeural" }
     };
     let voiceGenderPref = localStorage.getItem('yusr_voice_gender') || 'male';
+    let avatarEnabled = localStorage.getItem('yusr_avatar_enabled') === '1';
+    let avatarAudioCtx = null, avatarAnalyser = null, avatarFreqData = null, avatarRafId = null, avatarSourceEl = null;
     let currentSpeakingAudio = null; // بنتتبع الصوت الشغال دلوقتي عشان زرار الإيقاف يقدر يوقفه فوراً
     let speakQueueToken = 0;
     let cachedBrowserVoices = [];
@@ -2396,6 +2399,95 @@ window.__H = {
             if (icon) icon.className = voiceGenderPref === 'female' ? 'fa-solid fa-venus' : 'fa-solid fa-mars';
             assistantGenderBtn.title = voiceGenderPref === 'female' ? 'صوت الرد: صوت ست (دوس تغيير لراجل)' : 'صوت الرد: صوت راجل (دوس تغيير لست)';
         }
+        updateAvatarGender();
+    }
+
+    // ==== AI Avatar (مجاني بالكامل: رسمة SVG بتحرك بقها حسب صوت edge-tts الموجود أصلاً، من غير أي خدمة خارجية) ====
+    function updateAvatarGender() {
+        const maleHair = document.getElementById('avatar-hair-male');
+        const femaleHair = document.getElementById('avatar-hair-female');
+        if (!maleHair || !femaleHair) return;
+        maleHair.classList.toggle('hidden', voiceGenderPref === 'female');
+        femaleHair.classList.toggle('hidden', voiceGenderPref !== 'female');
+    }
+
+    function toggleAvatarPref(checked) {
+        avatarEnabled = !!checked;
+        localStorage.setItem('yusr_avatar_enabled', avatarEnabled ? '1' : '0');
+        const wrap = document.getElementById('ai-avatar-wrap');
+        if (wrap && !avatarEnabled) wrap.classList.add('hidden');
+    }
+
+    function showAvatarIfEnabled() {
+        const wrap = document.getElementById('ai-avatar-wrap');
+        if (!wrap) return;
+        if (avatarEnabled) { wrap.classList.remove('hidden'); updateAvatarGender(); }
+        else wrap.classList.add('hidden');
+    }
+    function hideAvatar() {
+        const wrap = document.getElementById('ai-avatar-wrap');
+        if (wrap) wrap.classList.add('hidden');
+    }
+
+    function ensureAvatarAudioCtx() {
+        if (!avatarAudioCtx) {
+            try { avatarAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+            catch (e) { avatarAudioCtx = null; }
+        }
+        if (avatarAudioCtx && avatarAudioCtx.state === 'suspended') {
+            avatarAudioCtx.resume().catch(() => {});
+        }
+        return avatarAudioCtx;
+    }
+
+    // بيوصل الصوت اللي شغال (edge-tts) بمحلل صوتي، وبيحرك بق الأفتار حسب مستوى الصوت الفعلي لحظة بلحظة
+    function startAvatarLipSync(audioEl) {
+        if (!avatarEnabled) return;
+        const ctx = ensureAvatarAudioCtx();
+        if (!ctx) { startAvatarFallbackTalkAnim(); return; }
+        try {
+            stopAvatarLipSync();
+            const source = ctx.createMediaElementSource(audioEl);
+            avatarAnalyser = ctx.createAnalyser();
+            avatarAnalyser.fftSize = 64;
+            avatarFreqData = new Uint8Array(avatarAnalyser.frequencyBinCount);
+            source.connect(avatarAnalyser);
+            avatarAnalyser.connect(ctx.destination); // لازم نوصله للسماعة تاني عشان الصوت يفضل مسموع
+            avatarSourceEl = audioEl;
+            const mouth = document.getElementById('avatar-mouth');
+            const loop = () => {
+                if (!avatarAnalyser) return;
+                avatarAnalyser.getByteFrequencyData(avatarFreqData);
+                let sum = 0;
+                for (let i = 0; i < avatarFreqData.length; i++) sum += avatarFreqData[i];
+                const avg = sum / avatarFreqData.length; // 0..255 تقريبًا
+                if (mouth) {
+                    const scaleY = 1 + Math.min(avg / 40, 4.2);
+                    mouth.style.transform = `scaleY(${scaleY})`;
+                }
+                avatarRafId = requestAnimationFrame(loop);
+            };
+            avatarRafId = requestAnimationFrame(loop);
+        } catch (e) {
+            // لو المتصفح رفض (نادرًا)، نرجع لحركة بق تقريبية بدل ما نكسر الصوت
+            startAvatarFallbackTalkAnim();
+        }
+    }
+
+    function startAvatarFallbackTalkAnim() {
+        const mouth = document.getElementById('avatar-mouth');
+        if (mouth) mouth.classList.add('avatar-mouth-talking-fallback');
+    }
+
+    function stopAvatarLipSync() {
+        if (avatarRafId) { cancelAnimationFrame(avatarRafId); avatarRafId = null; }
+        avatarAnalyser = null;
+        avatarSourceEl = null;
+        const mouth = document.getElementById('avatar-mouth');
+        if (mouth) {
+            mouth.classList.remove('avatar-mouth-talking-fallback');
+            mouth.style.transform = 'scaleY(1)';
+        }
     }
 
     const FEMALE_VOICE_HINTS = ['female', 'woman', 'salma', 'zeina', 'laila', 'hoda', 'amira', 'fatima', 'samantha', 'victoria', 'zira', 'susan', 'karen', 'moira', 'tessa', 'fiona', 'amal'];
@@ -2419,6 +2511,8 @@ window.__H = {
             try { currentSpeakingAudio.pause(); currentSpeakingAudio.currentTime = 0; } catch (e) {}
             currentSpeakingAudio = null;
         }
+        stopAvatarLipSync();
+        hideAvatar();
         const indicator = document.getElementById('ai-speaking-indicator');
         if (indicator) indicator.classList.add('hidden');
     }
@@ -2509,6 +2603,7 @@ window.__H = {
         const indicator = document.getElementById('ai-speaking-indicator');
         document.getElementById('status-text').innerText = `${currentInterviewerName} (HR) يتحدث...`;
         indicator.classList.remove('hidden');
+        showAvatarIfEnabled();
 
         const langVoices = EDGE_TTS_VOICES[currentAppLang] || EDGE_TTS_VOICES["ar-EG"];
         const voice = langVoices[voiceGenderPref] || langVoices.male;
@@ -2531,17 +2626,19 @@ window.__H = {
                 await new Promise((resolve) => {
                     const audio = new Audio(URL.createObjectURL(blob));
                     currentSpeakingAudio = audio;
-                    audio.onended = () => { if (currentSpeakingAudio === audio) currentSpeakingAudio = null; resolve(); };
-                    audio.onerror = () => resolve();
-                    audio.play().then(() => {}, () => resolve());
+                    audio.onended = () => { if (currentSpeakingAudio === audio) currentSpeakingAudio = null; stopAvatarLipSync(); resolve(); };
+                    audio.onerror = () => { stopAvatarLipSync(); resolve(); };
+                    audio.play().then(() => { if (avatarEnabled) startAvatarLipSync(audio); }, () => resolve());
                 });
             } catch (e) {
                 console.error("Edge TTS Voice Error (جملة رقم " + (i + 1) + "):", e);
                 if (myToken !== speakQueueToken) return;
+                if (avatarEnabled) startAvatarFallbackTalkAnim();
                 await speakSentenceWithBrowserVoice(sentences[i]);
+                stopAvatarLipSync();
             }
         }
-        if (myToken === speakQueueToken) indicator.classList.add('hidden');
+        if (myToken === speakQueueToken) { indicator.classList.add('hidden'); hideAvatar(); }
     }
     function speakText(text) { return speakTextChunked(text); }
 
@@ -4336,6 +4433,10 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
     applyI18n();
     checkTermsGate();
     updateVoiceGenderButtons();
+    (function initAvatarToggleUi() {
+        const cb = document.getElementById('avatar-toggle-checkbox');
+        if (cb) cb.checked = avatarEnabled;
+    })();
     checkInterviewResumeBanner();
     checkAndFireReminderNotification();
     setInterval(checkAndFireReminderNotification, 60 * 1000);

@@ -704,3 +704,47 @@ html.light-mode .assistant-msg.from-bot { border-color: rgba(47,111,237,.15) !im
 @media (prefers-reduced-motion: reduce) {
     .assistant-chat-header, .assistant-chat-avatar, .assistant-chat-send, #support-chat-fab { animation: none !important; }
 }
+
+/* ==== AI Avatar (talking avatar with lip-sync, added for voice interview) ==== */
+.ai-avatar-wrap {
+    position: relative;
+    width: 100%;
+    height: 210px;
+    border-radius: 1rem;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.ai-avatar-bg {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, #6d28d9, #a21caf, #0891b2, #6d28d9);
+    background-size: 300% 300%;
+    animation: avatarBgShift 10s ease infinite;
+}
+@keyframes avatarBgShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+.ai-avatar-svg {
+    position: relative;
+    z-index: 1;
+    width: 170px;
+    height: 170px;
+    filter: drop-shadow(0 6px 18px rgba(0,0,0,0.35));
+}
+.avatar-hair.hidden { display: none; }
+#avatar-mouth {
+    transform-box: fill-box;
+    transform-origin: center;
+    transition: transform 0.06s linear;
+}
+.avatar-mouth-talking-fallback {
+    animation: avatarMouthFallback 0.42s ease-in-out infinite;
+}
+@keyframes avatarMouthFallback {
+    0%, 100% { transform: scaleY(1); }
+    50% { transform: scaleY(2.6); }
+}
