@@ -733,23 +733,23 @@ html.light-mode .assistant-msg.from-bot { border-color: rgba(47,111,237,.15) !im
     filter: drop-shadow(0 6px 18px rgba(0,0,0,0.35));
 }
 .avatar-hair.hidden { display: none; }
+.avatar-photo { filter: saturate(1.03) contrast(1.02); }
 
-/* أشكال البق (visemes) بتتبدل بالـ opacity بدل ما تتمدد شكل واحد بس - بيدي إحساس كلام حقيقي أكتر */
-.avatar-mouth-state {
-    transition: opacity 0.07s linear;
+/* حلقة التوهج حوالين الصورة بتتغير شدتها مع مستوى الصوت الفعلي بدل ما نرسم بق بيتحرك -
+   ده بيدي إحساس "الشخص ده بيتكلم دلوقتي" من غير ما نتعدى على واقعية الصورة الحقيقية */
+#avatar-glow-ring {
+    transition: opacity 0.09s linear, stroke-width 0.09s linear;
 }
 
-/* رجّة راس خفيفة جدًا أثناء الكلام عشان الأفتار يبقى حيوي مش ثابت زي تمثال */
+/* رجّة/تنفس خفيف جدًا أثناء الكلام عشان الأفتار يبقى حيوي مش ثابت زي صورة جامدة */
 #avatar-headgroup {
     transform-box: fill-box;
     transform-origin: bottom center;
 }
 .avatar-talking-bob {
-    animation: avatarHeadBob 2.6s ease-in-out infinite;
+    animation: avatarHeadBob 3.2s ease-in-out infinite;
 }
 @keyframes avatarHeadBob {
-    0%, 100% { transform: translateY(0) rotate(0deg); }
-    25% { transform: translateY(-1.2px) rotate(-0.4deg); }
-    50% { transform: translateY(0.4px) rotate(0deg); }
-    75% { transform: translateY(-0.8px) rotate(0.4deg); }
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-0.8px) scale(1.004); }
 }

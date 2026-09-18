@@ -2402,13 +2402,10 @@ window.__H = {
         updateAvatarGender();
     }
 
-    // ==== AI Avatar (مجاني بالكامل: رسمة SVG بتحرك بقها حسب صوت edge-tts الموجود أصلاً، من غير أي خدمة خارجية) ====
+    // ==== AI Avatar (مجاني بالكامل: صورة حقيقية + حلقة توهج بتتفاعل مع صوت edge-tts الموجود أصلاً، من غير أي خدمة خارجية) ====
     function updateAvatarGender() {
-        const maleHair = document.getElementById('avatar-hair-male');
-        const femaleHair = document.getElementById('avatar-hair-female');
-        if (!maleHair || !femaleHair) return;
-        maleHair.classList.toggle('hidden', voiceGenderPref === 'female');
-        femaleHair.classList.toggle('hidden', voiceGenderPref !== 'female');
+        // متسيبناش حاجة لازم نعملها هنا دلوقتي طالما الأفتار بقى صورة واحدة ثابتة،
+        // بس سايبين الفانكشن عشان أي كود تاني بينادي عليها متتكسرش.
     }
 
     function toggleAvatarPref(checked) {
@@ -2440,16 +2437,24 @@ window.__H = {
         return avatarAudioCtx;
     }
 
-    // 4 أشكال بق (مقفول / صغير / متوسط / واسع) بنبدّل بينهم بالـ opacity حسب مستوى الصوت، بدل فتحة واحدة بتتمدد
+    // بدل ما نبدّل أشكال بق مرسومة (مش منطقي على صورة حقيقية)، بنغيّر شدة/سمك حلقة التوهج
+    // حوالين الصورة حسب مستوى الصوت الفعلي (0 = ساكت، 3 = أعلى مستوى صوت)
     let avatarCurrentViseme = -1;
     let avatarFallbackIntervalId = null;
     function setAvatarViseme(index) {
         if (index === avatarCurrentViseme) return;
         avatarCurrentViseme = index;
-        for (let i = 0; i < 4; i++) {
-            const el = document.getElementById('avatar-mouth-' + i);
-            if (el) el.style.opacity = (i === index) ? '1' : '0';
-        }
+        const ring = document.getElementById('avatar-glow-ring');
+        if (!ring) return;
+        const levels = [
+            { opacity: 0.35, width: 3 },
+            { opacity: 0.55, width: 3.5 },
+            { opacity: 0.75, width: 4.5 },
+            { opacity: 0.95, width: 5.5 }
+        ];
+        const lv = levels[Math.max(0, Math.min(3, index))] || levels[0];
+        ring.style.opacity = String(lv.opacity);
+        ring.setAttribute('stroke-width', String(lv.width));
     }
     function setAvatarTalkingBob(on) {
         const head = document.getElementById('avatar-headgroup');

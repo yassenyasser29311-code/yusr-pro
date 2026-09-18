@@ -954,53 +954,19 @@
                                 <rect x="153" y="185" width="54" height="17" rx="2" fill="#2a2440"/>
                                 <rect x="205" y="207" width="50" height="4" fill="#1a1428" opacity="0.7"/>
 
-                                <!-- الشخصية -->
+                                <!-- الشخصية: صورة حقيقية بتاعة الشخص، معروضة كـ"video tile" زي مكالمة فيديو -->
                                 <g id="avatar-headgroup">
-                                    <path d="M55,262 Q75,178 148,172 L252,172 Q325,178 345,262 Z" fill="url(#avatarBlazerGrad)"/>
-                                    <path d="M180,178 L200,200 L220,178 L210,172 L190,172 Z" fill="#f4f0ff"/>
-                                    <path d="M186,176 Q200,190 214,176 L214,160 L186,160 Z" fill="#e9c9a3"/>
-
-                                    <ellipse cx="152" cy="140" rx="7" ry="13" fill="#e9c9a3"/>
-                                    <ellipse cx="248" cy="140" rx="7" ry="13" fill="#e9c9a3"/>
-
-                                    <path id="avatar-hair-male" class="avatar-hair" d="M144,110 Q138,58 200,52 Q262,58 256,110 Q250,72 200,68 Q150,72 144,110 Z" fill="#1d1626"/>
-
-                                    <ellipse cx="200" cy="132" rx="50" ry="58" fill="url(#avatarFaceGrad)"/>
-                                    <ellipse cx="200" cy="172" rx="34" ry="14" fill="#f0bd93" opacity="0.55"/>
-
-                                    <path id="avatar-hair-female" class="avatar-hair hidden" d="M140,108 Q132,52 200,46 Q268,52 260,108 Q256,64 200,60 Q144,64 140,108 Z M136,112 Q124,175 148,205 Q136,155 152,112 Z M264,112 Q276,175 252,205 Q264,155 248,112 Z" fill="#3d2818"/>
-
-                                    <path d="M168,102 Q180,92 194,100" stroke="#5a4530" stroke-width="4" fill="none" stroke-linecap="round"/>
-                                    <path d="M206,100 Q220,92 232,102" stroke="#5a4530" stroke-width="4" fill="none" stroke-linecap="round"/>
-
-                                    <ellipse cx="180" cy="128" rx="9.5" ry="6.5" fill="#fff"/>
-                                    <ellipse cx="220" cy="128" rx="9.5" ry="6.5" fill="#fff"/>
-                                    <circle cx="181" cy="129" r="4.6" fill="#4a3220"/>
-                                    <circle cx="219" cy="129" r="4.6" fill="#4a3220"/>
-                                    <circle cx="182" cy="127" r="1.7" fill="#120c08"/>
-                                    <circle cx="220" cy="127" r="1.7" fill="#120c08"/>
-                                    <circle cx="179.5" cy="126.5" r="1" fill="#fff" opacity="0.9"/>
-                                    <circle cx="217.5" cy="126.5" r="1" fill="#fff" opacity="0.9"/>
-
-                                    <path d="M198,138 Q194,150 199,156 Q200,158 203,156" stroke="#d9a877" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.7"/>
-
-                                    <g id="avatar-mouth">
-                                        <path id="avatar-mouth-0" class="avatar-mouth-state" opacity="1" d="M182,168 Q200,173 218,168" stroke="#8a4a3a" stroke-width="3" fill="none" stroke-linecap="round"/>
-                                        <g id="avatar-mouth-1" class="avatar-mouth-state" opacity="0">
-                                            <ellipse cx="200" cy="169" rx="10" ry="4" fill="#7a3530"/>
-                                            <rect x="193" y="166" width="14" height="2.4" rx="1" fill="#fff" opacity="0.85"/>
-                                        </g>
-                                        <g id="avatar-mouth-2" class="avatar-mouth-state" opacity="0">
-                                            <ellipse cx="200" cy="170" rx="14" ry="7.5" fill="#6e2c28"/>
-                                            <rect x="189" y="164" width="22" height="3.2" rx="1.4" fill="#fff" opacity="0.9"/>
-                                            <ellipse cx="200" cy="175" rx="7" ry="2.5" fill="#c9635c" opacity="0.8"/>
-                                        </g>
-                                        <g id="avatar-mouth-3" class="avatar-mouth-state" opacity="0">
-                                            <ellipse cx="200" cy="172" rx="17" ry="11.5" fill="#611f1c"/>
-                                            <rect x="186" y="163" width="28" height="3.6" rx="1.6" fill="#fff" opacity="0.95"/>
-                                            <ellipse cx="200" cy="180" rx="9" ry="3.6" fill="#c9635c" opacity="0.85"/>
-                                        </g>
-                                    </g>
+                                    <!-- حلقة توهج بتتحرك شدتها مع مستوى الصوت الفعلي بدل ما نرسم بق يتحرك -->
+                                    <rect id="avatar-glow-ring" x="107" y="47" width="186" height="186" rx="20" fill="none" stroke="url(#avatarWindowGrad)" stroke-width="3" opacity="0.35"/>
+                                    <clipPath id="avatarPhotoClip">
+                                        <rect x="112" y="52" width="176" height="176" rx="16"/>
+                                    </clipPath>
+                                    <foreignObject x="112" y="52" width="176" height="176" clip-path="url(#avatarPhotoClip)">
+                                        <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%;height:100%;">
+                                            <img id="avatar-photo-male" class="avatar-photo" src="assets/hr-avatar.jpg" alt="" style="width:100%;height:100%;object-fit:cover;object-position:center 30%;display:block;" />
+                                        </div>
+                                    </foreignObject>
+                                    <rect x="112" y="52" width="176" height="176" rx="16" fill="none" stroke="#0f0a1c" stroke-width="1.5" opacity="0.6"/>
                                 </g>
                             </svg>
                         </div>
