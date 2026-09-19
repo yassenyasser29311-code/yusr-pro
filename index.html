@@ -883,10 +883,6 @@
                                 </button>
                             </div>
                         </div>
-                        <label class="flex items-center justify-between gap-2 panel-2 rounded-xl px-3.5 py-2.5 cursor-pointer">
-                            <span class="text-xs sm:text-sm font-bold flex items-center gap-2"><i class="fa-solid fa-masks-theater"></i> عرض أفتار متحرك بيقرأ الكلام (تجريبي، مجاني)</span>
-                            <input type="checkbox" id="avatar-toggle-checkbox" data-x-onchange="hToggleAvatar" class="w-5 h-5 accent-fuchsia-500">
-                        </label>
                         <button data-x-onclick="h88" class="w-full py-3 btn-accent acc-interview font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2">
                             <i class="fa-solid fa-circle-play"></i> <span data-i18n="interview.start">ابدأ الجلسة</span>
                         </button>
@@ -902,95 +898,6 @@
                             </button>
                         </div>
                         <p class="text-[10px] text-slate-500 -mt-1.5 text-center"><i class="fa-solid fa-circle-info"></i> <span data-i18n="interview.endHint">إنهاء المقابلة إجراء نهائي — الجلسة دي مش هيتم استكمالها بعد كده. لو عايز لغة أو محاور مختلف، ابدأ مقابلة جديدة.</span></p>
-                        <div id="ai-avatar-wrap" class="ai-avatar-wrap hidden">
-                            <div class="ai-avatar-bg"></div>
-                            <svg id="ai-avatar-svg" viewBox="0 0 400 260" preserveAspectRatio="xMidYMid meet" class="ai-avatar-svg" aria-hidden="true">
-                                <defs>
-                                    <linearGradient id="avatarWallGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                                        <stop offset="0%" stop-color="#241a3d"/>
-                                        <stop offset="100%" stop-color="#171224"/>
-                                    </linearGradient>
-                                    <linearGradient id="avatarWindowGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                                        <stop offset="0%" stop-color="#7b4fd8"/>
-                                        <stop offset="100%" stop-color="#22d3ee"/>
-                                    </linearGradient>
-                                    <linearGradient id="avatarDeskGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                                        <stop offset="0%" stop-color="#4a3626"/>
-                                        <stop offset="100%" stop-color="#2c2018"/>
-                                    </linearGradient>
-                                    <radialGradient id="avatarFaceGrad" cx="38%" cy="28%" r="80%">
-                                        <stop offset="0%" stop-color="#ffe3c7"/>
-                                        <stop offset="60%" stop-color="#f0bd93"/>
-                                        <stop offset="100%" stop-color="#c98f65" stop-opacity="0"/>
-                                    </radialGradient>
-                                    <linearGradient id="avatarBlazerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                                        <stop offset="0%" stop-color="#3a3252"/>
-                                        <stop offset="100%" stop-color="#221c36"/>
-                                    </linearGradient>
-                                </defs>
-
-                                <!-- خلفية المكتب -->
-                                <rect x="0" y="0" width="400" height="260" fill="url(#avatarWallGrad)"/>
-                                <rect x="286" y="18" width="96" height="118" rx="4" fill="url(#avatarWindowGrad)" opacity="0.55"/>
-                                <g stroke="#171224" stroke-width="4" opacity="0.5">
-                                    <line x1="286" y1="36" x2="382" y2="36"/>
-                                    <line x1="286" y1="54" x2="382" y2="54"/>
-                                    <line x1="286" y1="72" x2="382" y2="72"/>
-                                    <line x1="286" y1="90" x2="382" y2="90"/>
-                                    <line x1="286" y1="108" x2="382" y2="108"/>
-                                    <line x1="286" y1="126" x2="382" y2="126"/>
-                                </g>
-                                <!-- لوحة شعار يُسر Pro على الحيطة -->
-                                <rect x="122" y="16" width="156" height="46" rx="10" fill="#0f0a1c" opacity="0.55" stroke="url(#avatarWindowGrad)" stroke-width="1.5"/>
-                                <foreignObject x="122" y="16" width="156" height="46">
-                                    <div xmlns="http://www.w3.org/1999/xhtml" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;direction:rtl;font-weight:800;font-size:18px;color:#fff;font-family:inherit;letter-spacing:.5px;">
-                                        <span style="background:linear-gradient(90deg,#e879f9,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent;">يُسر</span>&nbsp;Pro
-                                    </div>
-                                </foreignObject>
-                                <!-- المكتب -->
-                                <path d="M0,205 L400,205 L400,260 L0,260 Z" fill="url(#avatarDeskGrad)"/>
-                                <rect x="0" y="200" width="400" height="7" fill="#5a4230"/>
-                                <rect x="150" y="182" width="60" height="26" rx="3" fill="#12101c" opacity="0.9"/>
-                                <rect x="153" y="185" width="54" height="17" rx="2" fill="#2a2440"/>
-                                <rect x="205" y="207" width="50" height="4" fill="#1a1428" opacity="0.7"/>
-
-                                <!-- الشخصية: صورة حقيقية بتاعة الشخص، معروضة كـ"video tile" زي مكالمة فيديو -->
-                                <g id="avatar-headgroup">
-                                    <!-- حلقة توهج خفيفة حوالين الوش بتنور مع مستوى الصوت -->
-                                    <rect id="avatar-glow-ring" x="107" y="47" width="186" height="186" rx="20" fill="none" stroke="url(#avatarWindowGrad)" stroke-width="3" opacity="0.35"/>
-                                    <clipPath id="avatarPhotoClip">
-                                        <rect x="112" y="52" width="176" height="176" rx="16"/>
-                                    </clipPath>
-                                    <g clip-path="url(#avatarPhotoClip)">
-                                        <rect x="112" y="52" width="176" height="176" fill="#241a3d"/>
-                                        <!-- الكتف/البدلة -->
-                                        <path d="M138,212 Q200,232 262,212 L272,232 L128,232 Z" fill="url(#avatarBlazerGrad)"/>
-                                        <!-- الشعر -->
-                                        <path d="M132,122 C132,58 268,58 268,122 L268,92 C268,66 234,48 200,48 C166,48 132,66 132,92 Z" fill="#241a3d"/>
-                                        <!-- الوش -->
-                                        <ellipse cx="200" cy="150" rx="72" ry="78" fill="#f5cca3"/>
-                                        <ellipse cx="200" cy="150" rx="72" ry="78" fill="url(#avatarFaceGrad)"/>
-                                        <!-- الحواجب -->
-                                        <path d="M158,100 Q172,91 186,100" stroke="#241a3d" stroke-width="4" fill="none" stroke-linecap="round"/>
-                                        <path d="M214,100 Q228,91 242,100" stroke="#241a3d" stroke-width="4" fill="none" stroke-linecap="round"/>
-                                        <!-- العينين + جفن الرمش -->
-                                        <g id="avatar-eyes">
-                                            <ellipse cx="172" cy="120" rx="14" ry="15" fill="#fff" stroke="#241a3d" stroke-width="1.5"/>
-                                            <circle cx="172" cy="122" r="6.5" fill="#241a3d"/>
-                                            <ellipse cx="228" cy="120" rx="14" ry="15" fill="#fff" stroke="#241a3d" stroke-width="1.5"/>
-                                            <circle cx="228" cy="122" r="6.5" fill="#241a3d"/>
-                                            <rect id="avatar-eyelid-l" class="avatar-eyelid" x="155" y="102" width="34" height="18" fill="#f5cca3"/>
-                                            <rect id="avatar-eyelid-r" class="avatar-eyelid" x="211" y="102" width="34" height="18" fill="#f5cca3"/>
-                                        </g>
-                                        <!-- الأنف -->
-                                        <path d="M198,128 Q194,148 200,152 Q206,148 202,128" stroke="#c98f65" stroke-width="2" fill="none" stroke-linecap="round"/>
-                                        <!-- البؤ: بيتحرك فعليًا مع مستوى الصوت أثناء الكلام -->
-                                        <ellipse id="avatar-mouth" cx="200" cy="188" rx="24" ry="3" fill="#7a3b3b" stroke="#4a2020" stroke-width="1.5"/>
-                                    </g>
-                                    <rect x="112" y="52" width="176" height="176" rx="16" fill="none" stroke="#0f0a1c" stroke-width="1.5" opacity="0.6"/>
-                                </g>
-                            </svg>
-                        </div>
                         <div id="chat-history" class="h-[320px] sm:h-[380px] overflow-y-auto space-y-3 p-3 panel-2 rounded-xl flex-1"></div>
 
                         <div id="ai-speaking-indicator" class="hidden flex items-center justify-between gap-2 text-[11px] text-slate-300 panel-2 py-1.5 px-2.5 rounded-lg">

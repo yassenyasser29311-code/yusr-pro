@@ -192,7 +192,6 @@ window.__H = {
   h185: function(event) { dismissOnboarding() },
   h187: function(event) { confirmNotifPermissionModal() },
   h188: function(event) { closeNotifPermissionModal() },
-  hToggleAvatar: function(event) { toggleAvatarPref(this.checked) },
   hFeedbackToggle: function(event) { adminFeedbackAction(this.getAttribute('data-fb-id'), this.getAttribute('data-fb-action')) },
   hSubReviewApprove: function(event) { adminReviewSubscriptionRequest(this.getAttribute('data-req-id'), 'approve') },
   hSubReviewReject: function(event) { adminReviewSubscriptionRequest(this.getAttribute('data-req-id'), 'reject') },
@@ -308,8 +307,6 @@ window.__H = {
         "fa-IR": { male: "fa-IR-FaridNeural", female: "fa-IR-DilaraNeural" }
     };
     let voiceGenderPref = localStorage.getItem('yusr_voice_gender') || 'male';
-    let avatarEnabled = localStorage.getItem('yusr_avatar_enabled') === '1';
-    let avatarAudioCtx = null, avatarAnalyser = null, avatarFreqData = null, avatarRafId = null, avatarSourceEl = null;
     let currentSpeakingAudio = null; // بنتتبع الصوت الشغال دلوقتي عشان زرار الإيقاف يقدر يوقفه فوراً
     let speakQueueToken = 0;
     let cachedBrowserVoices = [];
@@ -2399,157 +2396,7 @@ window.__H = {
             if (icon) icon.className = voiceGenderPref === 'female' ? 'fa-solid fa-venus' : 'fa-solid fa-mars';
             assistantGenderBtn.title = voiceGenderPref === 'female' ? 'صوت الرد: صوت ست (دوس تغيير لراجل)' : 'صوت الرد: صوت راجل (دوس تغيير لست)';
         }
-        updateAvatarGender();
     }
-
-    // ==== AI Avatar (مجاني بالكامل: صورة حقيقية + حلقة توهج بتتفاعل مع صوت edge-tts الموجود أصلاً، من غير أي خدمة خارجية) ====
-    function updateAvatarGender() {
-        // متسيبناش حاجة لازم نعملها هنا دلوقتي طالما الأفتار بقى صورة واحدة ثابتة،
-        // بس سايبين الفانكشن عشان أي كود تاني بينادي عليها متتكسرش.
-    }
-
-    function toggleAvatarPref(checked) {
-        avatarEnabled = !!checked;
-        localStorage.setItem('yusr_avatar_enabled', avatarEnabled ? '1' : '0');
-        const wrap = document.getElementById('ai-avatar-wrap');
-        if (wrap && !avatarEnabled) { wrap.classList.add('hidden'); stopAvatarBlink(); }
-    }
-
-    function showAvatarIfEnabled() {
-        const wrap = document.getElementById('ai-avatar-wrap');
-        if (!wrap) return;
-        if (avatarEnabled) { wrap.classList.remove('hidden'); updateAvatarGender(); scheduleAvatarBlink(); }
-        else { wrap.classList.add('hidden'); stopAvatarBlink(); }
-    }
-    function hideAvatar() {
-        const wrap = document.getElementById('ai-avatar-wrap');
-        if (wrap) wrap.classList.add('hidden');
-        stopAvatarBlink();
-    }
-
-    function ensureAvatarAudioCtx() {
-        if (!avatarAudioCtx) {
-            try { avatarAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
-            catch (e) { avatarAudioCtx = null; }
-        }
-        if (avatarAudioCtx && avatarAudioCtx.state === 'suspended') {
-            avatarAudioCtx.resume().catch(() => {});
-        }
-        return avatarAudioCtx;
-    }
-
-    // بنحرّك البؤ (الفم) فعليًا حسب مستوى الصوت الفعلي (0 = ساكت، 3 = أعلى مستوى صوت)،
-    // وبنزوّد نور حلقة التوهج معاه عشان يبقى في إحساس إضافي إن الأفتار بيتكلم دلوقتي
-    let avatarCurrentViseme = -1;
-    let avatarFallbackIntervalId = null;
-    function setAvatarViseme(index) {
-        if (index === avatarCurrentViseme) return;
-        avatarCurrentViseme = index;
-        const idx = Math.max(0, Math.min(3, index));
-        const ring = document.getElementById('avatar-glow-ring');
-        const mouth = document.getElementById('avatar-mouth');
-        const ringLevels = [
-            { opacity: 0.35, width: 3 },
-            { opacity: 0.55, width: 3.5 },
-            { opacity: 0.75, width: 4.5 },
-            { opacity: 0.95, width: 5.5 }
-        ];
-        const mouthLevels = [
-            { ry: 3, cy: 188 },
-            { ry: 8, cy: 190 },
-            { ry: 14, cy: 192 },
-            { ry: 19, cy: 194 }
-        ];
-        const rl = ringLevels[idx];
-        const ml = mouthLevels[idx];
-        if (ring) { ring.style.opacity = String(rl.opacity); ring.setAttribute('stroke-width', String(rl.width)); }
-        if (mouth) { mouth.setAttribute('ry', String(ml.ry)); mouth.setAttribute('cy', String(ml.cy)); }
-    }
-    function setAvatarTalkingBob(on) {
-        const head = document.getElementById('avatar-headgroup');
-        if (head) head.classList.toggle('avatar-talking-bob', !!on);
-    }
-
-    // بيوصل الصوت اللي شغال (edge-tts) بمحلل صوتي، وبيحرك بق الأفتار حسب مستوى الصوت الفعلي لحظة بلحظة
-    function startAvatarLipSync(audioEl) {
-        if (!avatarEnabled) return;
-        const ctx = ensureAvatarAudioCtx();
-        if (!ctx) { startAvatarFallbackTalkAnim(); return; }
-        try {
-            stopAvatarLipSync();
-            const source = ctx.createMediaElementSource(audioEl);
-            avatarAnalyser = ctx.createAnalyser();
-            avatarAnalyser.fftSize = 64;
-            avatarFreqData = new Uint8Array(avatarAnalyser.frequencyBinCount);
-            source.connect(avatarAnalyser);
-            avatarAnalyser.connect(ctx.destination); // لازم نوصله للسماعة تاني عشان الصوت يفضل مسموع
-            avatarSourceEl = audioEl;
-            setAvatarTalkingBob(true);
-            const loop = () => {
-                if (!avatarAnalyser) return;
-                avatarAnalyser.getByteFrequencyData(avatarFreqData);
-                let sum = 0;
-                for (let i = 0; i < avatarFreqData.length; i++) sum += avatarFreqData[i];
-                const avg = sum / avatarFreqData.length; // 0..255 تقريبًا
-                let viseme = 0;
-                if (avg > 55) viseme = 3;
-                else if (avg > 30) viseme = 2;
-                else if (avg > 10) viseme = 1;
-                setAvatarViseme(viseme);
-                avatarRafId = requestAnimationFrame(loop);
-            };
-            avatarRafId = requestAnimationFrame(loop);
-        } catch (e) {
-            // لو المتصفح رفض (نادرًا)، نرجع لحركة بق تقريبية بدل ما نكسر الصوت
-            startAvatarFallbackTalkAnim();
-        }
-    }
-
-    // لما نضطر نستخدم صوت المتصفح الاحتياطي (مفيش ملف صوت نقدر نحلله)، بنعمل حركة بق تقريبية بدورة زمنية
-    function startAvatarFallbackTalkAnim() {
-        stopAvatarFallbackTalkAnim();
-        setAvatarTalkingBob(true);
-        const pattern = [1, 2, 3, 2, 1, 0];
-        let step = 0;
-        avatarFallbackIntervalId = setInterval(() => {
-            setAvatarViseme(pattern[step % pattern.length]);
-            step++;
-        }, 130);
-    }
-    function stopAvatarFallbackTalkAnim() {
-        if (avatarFallbackIntervalId) { clearInterval(avatarFallbackIntervalId); avatarFallbackIntervalId = null; }
-    }
-
-    function stopAvatarLipSync() {
-        if (avatarRafId) { cancelAnimationFrame(avatarRafId); avatarRafId = null; }
-        stopAvatarFallbackTalkAnim();
-        avatarAnalyser = null;
-        avatarSourceEl = null;
-        setAvatarViseme(0);
-        setAvatarTalkingBob(false);
-    }
-
-    // ==== رمش العين: بترمش لوحدها كل شوية عشان الأفتار يبقى حي مش ثابت ====
-    let avatarBlinkTimeoutId = null;
-    function scheduleAvatarBlink() {
-        clearTimeout(avatarBlinkTimeoutId);
-        const delay = 2200 + Math.random() * 3200; // بين 2.2 و 5.4 ثانية
-        avatarBlinkTimeoutId = setTimeout(() => {
-            const l = document.getElementById('avatar-eyelid-l');
-            const r = document.getElementById('avatar-eyelid-r');
-            if (l && r) {
-                l.classList.add('blinking');
-                r.classList.add('blinking');
-                setTimeout(() => { l.classList.remove('blinking'); r.classList.remove('blinking'); }, 180);
-            }
-            scheduleAvatarBlink();
-        }, delay);
-    }
-    function stopAvatarBlink() {
-        clearTimeout(avatarBlinkTimeoutId);
-        avatarBlinkTimeoutId = null;
-    }
-
 
     const FEMALE_VOICE_HINTS = ['female', 'woman', 'salma', 'zeina', 'laila', 'hoda', 'amira', 'fatima', 'samantha', 'victoria', 'zira', 'susan', 'karen', 'moira', 'tessa', 'fiona', 'amal'];
     const MALE_VOICE_HINTS = ['male', 'man', 'naayf', 'hamed', 'majed', 'tarik', 'fred', 'daniel', 'david', 'george', 'mark', 'alex'];
@@ -2572,8 +2419,6 @@ window.__H = {
             try { currentSpeakingAudio.pause(); currentSpeakingAudio.currentTime = 0; } catch (e) {}
             currentSpeakingAudio = null;
         }
-        stopAvatarLipSync();
-        hideAvatar();
         const indicator = document.getElementById('ai-speaking-indicator');
         if (indicator) indicator.classList.add('hidden');
     }
@@ -2664,7 +2509,6 @@ window.__H = {
         const indicator = document.getElementById('ai-speaking-indicator');
         document.getElementById('status-text').innerText = `${currentInterviewerName} (HR) يتحدث...`;
         indicator.classList.remove('hidden');
-        showAvatarIfEnabled();
 
         const langVoices = EDGE_TTS_VOICES[currentAppLang] || EDGE_TTS_VOICES["ar-EG"];
         const voice = langVoices[voiceGenderPref] || langVoices.male;
@@ -2687,19 +2531,17 @@ window.__H = {
                 await new Promise((resolve) => {
                     const audio = new Audio(URL.createObjectURL(blob));
                     currentSpeakingAudio = audio;
-                    audio.onended = () => { if (currentSpeakingAudio === audio) currentSpeakingAudio = null; stopAvatarLipSync(); resolve(); };
-                    audio.onerror = () => { stopAvatarLipSync(); resolve(); };
-                    audio.play().then(() => { if (avatarEnabled) startAvatarLipSync(audio); }, () => resolve());
+                    audio.onended = () => { if (currentSpeakingAudio === audio) currentSpeakingAudio = null; resolve(); };
+                    audio.onerror = () => { resolve(); };
+                    audio.play().then(() => {}, () => resolve());
                 });
             } catch (e) {
                 console.error("Edge TTS Voice Error (جملة رقم " + (i + 1) + "):", e);
                 if (myToken !== speakQueueToken) return;
-                if (avatarEnabled) startAvatarFallbackTalkAnim();
                 await speakSentenceWithBrowserVoice(sentences[i]);
-                stopAvatarLipSync();
             }
         }
-        if (myToken === speakQueueToken) { indicator.classList.add('hidden'); hideAvatar(); }
+        if (myToken === speakQueueToken) { indicator.classList.add('hidden'); }
     }
     function speakText(text) { return speakTextChunked(text); }
 
@@ -4494,10 +4336,6 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
     applyI18n();
     checkTermsGate();
     updateVoiceGenderButtons();
-    (function initAvatarToggleUi() {
-        const cb = document.getElementById('avatar-toggle-checkbox');
-        if (cb) cb.checked = avatarEnabled;
-    })();
     checkInterviewResumeBanner();
     checkAndFireReminderNotification();
     setInterval(checkAndFireReminderNotification, 60 * 1000);
