@@ -735,10 +735,28 @@ html.light-mode .assistant-msg.from-bot { border-color: rgba(47,111,237,.15) !im
 .avatar-hair.hidden { display: none; }
 .avatar-photo { filter: saturate(1.03) contrast(1.02); }
 
-/* حلقة التوهج حوالين الصورة بتتغير شدتها مع مستوى الصوت الفعلي بدل ما نرسم بق بيتحرك -
-   ده بيدي إحساس "الشخص ده بيتكلم دلوقتي" من غير ما نتعدى على واقعية الصورة الحقيقية */
+/* حلقة توهج خفيفة حوالين الوش بتتغير شدتها مع مستوى الصوت الفعلي، بالإضافة لحركة البؤ نفسه */
 #avatar-glow-ring {
     transition: opacity 0.09s linear, stroke-width 0.09s linear;
+}
+
+/* البؤ (الفم) بيتحرك فعليًا مع مستوى الصوت */
+#avatar-mouth {
+    transition: ry 0.09s ease-out, cy 0.09s ease-out;
+}
+
+/* جفن العين: مستخبي عادي، وبينزل يقفل العين لما ترمش */
+.avatar-eyelid {
+    transform-box: fill-box;
+    transform-origin: top;
+    transform: scaleY(0);
+}
+.avatar-eyelid.blinking {
+    animation: avatarBlink 0.18s ease-in-out;
+}
+@keyframes avatarBlink {
+    0%, 100% { transform: scaleY(0); }
+    45%, 55% { transform: scaleY(1); }
 }
 
 /* رجّة/تنفس خفيف جدًا أثناء الكلام عشان الأفتار يبقى حيوي مش ثابت زي صورة جامدة */

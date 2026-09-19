@@ -2412,18 +2412,19 @@ window.__H = {
         avatarEnabled = !!checked;
         localStorage.setItem('yusr_avatar_enabled', avatarEnabled ? '1' : '0');
         const wrap = document.getElementById('ai-avatar-wrap');
-        if (wrap && !avatarEnabled) wrap.classList.add('hidden');
+        if (wrap && !avatarEnabled) { wrap.classList.add('hidden'); stopAvatarBlink(); }
     }
 
     function showAvatarIfEnabled() {
         const wrap = document.getElementById('ai-avatar-wrap');
         if (!wrap) return;
-        if (avatarEnabled) { wrap.classList.remove('hidden'); updateAvatarGender(); }
-        else wrap.classList.add('hidden');
+        if (avatarEnabled) { wrap.classList.remove('hidden'); updateAvatarGender(); scheduleAvatarBlink(); }
+        else { wrap.classList.add('hidden'); stopAvatarBlink(); }
     }
     function hideAvatar() {
         const wrap = document.getElementById('ai-avatar-wrap');
         if (wrap) wrap.classList.add('hidden');
+        stopAvatarBlink();
     }
 
     function ensureAvatarAudioCtx() {
@@ -2437,24 +2438,32 @@ window.__H = {
         return avatarAudioCtx;
     }
 
-    // بدل ما نبدّل أشكال بق مرسومة (مش منطقي على صورة حقيقية)، بنغيّر شدة/سمك حلقة التوهج
-    // حوالين الصورة حسب مستوى الصوت الفعلي (0 = ساكت، 3 = أعلى مستوى صوت)
+    // بنحرّك البؤ (الفم) فعليًا حسب مستوى الصوت الفعلي (0 = ساكت، 3 = أعلى مستوى صوت)،
+    // وبنزوّد نور حلقة التوهج معاه عشان يبقى في إحساس إضافي إن الأفتار بيتكلم دلوقتي
     let avatarCurrentViseme = -1;
     let avatarFallbackIntervalId = null;
     function setAvatarViseme(index) {
         if (index === avatarCurrentViseme) return;
         avatarCurrentViseme = index;
+        const idx = Math.max(0, Math.min(3, index));
         const ring = document.getElementById('avatar-glow-ring');
-        if (!ring) return;
-        const levels = [
+        const mouth = document.getElementById('avatar-mouth');
+        const ringLevels = [
             { opacity: 0.35, width: 3 },
             { opacity: 0.55, width: 3.5 },
             { opacity: 0.75, width: 4.5 },
             { opacity: 0.95, width: 5.5 }
         ];
-        const lv = levels[Math.max(0, Math.min(3, index))] || levels[0];
-        ring.style.opacity = String(lv.opacity);
-        ring.setAttribute('stroke-width', String(lv.width));
+        const mouthLevels = [
+            { ry: 3, cy: 188 },
+            { ry: 8, cy: 190 },
+            { ry: 14, cy: 192 },
+            { ry: 19, cy: 194 }
+        ];
+        const rl = ringLevels[idx];
+        const ml = mouthLevels[idx];
+        if (ring) { ring.style.opacity = String(rl.opacity); ring.setAttribute('stroke-width', String(rl.width)); }
+        if (mouth) { mouth.setAttribute('ry', String(ml.ry)); mouth.setAttribute('cy', String(ml.cy)); }
     }
     function setAvatarTalkingBob(on) {
         const head = document.getElementById('avatar-headgroup');
@@ -2518,6 +2527,27 @@ window.__H = {
         avatarSourceEl = null;
         setAvatarViseme(0);
         setAvatarTalkingBob(false);
+    }
+
+    // ==== رمش العين: بترمش لوحدها كل شوية عشان الأفتار يبقى حي مش ثابت ====
+    let avatarBlinkTimeoutId = null;
+    function scheduleAvatarBlink() {
+        clearTimeout(avatarBlinkTimeoutId);
+        const delay = 2200 + Math.random() * 3200; // بين 2.2 و 5.4 ثانية
+        avatarBlinkTimeoutId = setTimeout(() => {
+            const l = document.getElementById('avatar-eyelid-l');
+            const r = document.getElementById('avatar-eyelid-r');
+            if (l && r) {
+                l.classList.add('blinking');
+                r.classList.add('blinking');
+                setTimeout(() => { l.classList.remove('blinking'); r.classList.remove('blinking'); }, 180);
+            }
+            scheduleAvatarBlink();
+        }, delay);
+    }
+    function stopAvatarBlink() {
+        clearTimeout(avatarBlinkTimeoutId);
+        avatarBlinkTimeoutId = null;
     }
 
 
