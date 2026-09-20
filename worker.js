@@ -552,7 +552,9 @@ async function handleGroqChat(request, env, corsHeaders) {
     }
   }
 
-  return json({ error: "groq_error", detail: lastReason, attempted: attemptLog }, 502, corsHeaders);
+  // التفاصيل (سبب فشل كل مزوّد) بتتسجل في لوجات Cloudflare بس، ومش بتترجّع للمتصفح عشان مايشوفهاش المستخدم.
+  console.warn("groqChat: كل المزوّدين فشلوا:", JSON.stringify({ lastReason, attemptLog }));
+  return json({ error: "groq_error" }, 502, corsHeaders);
 }
 
 function lastUserMessageHasImage(msgs) {
