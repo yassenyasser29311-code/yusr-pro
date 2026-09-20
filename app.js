@@ -2957,9 +2957,9 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
     // النهائي اللي فعلاً بيتبعت للمساعد هو الأدق، مش الاقتراح الحي الأقل دقة.
     // ملحوظة: Web Speech API مش متاحة في كل المتصفحات (زي Safari)، فلو مش
     // موجودة بنرجع تلقائيًا لنفس أسلوب "سجّل ثم اتفرّغ" المستخدم في أداة تفريغ الصوت.
-    let isAssistantMicOn = false, isAssistantMicStarting = false;
+    let isAssistantMicOn = false, isAssistantMicStarting = false, assistantMicStopping = false;
     let assistantMediaRecorder = null, assistantMicChunks = [], assistantMicStream = null;
-    let assistantSpeechRecognition = null, assistantMicBaseValue = '';
+    let assistantSpeechRecognition = null, assistantMicBaseValue = '', assistantLiveSupportWarned = false;
     const ASSISTANT_SPEECH_LANG = { ar: 'ar-EG', en: 'en-US', fr: 'fr-FR', es: 'es-ES', tr: 'tr-TR', de: 'de-DE', hi: 'hi-IN', ur: 'ur-PK', fa: 'fa-IR' };
     function getAssistantMicButton() { return document.getElementById('assistant-mic-btn'); }
     function setAssistantMicRecordingUI(on) {
@@ -2977,16 +2977,56 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
             isAssistantMicStarting = false;
             showToast("المتصفح لا يدعم التسجيل الصوتي المباشر.", 'error'); return;
         }
+        const input = document.getElementById('assistant-chat-input');
+        assistantMicBaseValue = (input.value || '').trim();
+        assistantMicStopping = false;
+        assistantLiveSupportWarned = false;
+
+        // بنبدأ العرض الحي (Web Speech API) الأول وحده، قبل ما نطلب getUserMedia
+        // لتسجيل الصوت الخام. طلب المايك مرتين في نفس اللحظة (مرة من هنا ومرة من
+        // getUserMedia) هو السبب الشائع إن الـ Speech Recognition يفشل بصمت في
+        // بعض نسخ Chrome، فده بيدّيله أولوية ياخد المايك لوحده الأول.
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRec) {
+            assistantSpeechRecognition = new SpeechRec();
+            assistantSpeechRecognition.lang = ASSISTANT_SPEECH_LANG[currentAppLang] || 'ar-EG';
+            assistantSpeechRecognition.continuous = true;
+            assistantSpeechRecognition.interimResults = true;
+            assistantSpeechRecognition.onresult = (event) => {
+                let liveText = '';
+                for (let i = 0; i < event.results.length; i++) liveText += event.results[i][0].transcript;
+                input.value = (assistantMicBaseValue ? assistantMicBaseValue + ' ' : '') + liveText;
+                autoResizeAssistantInput();
+            };
+            assistantSpeechRecognition.onerror = (event) => {
+                console.warn('Assistant live speech recognition error:', event && event.error);
+                if (!assistantLiveSupportWarned && event && event.error !== 'no-speech') {
+                    assistantLiveSupportWarned = true;
+                    showToast("العرض الحي للكلام مش متاح دلوقتي، هيظهر النص بعد ما توقف التسجيل.", 'error');
+                }
+            };
+            // كروم أحياناً بيوقف الـ recognition تلقائي بعد سكتة قصيرة حتى مع
+            // continuous=true، فبنعيد تشغيله تلقائي طول ما المايك لسه شغال.
+            assistantSpeechRecognition.onend = () => {
+                if (isAssistantMicOn && !assistantMicStopping) {
+                    try { assistantSpeechRecognition.start(); } catch (e) { console.warn('Could not restart live recognition:', e); }
+                }
+            };
+            try { assistantSpeechRecognition.start(); } catch (e) { console.warn('Could not start live recognition:', e); assistantSpeechRecognition = null; }
+        } else if (!assistantLiveSupportWarned) {
+            assistantLiveSupportWarned = true;
+            showToast("المتصفح ده مش بيدعم عرض الكلام لحظة بلحظة، هيظهر النص بعد ما توقف التسجيل.", 'error');
+        }
+
         try {
             assistantMicStream = await navigator.mediaDevices.getUserMedia({
                 audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1, sampleRate: 48000, sampleSize: 16 }
             });
         } catch (e) {
             isAssistantMicStarting = false;
+            if (assistantSpeechRecognition) { try { assistantSpeechRecognition.onend = null; assistantSpeechRecognition.stop(); } catch (e2) {} assistantSpeechRecognition = null; }
             showToast("محتاج إذن الوصول للمايك عشان التسجيل يشتغل.", 'error'); return;
         }
-        const input = document.getElementById('assistant-chat-input');
-        assistantMicBaseValue = (input.value || '').trim();
         assistantMicChunks = [];
         const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : (MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '');
         assistantMediaRecorder = mimeType ? new MediaRecorder(assistantMicStream, { mimeType, audioBitsPerSecond: 128000 }) : new MediaRecorder(assistantMicStream);
@@ -3001,35 +3041,22 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
                 autoResizeAssistantInput();
             } catch (e) {
                 console.warn('Assistant mic transcription failed:', e);
-                // النص الحي (لو كان في متصفح بيدعم Web Speech) بيفضل موجود كبديل احتياطي
                 if (!input.value.trim()) showToast("تعذر تفريغ التسجيل. جرب تاني.", 'error');
             }
         };
         assistantMediaRecorder.start();
-        // العرض الحي كلمة بكلمة (لو المتصفح بيدعمه)
-        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (SpeechRec) {
-            assistantSpeechRecognition = new SpeechRec();
-            assistantSpeechRecognition.lang = ASSISTANT_SPEECH_LANG[currentAppLang] || 'ar-EG';
-            assistantSpeechRecognition.continuous = true;
-            assistantSpeechRecognition.interimResults = true;
-            assistantSpeechRecognition.onresult = (event) => {
-                let liveText = '';
-                for (let i = 0; i < event.results.length; i++) liveText += event.results[i][0].transcript;
-                input.value = (assistantMicBaseValue ? assistantMicBaseValue + ' ' : '') + liveText;
-                autoResizeAssistantInput();
-            };
-            assistantSpeechRecognition.onerror = () => {};
-            try { assistantSpeechRecognition.start(); } catch (e) {}
-        }
         isAssistantMicOn = true;
         isAssistantMicStarting = false;
         setAssistantMicRecordingUI(true);
     }
     function stopAssistantMic() {
         isAssistantMicOn = false;
+        assistantMicStopping = true;
         setAssistantMicRecordingUI(false);
-        if (assistantSpeechRecognition) { try { assistantSpeechRecognition.stop(); } catch (e) {} assistantSpeechRecognition = null; }
+        if (assistantSpeechRecognition) {
+            try { assistantSpeechRecognition.onend = null; assistantSpeechRecognition.stop(); } catch (e) {}
+            assistantSpeechRecognition = null;
+        }
         if (assistantMediaRecorder && assistantMediaRecorder.state !== 'inactive') assistantMediaRecorder.stop();
     }
     function autoResizeAssistantInput() {
