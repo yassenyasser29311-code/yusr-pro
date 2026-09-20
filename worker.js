@@ -19,7 +19,7 @@ const PLAN_LIMITS = {
 
 const RATE_LIMITS = {
   groqChat: { max: 20, windowSeconds: 60 },
-  groqTranscribe: { max: 10, windowSeconds: 60 },
+  groqTranscribe: { max: 25, windowSeconds: 60 },
   edgeTtsSpeak: { max: 20, windowSeconds: 60 }
 };
 
