@@ -2253,11 +2253,91 @@ window.__H = {
         const fillers = (t.match(/(يعني|امم+|إمم+|اه+|آه+|خلاص بس|يعني كده)/g) || []).length;
         speakingStats.push({ t, dur: Math.round(dur), wc, wpm, fillers });
     }
+    // عرض حي للكلام جوه خانة الكتابة وأنت بتتكلم (Web Speech API المدمجة في المتصفح).
+    // ده معاينة لحظية بس؛ النص النهائي اللي بيتبعت للمحاور لسه هو تفريغ Whisper الأدق زي ما كان.
+    // لو Whisper فشل أو رجّع فاضي، الكلام اللي ظهر لحظيًا بيفضل في الخانة عشان مايضيعش.
+    let interviewSpeechRec = null, interviewMicSession = false, interviewLiveBase = '';
+    let interviewHadLiveText = false, interviewLiveWarned = false, interviewLiveDisabled = false, interviewLiveRapidEnds = 0;
+    function warnInterviewLiveOnce(msg) {
+        if (interviewLiveWarned) return;
+        interviewLiveWarned = true;
+        showToast(msg, 'error');
+    }
+    function startInterviewLiveRecognition(inputEl) {
+        interviewHadLiveText = false; interviewLiveDisabled = false; interviewLiveWarned = false; interviewLiveRapidEnds = 0;
+        interviewLiveBase = (inputEl.value || '').trim();
+        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRec) {
+            warnInterviewLiveOnce("المتصفح ده مش بيدعم عرض الكلام لحظة بلحظة، هيظهر النص بعد ما توقف التسجيل.");
+            return;
+        }
+        const rec = new SpeechRec();
+        let startedAt = Date.now();
+        rec.lang = currentAppLang || 'ar-EG';
+        rec.continuous = true;
+        rec.interimResults = true;
+        rec.onresult = (event) => {
+            if (interviewSpeechRec !== rec) return;
+            interviewLiveRapidEnds = 0;
+            let live = '';
+            for (let i = 0; i < event.results.length; i++) live += event.results[i][0].transcript;
+            live = live.trim();
+            if (!live) return;
+            interviewHadLiveText = true;
+            inputEl.value = (interviewLiveBase ? interviewLiveBase + ' ' : '') + live;
+        };
+        rec.onerror = (event) => {
+            const err = event && event.error;
+            console.warn('Interview live speech recognition error:', err);
+            if (err === 'no-speech' || err === 'aborted') return;
+            if (err === 'not-allowed' || err === 'service-not-allowed') {
+                interviewLiveDisabled = true;
+                warnInterviewLiveOnce("المتصفح مانع العرض الحي للكلام (إذن المايك/خدمة التعرف الصوتي)، هيظهر النص بعد ما توقف التسجيل.");
+            } else if (err === 'network') {
+                interviewLiveDisabled = true;
+                warnInterviewLiveOnce("العرض الحي محتاج نت ثابت وحصلت مشكلة في الاتصال، هيظهر النص بعد ما توقف التسجيل.");
+            } else if (err === 'audio-capture') {
+                warnInterviewLiveOnce("العرض الحي مش قادر يستخدم المايك دلوقتي، هيظهر النص بعد ما توقف التسجيل.");
+            } else {
+                warnInterviewLiveOnce("العرض الحي للكلام مش متاح دلوقتي، هيظهر النص بعد ما توقف التسجيل.");
+            }
+        };
+        // كروم بيوقف الـ recognition تلقائي بعد سكتة قصيرة حتى مع continuous=true، فبنعيد تشغيله
+        // طول ما التسجيل شغال، وبنحتفظ بالكلام اللي اتكتب قبل إعادة التشغيل.
+        rec.onend = () => {
+            if (interviewSpeechRec !== rec || !interviewMicSession || interviewLiveDisabled) return;
+            interviewLiveRapidEnds = (Date.now() - startedAt < 1500) ? interviewLiveRapidEnds + 1 : 0;
+            if (interviewLiveRapidEnds > 5) {
+                warnInterviewLiveOnce("العرض الحي للكلام بيقفل بسرعة على جهازك، هيظهر النص بعد ما توقف التسجيل.");
+                return;
+            }
+            interviewLiveBase = (inputEl.value || '').trim();
+            setTimeout(() => {
+                if (interviewSpeechRec !== rec || !interviewMicSession) return;
+                try { startedAt = Date.now(); rec.start(); } catch (e) { console.warn('Could not restart interview live recognition:', e); }
+            }, 200);
+        };
+        interviewSpeechRec = rec;
+        try { rec.start(); } catch (e) {
+            console.warn('Could not start interview live recognition:', e);
+            interviewSpeechRec = null;
+            warnInterviewLiveOnce("العرض الحي للكلام مش متاح دلوقتي، هيظهر النص بعد ما توقف التسجيل.");
+        }
+    }
+    function stopInterviewLiveRecognition() {
+        const rec = interviewSpeechRec;
+        interviewSpeechRec = null;
+        if (rec) {
+            try { rec.onend = null; rec.onresult = null; rec.onerror = null; rec.abort(); } catch (e) { try { rec.stop(); } catch (e2) {} }
+        }
+    }
+
     async function toggleMic() {
         const micBtn = document.getElementById('mic-btn');
         const inputEl = document.getElementById('user-chat-input');
         if (isRecording) {
             isRecording = false;
+            interviewMicSession = false;
             micBtn.classList.remove('bg-red-500/20', 'text-red-400', 'recording-pulse');
             micBtn.setAttribute('aria-label', 'جاري تحويل كلامك لنص');
             inputEl.placeholder = "بيحوّل كلامك لنص دلوقتي...";
@@ -2269,10 +2349,16 @@ window.__H = {
             showToast("المتصفح لا يدعم التسجيل الصوتي المباشر.", 'error'); return;
         }
         isInterviewMicStarting = true;
+        // بنبدأ العرض الحي الأول (قبل getUserMedia) عشان مايتخانقوش على المايك، زي ما بيحصل في مايك المساعد الذكي.
+        stopSpeaking(); // نوقف صوت المحاور الأول عشان مايتسمعش في المايك
+        interviewMicSession = true;
+        startInterviewLiveRecognition(inputEl);
         try {
             interviewStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1, sampleRate: 48000, sampleSize: 16 } });
         } catch (e) {
             isInterviewMicStarting = false;
+            interviewMicSession = false;
+            stopInterviewLiveRecognition();
             showToast("محتاج إذن الوصول للمايك عشان التسجيل يشتغل.", 'error'); return;
         }
         stopSpeaking();
@@ -2286,7 +2372,12 @@ window.__H = {
             interviewStream.getTracks().forEach(t => t.stop());
             const blob = new Blob(interviewAudioChunks, { type: interviewMediaRecorder.mimeType || 'audio/webm' });
             stopMic();
-            if (blob.size < 800) { showToast("معلش، مسجّلش صوت كفاية. جرب تاني.", 'error'); return; }
+            // لو الكلام ظهر لحظيًا في الخانة بس التفريغ الدقيق فشل، منمسحش اللي اتكتب ونسيب المستخدم يراجعه ويبعته.
+            const keepLiveText = (msg) => {
+                if (interviewHadLiveText && inputEl.value.trim()) { showToast("كلامك اتكتب في الخانة، راجعه واضغط إرسال.", 'success'); return true; }
+                showToast(msg, 'error'); return false;
+            };
+            if (blob.size < 800) { keepLiveText("معلش، مسجّلش صوت كفاية. جرب تاني."); return; }
             try {
                 const t = await transcribeAudioBlob(blob, 'interview-answer.webm', false, 'interview');
                 if (t && t.trim()) {
@@ -2294,11 +2385,11 @@ window.__H = {
                     inputEl.value = t;
                     sendUserAnswer();
                 } else {
-                    showToast("معلش، ما اتسمعش كلام واضح. جرب تاني.", 'error');
+                    keepLiveText("معلش، ما اتسمعش كلام واضح. جرب تاني.");
                 }
             } catch (e) {
                 console.warn('Interview mic transcription failed:', e);
-                showToast("تعذر فهم الصوت، جرب تاني أو اكتب إجابتك.", 'error');
+                keepLiveText("تعذر فهم الصوت، جرب تاني أو اكتب إجابتك.");
             }
         };
         interviewMediaRecorder.start();
@@ -2310,6 +2401,8 @@ window.__H = {
     }
     function stopMic() {
         isRecording = false;
+        interviewMicSession = false;
+        stopInterviewLiveRecognition();
         const micBtn = document.getElementById('mic-btn');
         micBtn.classList.remove('bg-red-500/20', 'text-red-400', 'recording-pulse');
         micBtn.setAttribute('aria-label', 'تحدث بصوتك');
@@ -2632,7 +2725,7 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
 2. وجه سؤالاً واحداً مختصراً في كل مرة (سطرين كحد أقصى).
 3. ابدأ فوراً بالتحية وسؤاله عن نفسه بخبرته.
 4. أسلوب الكلام (أهم قاعدة هنا، لازم تتبعها في كل رد من غير ما تنسى): لو الشخصية المطلوبة (${selectedNationality}) مصرية أو مفيش تحديد للهجة تانية، اتكلم بعامية مصرية طبيعية وبسيطة زي أي حد بيتكلم عادي في مقابلة شغل حقيقية — ممنوع الفصحى الكلاسيكية أو الأسلوب الرسمي المصطنع (تجنب كلمات زي "إنّ، لذا، بالتالي، يجدر، ينبغي" واستخدم بدلها "علشان، يبقى، لازم، كده"). حافظ على احترافيتك كمحاور، بس بصوت إنسان طبيعي مش بوت بيقرا نشرة أخبار. لو الشخصية مطلوبة بلهجة أو لغة تانية، اتبعها بنفس المنطق: كلام طبيعي منطوق، مش مكتوب رسمي. مثال: رد كويس على "أهلاً بيك، مبسوط إنك جيت" — أما جملة زي "قول لي إيه أحدث عندك؟" فمرفوضة تماماً لأنها مش جملة حد بيقولها فعلاً، فلو مش متأكد من صياغة معينة استخدم جملة أبسط وأقصر بدل ما تخترع تعبير غريب.
-5. لو ردك بالعربي، اكتبه بعامية مصرية طبيعية عادية من غير أي علامات تشكيل خالص (متحطش فتحة ولا ضمة ولا كسرة ولا سكون ولا شدة على أي حرف). الصوت المصري اللي بيقرا كلامك (Edge Neural) مدرّب أصلاً على كلام مصري طبيعي وبينطقه صح لوحده من غير تشكيل، والتشكيل اليدوي بيلخبطه وبيخليه ينطق غلط وبطيء وغير طبيعي. لو ردك بالإنجليزي، اكتبه بإنجليزية واضحة وسليمة النطق.`;
+5. لو ردك بالعربي، اكتبه بعامية مصرية طبيعية ومشكّل تشكيل كامل: حط علامات التشكيل (الفتحة والضمة والكسرة والسكون والشدة والتنوين) على كل حرف في كل كلمة عربية في ردك، بالظبط زي ما المصريين بيلفظوها في الكلام العادي (مش زي نطق الفصحى). ده ضروري لأن ردك بيتحوّل لصوت، والصوت بيقرا الحروف زي ما هي مكتوبة، فأي كلمة من غير تشكيل ممكن تتنطق غلط (مثلاً «لورا» من غير تشكيل بتتنطق «لُورا» بدل «لِوَرَا»). أمثلة على الشكل المطلوب: إِزَّاي، دِلْوَقْتِي، لِوَرَا، قُدَّام، عَلَشَان، كِدَه، مِش، لِسَّه، أَوِي. التشكيل بيتشال تلقائي من على الشاشة فالمتقدم مش هيشوفه، فمتتكلمش عنه خالص. متشكّلش الكلمات الإنجليزية، وحافظ على علامات الترقيم عادي. لو ردك بالإنجليزي، اكتبه بإنجليزية واضحة وسليمة النطق.`;
 
         chatHistory = [{ role: "system", content: systemPrompt }];
         appendChatMessage("ai", "جاري الاتصال بالمحاور...");
@@ -2780,7 +2873,7 @@ ${currentUiLang === 'ar' ? `Talking style (the single most important rule in thi
 
 Concrete example so you don't invent unnatural phrases: if the user says "ازيك، عامل ايه؟", a GOOD reply is something like "أهلاً بيك! تمام الحمد لله، وانت عامل إيه؟ محتاج مساعدة في إيه النهاردة؟" — short, sounds like a real person, and ends by offering real help. A BAD reply is something like "أهلا يا صاحب، أنا بخير وإنت إزاي؟ يلا قول لي إيه أحدث عندك؟" — "قول لي إيه أحدث عندك" is not a sentence a real Egyptian says; it reads like a broken translation. Never produce sentences like that. If you're not sure a phrase is something a real person actually says out loud, don't use it — pick a simpler, shorter, more common phrase instead.` : `Use a polished, warm, direct, and concise style (short paragraphs, no markdown symbols).`}
 
-Pronunciation note: your reply text is also converted to speech using a natural neural voice trained on real spoken language, so do NOT add any Arabic diacritics/tashkeel (no fatha, damma, kasra, sukun, shadda) anywhere in your reply, even though it becomes speech. Write plain, natural text exactly as it would normally be written — the voice already pronounces it correctly and naturally on its own. Manually adding diacritics actually confuses the voice, makes it mispronounce words, and makes it sound slow, stilted, and less natural — the opposite of what you want. For other languages, just use correct standard spelling.
+${currentUiLang === 'ar' && localStorage.getItem('yusr_assistant_voice') !== 'off' ? `Pronunciation rule (very important): your reply is also read aloud by a text-to-speech voice that reads the letters exactly as written, so write every Arabic word in your reply fully vocalized with tashkeel (fatha, damma, kasra, sukun, shadda, tanween), matching how Egyptians actually pronounce the word in everyday speech (not Modern Standard Arabic pronunciation). Without tashkeel, words get mispronounced — for example "لورا" is read as "لُورا" instead of "لِوَرَا" (which means "behind/backwards"). Examples of the required form: إِزَّاي، دِلْوَقْتِي، لِوَرَا، قُدَّام، عَلَشَان، كِدَه، مِش، لِسَّه، أَوِي. Do not add tashkeel to English words, keep normal punctuation, and never mention this rule — the tashkeel is automatically hidden from the user's screen, so they only see plain text.` : `Pronunciation note: your reply text may also be converted to speech, so use correct standard spelling and normal punctuation.`}
 
 Fixed important rule: if anyone asks who built you, who made you, what technology or model you run on, or any question about your technical identity — answer only that you were built and designed by "Yusr Pro company", without mentioning the name of any other AI company, model, or technical provider at all, even if asked insistently.`;
     }
@@ -2959,7 +3052,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
     // موجودة بنرجع تلقائيًا لنفس أسلوب "سجّل ثم اتفرّغ" المستخدم في أداة تفريغ الصوت.
     let isAssistantMicOn = false, isAssistantMicStarting = false, assistantMicStopping = false;
     let assistantMediaRecorder = null, assistantMicChunks = [], assistantMicStream = null;
-    let assistantSpeechRecognition = null, assistantMicBaseValue = '', assistantLiveSupportWarned = false;
+    let assistantSpeechRecognition = null, assistantMicBaseValue = '', assistantLiveBase = '', assistantLiveSupportWarned = false;
     const ASSISTANT_SPEECH_LANG = { ar: 'ar-EG', en: 'en-US', fr: 'fr-FR', es: 'es-ES', tr: 'tr-TR', de: 'de-DE', hi: 'hi-IN', ur: 'ur-PK', fa: 'fa-IR' };
     function getAssistantMicButton() { return document.getElementById('assistant-mic-btn'); }
     function setAssistantMicRecordingUI(on) {
@@ -2979,6 +3072,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         }
         const input = document.getElementById('assistant-chat-input');
         assistantMicBaseValue = (input.value || '').trim();
+        assistantLiveBase = assistantMicBaseValue; // أساس العرض الحي بس (بيتحدّث لو الـ recognition اتعاد تشغيله)، أما assistantMicBaseValue فبيفضل للنص النهائي
         assistantMicStopping = false;
         assistantLiveSupportWarned = false;
 
@@ -2989,13 +3083,13 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (SpeechRec) {
             assistantSpeechRecognition = new SpeechRec();
-            assistantSpeechRecognition.lang = ASSISTANT_SPEECH_LANG[currentAppLang] || 'ar-EG';
+            assistantSpeechRecognition.lang = currentAppLang || 'ar-EG'; // currentAppLang أصلاً بصيغة ar-EG / en-US...
             assistantSpeechRecognition.continuous = true;
             assistantSpeechRecognition.interimResults = true;
             assistantSpeechRecognition.onresult = (event) => {
                 let liveText = '';
                 for (let i = 0; i < event.results.length; i++) liveText += event.results[i][0].transcript;
-                input.value = (assistantMicBaseValue ? assistantMicBaseValue + ' ' : '') + liveText;
+                input.value = (assistantLiveBase ? assistantLiveBase + ' ' : '') + liveText;
                 autoResizeAssistantInput();
             };
             assistantSpeechRecognition.onerror = (event) => {
@@ -3007,9 +3101,14 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
             };
             // كروم أحياناً بيوقف الـ recognition تلقائي بعد سكتة قصيرة حتى مع
             // continuous=true، فبنعيد تشغيله تلقائي طول ما المايك لسه شغال.
+            // (isAssistantMicStarting بتتحسب كمان: الـ recognition ممكن يقفل وإحنا لسه بنطلب المايك للتسجيل)
             assistantSpeechRecognition.onend = () => {
-                if (isAssistantMicOn && !assistantMicStopping) {
-                    try { assistantSpeechRecognition.start(); } catch (e) { console.warn('Could not restart live recognition:', e); }
+                if ((isAssistantMicOn || isAssistantMicStarting) && !assistantMicStopping) {
+                    assistantLiveBase = (input.value || '').trim(); // نحتفظ باللي اتكتب لحد دلوقتي قبل ما النتايج تتصفّر
+                    setTimeout(() => {
+                        if (!assistantSpeechRecognition || assistantMicStopping || !(isAssistantMicOn || isAssistantMicStarting)) return;
+                        try { assistantSpeechRecognition.start(); } catch (e) { console.warn('Could not restart live recognition:', e); }
+                    }, 200);
                 }
             };
             try { assistantSpeechRecognition.start(); } catch (e) { console.warn('Could not start live recognition:', e); assistantSpeechRecognition = null; }
@@ -3037,8 +3136,10 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
             if (blob.size < 800) return;
             try {
                 const text = await transcribeAudioBlob(blob, 'assistant-mic.webm', false, 'assistant');
-                input.value = (assistantMicBaseValue ? assistantMicBaseValue + ' ' : '') + text;
-                autoResizeAssistantInput();
+                if (text && text.trim()) {
+                    input.value = (assistantMicBaseValue ? assistantMicBaseValue + ' ' : '') + text;
+                    autoResizeAssistantInput();
+                } // لو التفريغ رجع فاضي بنسيب الكلام اللي ظهر لحظيًا زي ما هو
             } catch (e) {
                 console.warn('Assistant mic transcription failed:', e);
                 if (!input.value.trim()) showToast("تعذر تفريغ التسجيل. جرب تاني.", 'error');
@@ -4086,7 +4187,7 @@ ${firstPass}
                 ? `<div class="mt-2.5 pt-2.5 border-t border-[var(--border)]">
                         <p class="text-[10.5px] font-bold text-slate-400 mb-1.5"><i class="fa-solid fa-comments"></i> نص المحادثة كاملاً</p>
                         <div class="space-y-1.5 max-h-[220px] overflow-y-auto pr-1">
-                            ${e.transcript.map(m => `<p class="text-[11px] leading-relaxed"><span class="font-bold ${m.role === 'assistant' ? 'text-[var(--accent-strong)]' : 'text-slate-300'}">${m.role === 'assistant' ? escapeHtml(e.interviewerName || 'المحاور') : 'المتقدم'}:</span> ${escapeHtml(m.content)}</p>`).join('')}
+                            ${e.transcript.map(m => `<p class="text-[11px] leading-relaxed"><span class="font-bold ${m.role === 'assistant' ? 'text-[var(--accent-strong)]' : 'text-slate-300'}">${m.role === 'assistant' ? escapeHtml(e.interviewerName || 'المحاور') : 'المتقدم'}:</span> ${escapeHtml(stripArabicDiacritics(m.content))}</p>`).join('')}
                         </div>
                    </div>`
                 : '';
