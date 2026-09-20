@@ -523,7 +523,11 @@ async function handleGroqChat(request, env, corsHeaders) {
       attemptLog.push({ name: provider.name, skipped: true, hasKey: !!provider.apiKey });
       continue; // مش متظبط، اتخطاه
     }
-    const attempt = await tryChatProvider(provider.baseUrl, provider.apiKey, provider.model, cleanMessages);
+    // طلبات الصور: موديل Qwen على Groq بيدخل في تكرار لا نهائي (ههههه...) مع temperature واطية، فبنستخدم
+    // القيم اللي Groq نفسه بيوصي بيها في الدوكيومنتيشن بتاع الرؤية (temperature=1, top_p=1)، وبنحط سقف لطول الرد.
+    const sampling = !hasImage ? undefined
+      : (provider.name === "groq" ? { temperature: 1, topP: 1, maxTokens: 4096 } : { maxTokens: 4096 });
+    const attempt = await tryChatProvider(provider.baseUrl, provider.apiKey, provider.model, cleanMessages, sampling);
     if (attempt.ok) {
       if (provider.name !== "groq") {
         console.warn(`تم الرد عن طريق مزوّد بديل (${provider.name}) بعد فشل اللي قبله`);
@@ -538,7 +542,18 @@ async function handleGroqChat(request, env, corsHeaders) {
   return json({ error: "groq_error", detail: lastReason, attempted: attemptLog }, 502, corsHeaders);
 }
 
-async function tryChatProvider(baseUrl, apiKey, model, cleanMessages) {
+// بيكشف الردود "العالقة" اللي معظمها نفس الحرف/المقطع بيتكرر (زي ههههه... أو ااااا...) عشان نعتبرها فشل ونجرّب المزوّد اللي بعده.
+function looksDegenerate(text) {
+  const t = String(text || "").replace(/\s+/g, "");
+  if (t.length < 40) return false;
+  let repeated = 0;
+  const re = /(.{1,6}?)\1{14,}/gu;
+  let m;
+  while ((m = re.exec(t)) !== null) repeated += m[0].length;
+  return repeated / t.length > 0.5;
+}
+
+async function tryChatProvider(baseUrl, apiKey, model, cleanMessages, sampling) {
   if (!apiKey) return { ok: false, reason: "no_api_key" };
   let r;
   try {
@@ -548,7 +563,13 @@ async function tryChatProvider(baseUrl, apiKey, model, cleanMessages) {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ model, messages: cleanMessages, temperature: 0.4 })
+      body: JSON.stringify({
+        model,
+        messages: cleanMessages,
+        temperature: (sampling && sampling.temperature !== undefined) ? sampling.temperature : 0.4,
+        ...(sampling && sampling.topP !== undefined ? { top_p: sampling.topP } : {}),
+        ...(sampling && sampling.maxTokens ? { max_tokens: sampling.maxTokens } : {})
+      })
     });
   } catch (e) {
     return { ok: false, reason: "network_error: " + (e && e.message) };
@@ -568,6 +589,9 @@ async function tryChatProvider(baseUrl, apiKey, model, cleanMessages) {
     // المحادثة وبعدين يفشّل أي رسالة جايه بعده (invalid_content). امنعه من الأول
     // وجرّب المزوّد اللي بعده بدل ما نرجّع رد فاضي للمستخدم.
     return { ok: false, reason: "empty_content" };
+  }
+  if (looksDegenerate(cleanedContent)) {
+    return { ok: false, reason: "degenerate_output" };
   }
   return { ok: true, content: cleanedContent };
 }
