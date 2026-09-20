@@ -2253,91 +2253,179 @@ window.__H = {
         const fillers = (t.match(/(يعني|امم+|إمم+|اه+|آه+|خلاص بس|يعني كده)/g) || []).length;
         speakingStats.push({ t, dur: Math.round(dur), wc, wpm, fillers });
     }
-    // عرض حي للكلام جوه خانة الكتابة وأنت بتتكلم (Web Speech API المدمجة في المتصفح).
-    // ده معاينة لحظية بس؛ النص النهائي اللي بيتبعت للمحاور لسه هو تفريغ Whisper الأدق زي ما كان.
-    // لو Whisper فشل أو رجّع فاضي، الكلام اللي ظهر لحظيًا بيفضل في الخانة عشان مايضيعش.
-    let interviewSpeechRec = null, interviewMicSession = false, interviewLiveBase = '';
-    let interviewHadLiveText = false, interviewLiveWarned = false, interviewLiveDisabled = false, interviewLiveRapidEnds = 0;
-    function warnInterviewLiveOnce(msg) {
-        if (interviewLiveWarned) return;
-        interviewLiveWarned = true;
-        showToast(msg, 'error');
+    // ===== إملاء حي (Live Dictation) — مشترك بين مايك المقابلة ومايك المساعد الذكي =====
+    // بيستخدم Web Speech API المدمجة في المتصفح لوحدها (من غير تسجيل صوت موازي، لأن الاتنين مع بعض
+    // بيتخانقوا على المايك في كتير من الموبايلات) عشان الكلام يتكتب في خانة الكتابة كلمة بكلمة أثناء
+    // ما المستخدم بيتكلم، من غير ما يدوس على المايك تاني.
+    //  - طول ما المستخدم بيتكلم: بيفضل يكتب، وبيعيد تشغيل نفسه لو المتصفح قفل الجلسة (كروم بيقفلها كل شوية).
+    //  - لو المستخدم سكت 8 ثواني (مفيش أي كلام جديد): بيقفل لوحده.
+    const LIVE_DICTATION_SILENCE_MS = 8000;
+    let liveUnsupportedWarned = false;
+    function isLiveDictationSupported() {
+        return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
     }
-    function startInterviewLiveRecognition(inputEl) {
-        interviewHadLiveText = false; interviewLiveDisabled = false; interviewLiveWarned = false; interviewLiveRapidEnds = 0;
-        interviewLiveBase = (inputEl.value || '').trim();
+    function warnLiveUnsupportedOnce() {
+        if (liveUnsupportedWarned) return;
+        liveUnsupportedWarned = true;
+        showToast("المتصفح ده مش بيدعم الكتابة اللحظية، هيظهر النص بعد ما توقف التسجيل. (كروم وإيدج بيدعموها.)", 'error');
+    }
+    function liveDictationFailMessage(kind) {
+        if (kind === 'not-allowed' || kind === 'service-not-allowed') return "المتصفح مانع الميكروفون أو التعرف الصوتي. اسمح بالمايك من إعدادات الموقع وجرب تاني.";
+        if (kind === 'network') return "الكتابة الصوتية محتاجة نت ثابت وحصلت مشكلة في الاتصال. جرب تاني.";
+        if (kind === 'audio-capture') return "مش قادر أستخدم المايك دلوقتي. اتأكد إن مفيش تطبيق تاني شاغله وجرب تاني.";
+        return "الكتابة الصوتية مش متاحة دلوقتي، جرب تاني أو اكتب بإيدك.";
+    }
+    function createLiveDictation(inputEl, callbacks) {
         const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRec) {
-            warnInterviewLiveOnce("المتصفح ده مش بيدعم عرض الكلام لحظة بلحظة، هيظهر النص بعد ما توقف التسجيل.");
-            return;
-        }
-        const rec = new SpeechRec();
-        let startedAt = Date.now();
-        rec.lang = currentAppLang || 'ar-EG';
-        rec.continuous = true;
-        rec.interimResults = true;
-        rec.onresult = (event) => {
-            if (interviewSpeechRec !== rec) return;
-            interviewLiveRapidEnds = 0;
-            let live = '';
-            for (let i = 0; i < event.results.length; i++) live += event.results[i][0].transcript;
-            live = live.trim();
-            if (!live) return;
-            interviewHadLiveText = true;
-            inputEl.value = (interviewLiveBase ? interviewLiveBase + ' ' : '') + live;
-        };
-        rec.onerror = (event) => {
-            const err = event && event.error;
-            console.warn('Interview live speech recognition error:', err);
-            if (err === 'no-speech' || err === 'aborted') return;
-            if (err === 'not-allowed' || err === 'service-not-allowed') {
-                interviewLiveDisabled = true;
-                warnInterviewLiveOnce("المتصفح مانع العرض الحي للكلام (إذن المايك/خدمة التعرف الصوتي)، هيظهر النص بعد ما توقف التسجيل.");
-            } else if (err === 'network') {
-                interviewLiveDisabled = true;
-                warnInterviewLiveOnce("العرض الحي محتاج نت ثابت وحصلت مشكلة في الاتصال، هيظهر النص بعد ما توقف التسجيل.");
-            } else if (err === 'audio-capture') {
-                warnInterviewLiveOnce("العرض الحي مش قادر يستخدم المايك دلوقتي، هيظهر النص بعد ما توقف التسجيل.");
-            } else {
-                warnInterviewLiveOnce("العرض الحي للكلام مش متاح دلوقتي، هيظهر النص بعد ما توقف التسجيل.");
+        const cb = callbacks || {};
+        let active = false, stopping = false, finished = false, gotAny = false, stopReason = 'manual';
+        let rec = null, base = '', silenceTimer = null, stopTimer = null, startedAt = 0, rapidEnds = 0;
+
+        // بيبني النص من كل نتايج الـ recognition. بعض نسخ كروم على أندرويد بتكرر النص التراكمي
+        // في كل نتيجة، فلو النتيجة الجديدة بتبدأ بالنتيجة اللي قبلها بناخد الأطول بس.
+        function liveTextFrom(event) {
+            const parts = [];
+            for (let i = 0; i < event.results.length; i++) {
+                const t = (event.results[i][0].transcript || '').trim();
+                if (!t) continue;
+                if (parts.length && t.startsWith(parts[parts.length - 1])) parts[parts.length - 1] = t;
+                else parts.push(t);
             }
-        };
-        // كروم بيوقف الـ recognition تلقائي بعد سكتة قصيرة حتى مع continuous=true، فبنعيد تشغيله
-        // طول ما التسجيل شغال، وبنحتفظ بالكلام اللي اتكتب قبل إعادة التشغيل.
-        rec.onend = () => {
-            if (interviewSpeechRec !== rec || !interviewMicSession || interviewLiveDisabled) return;
-            interviewLiveRapidEnds = (Date.now() - startedAt < 1500) ? interviewLiveRapidEnds + 1 : 0;
-            if (interviewLiveRapidEnds > 5) {
-                warnInterviewLiveOnce("العرض الحي للكلام بيقفل بسرعة على جهازك، هيظهر النص بعد ما توقف التسجيل.");
-                return;
+            return parts.join(' ');
+        }
+        function clearTimers() { clearTimeout(silenceTimer); clearTimeout(stopTimer); }
+        function detach() {
+            const r = rec;
+            rec = null;
+            if (r) {
+                r.onresult = null; r.onerror = null; r.onend = null; r.onspeechstart = null;
+                try { r.abort(); } catch (e) {}
             }
-            interviewLiveBase = (inputEl.value || '').trim();
-            setTimeout(() => {
-                if (interviewSpeechRec !== rec || !interviewMicSession) return;
-                try { startedAt = Date.now(); rec.start(); } catch (e) { console.warn('Could not restart interview live recognition:', e); }
-            }, 200);
+        }
+        function armSilence() {
+            clearTimeout(silenceTimer);
+            silenceTimer = setTimeout(() => api.stop('silence'), LIVE_DICTATION_SILENCE_MS);
+        }
+        function finish(reason) {
+            if (finished) return;
+            finished = true; active = false; clearTimers(); detach();
+            if (cb.onEnd) cb.onEnd(reason, (inputEl.value || '').trim(), gotAny);
+        }
+        function fail(kind) {
+            if (finished) return;
+            finished = true; active = false; stopping = false; clearTimers(); detach();
+            if (cb.onFail) cb.onFail(kind, gotAny);
+        }
+        function begin() {
+            if (!active || stopping || finished) return;
+            const r = new SpeechRec();
+            rec = r;
+            r.lang = currentAppLang || 'ar-EG';
+            r.continuous = true;
+            r.interimResults = true;
+            startedAt = Date.now();
+            r.onresult = (event) => {
+                if (rec !== r) return;
+                const live = liveTextFrom(event);
+                if (!live) return;
+                gotAny = true; rapidEnds = 0;
+                inputEl.value = (base ? base + ' ' : '') + live;
+                if (cb.onText) cb.onText(inputEl.value);
+                if (!stopping) armSilence();
+            };
+            r.onspeechstart = () => { if (rec === r && !stopping) armSilence(); };
+            r.onerror = (event) => {
+                if (rec !== r) return;
+                const err = event && event.error;
+                console.warn('Live dictation error:', err);
+                if (err === 'not-allowed' || err === 'service-not-allowed' || err === 'network' || err === 'audio-capture' || err === 'language-not-supported') fail(err);
+            };
+            r.onend = () => {
+                if (rec !== r) return;
+                if (stopping) { finish(stopReason); return; }
+                if (!active) return;
+                rapidEnds = (Date.now() - startedAt < 1000) ? rapidEnds + 1 : 0;
+                if (rapidEnds > 5) { fail('unstable'); return; }
+                base = (inputEl.value || '').trim(); // نحتفظ باللي اتكتب لحد دلوقتي قبل ما النتايج تتصفّر
+                setTimeout(begin, 150);
+            };
+            try { r.start(); } catch (e) { console.warn('Live dictation start failed:', e); fail('start'); }
+        }
+        const api = {
+            start() {
+                finished = false; stopping = false; active = true; gotAny = false; rapidEnds = 0;
+                base = (inputEl.value || '').trim();
+                armSilence(); // لو محدش اتكلم خالص لمدة 8 ثواني بيقفل
+                begin();
+            },
+            // إيقاف طبيعي: بنستنى آخر نتيجة توصل (لحد ثانية ونص) وبعدين بننادي onEnd بالنص النهائي.
+            stop(reason) {
+                if (finished || stopping) return;
+                stopping = true; stopReason = reason || 'manual';
+                clearTimeout(silenceTimer);
+                if (!rec) { finish(stopReason); return; }
+                try { rec.stop(); } catch (e) { finish(stopReason); return; }
+                stopTimer = setTimeout(() => finish(stopReason), 1500);
+            },
+            // إيقاف فوري من غير callbacks ومن غير أي نتايج متأخرة (بنستخدمه لما المستخدم يبعت الرسالة والمايك شغال).
+            abort() {
+                if (finished) return;
+                finished = true; active = false; stopping = false; clearTimers(); detach();
+            },
+            isActive() { return active && !finished; }
         };
-        interviewSpeechRec = rec;
-        try { rec.start(); } catch (e) {
-            console.warn('Could not start interview live recognition:', e);
-            interviewSpeechRec = null;
-            warnInterviewLiveOnce("العرض الحي للكلام مش متاح دلوقتي، هيظهر النص بعد ما توقف التسجيل.");
-        }
-    }
-    function stopInterviewLiveRecognition() {
-        const rec = interviewSpeechRec;
-        interviewSpeechRec = null;
-        if (rec) {
-            try { rec.onend = null; rec.onresult = null; rec.onerror = null; rec.abort(); } catch (e) { try { rec.stop(); } catch (e2) {} }
-        }
+        return api;
     }
 
+    // مراقب سكوت للتسجيل العادي (الاحتياطي لما المتصفح مايدعمش الإملاء الحي): بينادي onSilence لو مفيش صوت ms مللي ثانية.
+    function watchStreamSilence(stream, ms, onSilence) {
+        try {
+            const Ctx = window.AudioContext || window.webkitAudioContext;
+            if (!Ctx) return () => {};
+            const ctx = new Ctx();
+            const src = ctx.createMediaStreamSource(stream);
+            const analyser = ctx.createAnalyser();
+            analyser.fftSize = 512;
+            src.connect(analyser);
+            const buf = new Uint8Array(analyser.fftSize);
+            let lastVoice = Date.now();
+            const id = setInterval(() => {
+                analyser.getByteTimeDomainData(buf);
+                let peak = 0;
+                for (let i = 0; i < buf.length; i++) peak = Math.max(peak, Math.abs(buf[i] - 128));
+                if (peak > 8) lastVoice = Date.now();
+                else if (Date.now() - lastVoice > ms) { clearInterval(id); onSilence(); }
+            }, 200);
+            return () => { clearInterval(id); try { ctx.close(); } catch (e) {} };
+        } catch (e) { return () => {}; }
+    }
+
+    let interviewLive = null, interviewSilenceStop = null;
+    function startInterviewLiveMic(micBtn, inputEl) {
+        stopSpeaking(); // نوقف صوت المحاور الأول عشان مايتسمعش في المايك
+        isRecording = true; recordStartTime = Date.now();
+        micBtn.classList.add('bg-red-500/20', 'text-red-400', 'recording-pulse');
+        micBtn.setAttribute('aria-label', 'إيقاف التسجيل');
+        inputEl.placeholder = "اتكلم دلوقتي... كلامك بيتكتب لوحده، وهيقفل لوحده لو سكت 8 ثواني";
+        interviewLive = createLiveDictation(inputEl, {
+            onEnd: (reason, text, gotAny) => {
+                interviewLive = null; stopMic();
+                if (text) { recordSpeakingStats(text); sendUserAnswer(); }
+                else showToast("معلش، ما اتسمعش كلام واضح. جرب تاني.", 'error');
+            },
+            onFail: (kind, gotAny) => {
+                interviewLive = null; stopMic();
+                showToast(liveDictationFailMessage(kind), 'error'); // اللي اتكتب قبل الفشل بيفضل في الخانة
+            }
+        });
+        interviewLive.start();
+    }
     async function toggleMic() {
         const micBtn = document.getElementById('mic-btn');
         const inputEl = document.getElementById('user-chat-input');
+        if (interviewLive) { interviewLive.stop('manual'); return; }
         if (isRecording) {
             isRecording = false;
-            interviewMicSession = false;
             micBtn.classList.remove('bg-red-500/20', 'text-red-400', 'recording-pulse');
             micBtn.setAttribute('aria-label', 'جاري تحويل كلامك لنص');
             inputEl.placeholder = "بيحوّل كلامك لنص دلوقتي...";
@@ -2345,20 +2433,17 @@ window.__H = {
             return;
         }
         if (isInterviewMicStarting) return;
+        if (isLiveDictationSupported()) { startInterviewLiveMic(micBtn, inputEl); return; }
+        warnLiveUnsupportedOnce();
+        // ---- الاحتياطي: تسجيل ثم تفريغ Whisper (للمتصفحات اللي مابتدعمش الإملاء الحي) ----
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             showToast("المتصفح لا يدعم التسجيل الصوتي المباشر.", 'error'); return;
         }
         isInterviewMicStarting = true;
-        // بنبدأ العرض الحي الأول (قبل getUserMedia) عشان مايتخانقوش على المايك، زي ما بيحصل في مايك المساعد الذكي.
-        stopSpeaking(); // نوقف صوت المحاور الأول عشان مايتسمعش في المايك
-        interviewMicSession = true;
-        startInterviewLiveRecognition(inputEl);
         try {
             interviewStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1, sampleRate: 48000, sampleSize: 16 } });
         } catch (e) {
             isInterviewMicStarting = false;
-            interviewMicSession = false;
-            stopInterviewLiveRecognition();
             showToast("محتاج إذن الوصول للمايك عشان التسجيل يشتغل.", 'error'); return;
         }
         stopSpeaking();
@@ -2369,15 +2454,11 @@ window.__H = {
         interviewMediaRecorder = mimeType ? new MediaRecorder(interviewStream, { mimeType, audioBitsPerSecond: 128000 }) : new MediaRecorder(interviewStream);
         interviewMediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) interviewAudioChunks.push(e.data); };
         interviewMediaRecorder.onstop = async () => {
+            if (interviewSilenceStop) { interviewSilenceStop(); interviewSilenceStop = null; }
             interviewStream.getTracks().forEach(t => t.stop());
             const blob = new Blob(interviewAudioChunks, { type: interviewMediaRecorder.mimeType || 'audio/webm' });
             stopMic();
-            // لو الكلام ظهر لحظيًا في الخانة بس التفريغ الدقيق فشل، منمسحش اللي اتكتب ونسيب المستخدم يراجعه ويبعته.
-            const keepLiveText = (msg) => {
-                if (interviewHadLiveText && inputEl.value.trim()) { showToast("كلامك اتكتب في الخانة، راجعه واضغط إرسال.", 'success'); return true; }
-                showToast(msg, 'error'); return false;
-            };
-            if (blob.size < 800) { keepLiveText("معلش، مسجّلش صوت كفاية. جرب تاني."); return; }
+            if (blob.size < 800) { showToast("معلش، مسجّلش صوت كفاية. جرب تاني.", 'error'); return; }
             try {
                 const t = await transcribeAudioBlob(blob, 'interview-answer.webm', false, 'interview');
                 if (t && t.trim()) {
@@ -2385,11 +2466,11 @@ window.__H = {
                     inputEl.value = t;
                     sendUserAnswer();
                 } else {
-                    keepLiveText("معلش، ما اتسمعش كلام واضح. جرب تاني.");
+                    showToast("معلش، ما اتسمعش كلام واضح. جرب تاني.", 'error');
                 }
             } catch (e) {
                 console.warn('Interview mic transcription failed:', e);
-                keepLiveText("تعذر فهم الصوت، جرب تاني أو اكتب إجابتك.");
+                showToast("تعذر فهم الصوت، جرب تاني أو اكتب إجابتك.", 'error');
             }
         };
         interviewMediaRecorder.start();
@@ -2397,12 +2478,11 @@ window.__H = {
         isInterviewMicStarting = false;
         micBtn.classList.add('bg-red-500/20', 'text-red-400', 'recording-pulse');
         micBtn.setAttribute('aria-label', 'إيقاف التسجيل');
-        inputEl.placeholder = "جاري الاستماع إليك... دوس تاني عشان توقف";
+        inputEl.placeholder = "جاري الاستماع إليك... هيقفل لوحده لو سكت 8 ثواني (أو دوس تاني)";
+        interviewSilenceStop = watchStreamSilence(interviewStream, LIVE_DICTATION_SILENCE_MS, () => { if (isRecording) toggleMic(); });
     }
     function stopMic() {
         isRecording = false;
-        interviewMicSession = false;
-        stopInterviewLiveRecognition();
         const micBtn = document.getElementById('mic-btn');
         micBtn.classList.remove('bg-red-500/20', 'text-red-400', 'recording-pulse');
         micBtn.setAttribute('aria-label', 'تحدث بصوتك');
@@ -2754,6 +2834,7 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
     }
 
     async function sendUserAnswer() {
+        if (interviewLive) { interviewLive.abort(); interviewLive = null; stopMic(); } // المستخدم بعت والمايك شغال: نقفل الإملاء فوراً
         const inputField = document.getElementById('user-chat-input');
         const userMsg = inputField.value.trim();
         if (!userMsg) return;
@@ -2996,6 +3077,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
 
     async function sendAssistantMessage() {
         const input = document.getElementById('assistant-chat-input');
+        if (assistantLive) { assistantLive.abort(); assistantLive = null; isAssistantMicOn = false; setAssistantMicRecordingUI(false); } // المستخدم بعت والمايك شغال: نقفل الإملاء فوراً
         const text = (input.value || '').trim();
         if ((!text && !assistantPendingImage) || assistantChatBusy) return;
         if (!checkDeviceTrial()) return;
@@ -3037,16 +3119,13 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         renderAssistantMessages();
     }
 
-    // مايك المساعد الذكي: هجين بين عرض حي (كلمة بكلمة أثناء الكلام) عن طريق
-    // Web Speech API المدمجة في المتصفح، وتسجيل صوتي كامل بالتوازي بيتفرّغ
-    // في الآخر بمحرك Whisper (نفس اللي بيستخدمه باقي الموقع) عشان يبقى النص
-    // النهائي اللي فعلاً بيتبعت للمساعد هو الأدق، مش الاقتراح الحي الأقل دقة.
-    // ملحوظة: Web Speech API مش متاحة في كل المتصفحات (زي Safari)، فلو مش
-    // موجودة بنرجع تلقائيًا لنفس أسلوب "سجّل ثم اتفرّغ" المستخدم في أداة تفريغ الصوت.
-    let isAssistantMicOn = false, isAssistantMicStarting = false, assistantMicStopping = false;
+    // مايك المساعد الذكي:
+    //  - لو المتصفح بيدعم Web Speech API: كتابة لحظية في الخانة أثناء الكلام، وبيقفل لوحده بعد 8 ثواني سكوت
+    //    (شوف createLiveDictation فوق). النص بيفضل في الخانة والمستخدم هو اللي يدوس إرسال.
+    //  - لو مش بيدعمها: تسجيل ثم تفريغ Whisper بعد الإيقاف (زي أداة تفريغ الصوت)، وبيقفل لوحده بعد 8 ثواني سكوت.
+    let isAssistantMicOn = false, isAssistantMicStarting = false;
     let assistantMediaRecorder = null, assistantMicChunks = [], assistantMicStream = null;
-    let assistantSpeechRecognition = null, assistantMicBaseValue = '', assistantLiveBase = '', assistantLiveSupportWarned = false;
-    const ASSISTANT_SPEECH_LANG = { ar: 'ar-EG', en: 'en-US', fr: 'fr-FR', es: 'es-ES', tr: 'tr-TR', de: 'de-DE', hi: 'hi-IN', ur: 'ur-PK', fa: 'fa-IR' };
+    let assistantLive = null, assistantSilenceStop = null, assistantMicBaseValue = '';
     function getAssistantMicButton() { return document.getElementById('assistant-mic-btn'); }
     function setAssistantMicRecordingUI(on) {
         const btn = getAssistantMicButton();
@@ -3055,9 +3134,32 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         btn.classList.toggle('text-red-400', on);
         btn.classList.toggle('recording-pulse', on);
     }
+    function startAssistantLiveMic() {
+        const input = document.getElementById('assistant-chat-input');
+        try { stopSpeaking(); } catch (e) {} // نوقف صوت البوت الأول عشان مايتسمعش في المايك
+        isAssistantMicOn = true;
+        setAssistantMicRecordingUI(true);
+        const reset = () => { assistantLive = null; isAssistantMicOn = false; setAssistantMicRecordingUI(false); autoResizeAssistantInput(); };
+        assistantLive = createLiveDictation(input, {
+            onText: () => autoResizeAssistantInput(),
+            onEnd: (reason, text, gotAny) => {
+                reset();
+                if (!gotAny) showToast("معلش، ما اتسمعش كلام واضح. جرب تاني.", 'error');
+            },
+            onFail: (kind) => {
+                reset();
+                showToast(liveDictationFailMessage(kind), 'error'); // اللي اتكتب قبل الفشل بيفضل في الخانة
+            }
+        });
+        assistantLive.start();
+    }
     async function toggleAssistantMic() {
+        if (assistantLive) { assistantLive.stop('manual'); return; }
         if (isAssistantMicOn) { stopAssistantMic(); return; }
         if (isAssistantMicStarting || assistantChatBusy) return;
+        if (isLiveDictationSupported()) { startAssistantLiveMic(); return; }
+        warnLiveUnsupportedOnce();
+        // ---- الاحتياطي: تسجيل ثم تفريغ Whisper ----
         isAssistantMicStarting = true;
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
             isAssistantMicStarting = false;
@@ -3065,58 +3167,12 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         }
         const input = document.getElementById('assistant-chat-input');
         assistantMicBaseValue = (input.value || '').trim();
-        assistantLiveBase = assistantMicBaseValue; // أساس العرض الحي بس (بيتحدّث لو الـ recognition اتعاد تشغيله)، أما assistantMicBaseValue فبيفضل للنص النهائي
-        assistantMicStopping = false;
-        assistantLiveSupportWarned = false;
-
-        // بنبدأ العرض الحي (Web Speech API) الأول وحده، قبل ما نطلب getUserMedia
-        // لتسجيل الصوت الخام. طلب المايك مرتين في نفس اللحظة (مرة من هنا ومرة من
-        // getUserMedia) هو السبب الشائع إن الـ Speech Recognition يفشل بصمت في
-        // بعض نسخ Chrome، فده بيدّيله أولوية ياخد المايك لوحده الأول.
-        const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (SpeechRec) {
-            assistantSpeechRecognition = new SpeechRec();
-            assistantSpeechRecognition.lang = currentAppLang || 'ar-EG'; // currentAppLang أصلاً بصيغة ar-EG / en-US...
-            assistantSpeechRecognition.continuous = true;
-            assistantSpeechRecognition.interimResults = true;
-            assistantSpeechRecognition.onresult = (event) => {
-                let liveText = '';
-                for (let i = 0; i < event.results.length; i++) liveText += event.results[i][0].transcript;
-                input.value = (assistantLiveBase ? assistantLiveBase + ' ' : '') + liveText;
-                autoResizeAssistantInput();
-            };
-            assistantSpeechRecognition.onerror = (event) => {
-                console.warn('Assistant live speech recognition error:', event && event.error);
-                if (!assistantLiveSupportWarned && event && event.error !== 'no-speech') {
-                    assistantLiveSupportWarned = true;
-                    showToast("العرض الحي للكلام مش متاح دلوقتي، هيظهر النص بعد ما توقف التسجيل.", 'error');
-                }
-            };
-            // كروم أحياناً بيوقف الـ recognition تلقائي بعد سكتة قصيرة حتى مع
-            // continuous=true، فبنعيد تشغيله تلقائي طول ما المايك لسه شغال.
-            // (isAssistantMicStarting بتتحسب كمان: الـ recognition ممكن يقفل وإحنا لسه بنطلب المايك للتسجيل)
-            assistantSpeechRecognition.onend = () => {
-                if ((isAssistantMicOn || isAssistantMicStarting) && !assistantMicStopping) {
-                    assistantLiveBase = (input.value || '').trim(); // نحتفظ باللي اتكتب لحد دلوقتي قبل ما النتايج تتصفّر
-                    setTimeout(() => {
-                        if (!assistantSpeechRecognition || assistantMicStopping || !(isAssistantMicOn || isAssistantMicStarting)) return;
-                        try { assistantSpeechRecognition.start(); } catch (e) { console.warn('Could not restart live recognition:', e); }
-                    }, 200);
-                }
-            };
-            try { assistantSpeechRecognition.start(); } catch (e) { console.warn('Could not start live recognition:', e); assistantSpeechRecognition = null; }
-        } else if (!assistantLiveSupportWarned) {
-            assistantLiveSupportWarned = true;
-            showToast("المتصفح ده مش بيدعم عرض الكلام لحظة بلحظة، هيظهر النص بعد ما توقف التسجيل.", 'error');
-        }
-
         try {
             assistantMicStream = await navigator.mediaDevices.getUserMedia({
                 audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1, sampleRate: 48000, sampleSize: 16 }
             });
         } catch (e) {
             isAssistantMicStarting = false;
-            if (assistantSpeechRecognition) { try { assistantSpeechRecognition.onend = null; assistantSpeechRecognition.stop(); } catch (e2) {} assistantSpeechRecognition = null; }
             showToast("محتاج إذن الوصول للمايك عشان التسجيل يشتغل.", 'error'); return;
         }
         assistantMicChunks = [];
@@ -3124,6 +3180,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         assistantMediaRecorder = mimeType ? new MediaRecorder(assistantMicStream, { mimeType, audioBitsPerSecond: 128000 }) : new MediaRecorder(assistantMicStream);
         assistantMediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) assistantMicChunks.push(e.data); };
         assistantMediaRecorder.onstop = async () => {
+            if (assistantSilenceStop) { assistantSilenceStop(); assistantSilenceStop = null; }
             assistantMicStream.getTracks().forEach(t => t.stop());
             const blob = new Blob(assistantMicChunks, { type: assistantMediaRecorder.mimeType || 'audio/webm' });
             if (blob.size < 800) return;
@@ -3132,7 +3189,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
                 if (text && text.trim()) {
                     input.value = (assistantMicBaseValue ? assistantMicBaseValue + ' ' : '') + text;
                     autoResizeAssistantInput();
-                } // لو التفريغ رجع فاضي بنسيب الكلام اللي ظهر لحظيًا زي ما هو
+                }
             } catch (e) {
                 console.warn('Assistant mic transcription failed:', e);
                 if (!input.value.trim()) showToast("تعذر تفريغ التسجيل. جرب تاني.", 'error');
@@ -3142,15 +3199,11 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         isAssistantMicOn = true;
         isAssistantMicStarting = false;
         setAssistantMicRecordingUI(true);
+        assistantSilenceStop = watchStreamSilence(assistantMicStream, LIVE_DICTATION_SILENCE_MS, () => { if (isAssistantMicOn) stopAssistantMic(); });
     }
     function stopAssistantMic() {
         isAssistantMicOn = false;
-        assistantMicStopping = true;
         setAssistantMicRecordingUI(false);
-        if (assistantSpeechRecognition) {
-            try { assistantSpeechRecognition.onend = null; assistantSpeechRecognition.stop(); } catch (e) {}
-            assistantSpeechRecognition = null;
-        }
         if (assistantMediaRecorder && assistantMediaRecorder.state !== 'inactive') assistantMediaRecorder.stop();
     }
     function autoResizeAssistantInput() {
