@@ -524,9 +524,9 @@ async function handleGroqChat(request, env, corsHeaders) {
       continue; // مش متظبط، اتخطاه
     }
     // طلبات الصور: موديل Qwen على Groq بيدخل في تكرار لا نهائي (ههههه...) مع temperature واطية، فبنستخدم
-    // القيم اللي Groq نفسه بيوصي بيها في الدوكيومنتيشن بتاع الرؤية (temperature=1, top_p=1)، وبنحط سقف لطول الرد.
+    // القيم اللي Groq نفسه بيوصي بيها في الدوكيومنتيشن بتاع الرؤية (temperature=1, top_p=1)، وبنحط سقف لطول الرد. (سقف Groq هنا 700 لأن الخطة الحالية على موديل الصور محدودة بـ 1000 توكن خرج في الدقيقة.)
     const sampling = !hasImage ? undefined
-      : (provider.name === "groq" ? { temperature: 1, topP: 1, maxTokens: 4096 } : { maxTokens: 4096 });
+      : (provider.name === "groq" ? { temperature: 1, topP: 1, maxTokens: 700 } : { maxTokens: 4096 });
     const attempt = await tryChatProvider(provider.baseUrl, provider.apiKey, provider.model, cleanMessages, sampling);
     if (attempt.ok) {
       if (provider.name !== "groq") {
@@ -537,9 +537,43 @@ async function handleGroqChat(request, env, corsHeaders) {
     lastReason = attempt.reason;
     attemptLog.push({ name: provider.name, skipped: false, reason: attempt.reason });
     console.warn(`مزوّد ${provider.name} فشل:`, attempt.reason);
+
+    // لو آخر رسالة من المستخدم نص عادي (سؤال متابعة بعد صورة قديمة في المحادثة) وموديل الصور على Groq فشل
+    // (غالباً حد التوكنز/دقيقة في الخطة)، بنعيد المحاولة على موديل النص بتاع Groq من غير الصور القديمة،
+    // بدل ما نروح لمزوّدين تانيين ممكن حسابهم واقف. لو الرسالة الحالية فيها صورة مش بنعمل كده عشان الرد مايبقاش تخمين.
+    if (provider.name === "groq" && hasImage && !lastUserMessageHasImage(cleanMessages)) {
+      const retry = await tryChatProvider(provider.baseUrl, provider.apiKey, GROQ_TEXT_MODEL, stripImagesFromMessages(cleanMessages));
+      if (retry.ok) {
+        return json({ content: retry.content, provider: "groq" }, 200, corsHeaders);
+      }
+      lastReason = retry.reason;
+      attemptLog.push({ name: "groq-text-retry", skipped: false, reason: retry.reason });
+      console.warn("مزوّد groq (موديل النص بدون صور) فشل:", retry.reason);
+    }
   }
 
   return json({ error: "groq_error", detail: lastReason, attempted: attemptLog }, 502, corsHeaders);
+}
+
+function lastUserMessageHasImage(msgs) {
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    if (msgs[i].role !== "user") continue;
+    const c = msgs[i].content;
+    return Array.isArray(c) && c.some(part => part && part.type === "image_url");
+  }
+  return false;
+}
+
+// بيحوّل الرسايل اللي فيها صور لنص عادي (بيشيل الصورة ويسيب سطر ينبّه الموديل إن فيه صورة كانت هنا).
+function stripImagesFromMessages(msgs) {
+  return msgs.map(m => {
+    if (!Array.isArray(m.content)) return m;
+    const text = m.content.filter(p => p && p.type === "text").map(p => p.text).join("\n");
+    return {
+      role: m.role,
+      content: (text ? text + "\n" : "") + "[المستخدم كان بعت صورة هنا في المحادثة، بس مش متاحة دلوقتي — اعتمد على وصفك ليها في ردودك السابقة، ولو السؤال محتاج تشوف الصورة تاني قوله يبعتها من جديد.]"
+    };
+  });
 }
 
 // بيكشف الردود "العالقة" اللي معظمها نفس الحرف/المقطع بيتكرر (زي ههههه... أو ااااا...) عشان نعتبرها فشل ونجرّب المزوّد اللي بعده.
