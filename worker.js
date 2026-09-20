@@ -488,7 +488,7 @@ async function handleGroqChat(request, env, corsHeaders) {
   const cleanMessages = messages.map(m => ({ role: m.role, content: m.content }));
 
   const GROQ_TEXT_MODEL = "openai/gpt-oss-120b";
-  const GROQ_VISION_MODEL = "qwen/qwen3.6-27b";
+  const GROQ_VISION_MODEL = "qwen/qwen3.8-27b";
   const providerChain = [
     {
       name: "groq",
