@@ -202,6 +202,7 @@ window.__H = {
   hAdminSetPlan: function(event) { adminUserAction(this.getAttribute('data-user-uid'), 'setPlan', this.value) },
   hAdminSetCustomLimit: function(event) { adminUserAction(this.getAttribute('data-user-uid'), 'setCustomLimit', this.value === '' ? null : this.value) },
   hAdminSortUsers: function(event) { adminSortUsersBy(this.getAttribute('data-sort-key')) },
+  hListenResult: function(event) { toggleListenResult(this) },
   hCopyResult: function(event) { copyResult(this) },
   hDownloadResult: function(event) { downloadResult(this, this.getAttribute('data-filename')) },
   hToggleHistoryEntry: function(event) { toggleHistoryEntry(parseInt(this.getAttribute('data-idx'), 10)) },
@@ -2061,14 +2062,145 @@ window.__H = {
         if (gsiScript) gsiScript.addEventListener('load', function () { try { initGoogleSignIn(); } catch (e) {} });
     })();
 
+    // ==== تحسينات عرض النتايج الطويلة: وقت قراءة تقديري + أقسام قابلة للطي + تمييز تلقائي بسيط + شريط تقدّم القراءة ====
+    function formatReportTextResult(text) {
+        const escaped = String(text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        const bolded = escaped.replace(/\*\*(.+?)\*\*/g, '<b class="text-slate-100">$1</b>');
+        const lines = bolded.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        if (!lines.length) return '';
+        // تمييز تلقائي خفيف للأرقام/النسب وبدايات النقاط عشان "مسح" النص بالعين يبقى أسرع
+        const highlighted = lines.map((l) => {
+            if (/^<b[ >]/.test(l) && /<\/b>\s*$/.test(l)) return l; // سطر أصلاً بولد بالكامل (عنوان) سيبه زي ما هو
+            return l
+                .replace(/(\d+(?:\.\d+)?\s?%|\d+\s?\/\s?\d+)/g, '<b class="text-slate-100">$1</b>')
+                .replace(/^((?:\d+[\).]|[-•])\s*)/, '<b class="text-slate-100">$1</b>');
+        });
+        const CHUNK_SIZE = 4; // تقسيم النص الطويل لأقسام قابلة للطي بدل ما ينزل كجدار كلام واحد
+        if (highlighted.length <= CHUNK_SIZE) {
+            return highlighted.map(l => `<p class="mb-2">${l}</p>`).join('');
+        }
+        let html = '';
+        for (let i = 0; i < highlighted.length; i += CHUNK_SIZE) {
+            const chunkLines = highlighted.slice(i, i + CHUNK_SIZE);
+            const sectionIdx = Math.floor(i / CHUNK_SIZE);
+            const isFirst = sectionIdx === 0;
+            const previewText = chunkLines[0].replace(/<[^>]+>/g, '');
+            const previewShort = previewText.length > 70 ? previewText.slice(0, 70) + '…' : previewText;
+            html += `<details class="result-section mb-2"${isFirst ? ' open' : ''}>
+                <summary class="result-section-summary">
+                    <span class="result-section-num">${sectionIdx + 1}</span>
+                    <span class="result-section-preview">${previewShort}</span>
+                    <i class="fa-solid fa-chevron-down result-section-chevron"></i>
+                </summary>
+                <div class="result-section-body">${chunkLines.map(l => `<p class="mb-2">${l}</p>`).join('')}</div>
+            </details>`;
+        }
+        return html;
+    }
+    function estimateReadTimeLabel(text) {
+        const words = String(text || '').trim().split(/\s+/).filter(Boolean).length;
+        if (words < 40) return ''; // نص قصير مالوش داعي لعرض وقت قراءة
+        const minutes = Math.max(1, Math.round(words / 180));
+        return `<div class="result-readtime"><i class="fa-regular fa-clock"></i> <span>${minutes <= 1 ? 'أقل من دقيقة قراءة' : `~${minutes} دقايق قراءة`}</span></div>`;
+    }
+    let readingProgressListenerAttached = false;
+    function ensureReadingProgressListener() {
+        if (readingProgressListenerAttached) return;
+        readingProgressListenerAttached = true;
+        function updateAllReadingProgressBars() {
+            document.querySelectorAll('.reading-progress-fill').forEach((bar) => {
+                const box = bar.closest('[data-raw]');
+                if (!box || box.classList.contains('hidden')) return;
+                const max = box.scrollHeight - box.clientHeight;
+                const pct = max <= 0 ? 100 : Math.max(0, Math.min(100, (box.scrollTop / max) * 100));
+                bar.style.width = pct + '%';
+            });
+        }
+        document.addEventListener('scroll', updateAllReadingProgressBars, { capture: true, passive: true });
+        window.addEventListener('resize', updateAllReadingProgressBars, { passive: true });
+        updateAllReadingProgressBars();
+    }
+    // ==== زرار "استمع للنتيجة": بيستخدم نفس بنية Edge TTS الجاهزة بدون ما يأثر على صوت المقابلة ====
+    let resultSpeakToken = 0;
+    let activeResultSpeakBtn = null;
+    let currentResultAudio = null;
+    const RESULT_LISTEN_IDLE_HTML = '<i class="fa-solid fa-volume-high"></i> <span>استمع للنتيجة</span>';
+    const RESULT_LISTEN_LOADING_HTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>جاري التجهيز...</span>';
+    const RESULT_LISTEN_PLAYING_HTML = '<i class="fa-solid fa-stop"></i> <span>إيقاف الاستماع</span>';
+    function stopResultSpeech() {
+        resultSpeakToken++;
+        if (currentResultAudio) {
+            try { currentResultAudio.pause(); currentResultAudio.currentTime = 0; } catch (e) {}
+            currentResultAudio = null;
+        }
+        if (activeResultSpeakBtn) {
+            activeResultSpeakBtn.classList.remove('is-speaking');
+            activeResultSpeakBtn.innerHTML = RESULT_LISTEN_IDLE_HTML;
+            activeResultSpeakBtn = null;
+        }
+    }
+    async function toggleListenResult(btn) {
+        if (activeResultSpeakBtn === btn) { stopResultSpeech(); return; } // ضغط تاني على نفس الزرار = إيقاف
+        const box = btn.closest('[data-raw]');
+        const raw = box ? box.dataset.raw : '';
+        if (!raw) return;
+        stopResultSpeech();
+        if (typeof stopSpeaking === 'function') stopSpeaking(); // نوقف صوت المقابلة لو شغال عشان محصلش تراكب أصوات
+        const myToken = ++resultSpeakToken;
+        activeResultSpeakBtn = btn;
+        btn.classList.add('is-speaking');
+        btn.innerHTML = RESULT_LISTEN_LOADING_HTML;
+        const sentences = splitIntoSentences(raw);
+        if (!sentences.length) { stopResultSpeech(); return; }
+        const langVoices = EDGE_TTS_VOICES[currentAppLang] || EDGE_TTS_VOICES["ar-EG"];
+        const voice = langVoices[voiceGenderPref] || langVoices.male;
+        const pendingBlobs = sentences.map((sentence) => {
+            const key = ttsCacheKey(sentence, voice);
+            if (ttsAudioCache.has(key)) return ttsAudioCache.get(key);
+            const pending = fetchEdgeTtsBlob(sentence, voice).catch((e) => { ttsAudioCache.delete(key); throw e; });
+            ttsAudioCache.set(key, pending);
+            return pending;
+        });
+        for (let i = 0; i < sentences.length; i++) {
+            if (myToken !== resultSpeakToken) return;
+            if (i === 0) btn.innerHTML = RESULT_LISTEN_PLAYING_HTML;
+            const key = ttsCacheKey(sentences[i], voice);
+            try {
+                const blob = await pendingBlobs[i];
+                ttsAudioCache.delete(key);
+                if (myToken !== resultSpeakToken) return;
+                await new Promise((resolve) => {
+                    const audio = new Audio(URL.createObjectURL(blob));
+                    audio.playbackRate = 1.15;
+                    currentResultAudio = audio;
+                    audio.onended = () => { if (currentResultAudio === audio) currentResultAudio = null; resolve(); };
+                    audio.onerror = () => resolve();
+                    audio.play().then(() => {}, () => resolve());
+                });
+            } catch (e) {
+                console.error("Edge TTS خطأ في قراءة نتيجة (جملة رقم " + (i + 1) + "):", e);
+                if (myToken !== resultSpeakToken) return;
+                await speakSentenceWithBrowserVoice(sentences[i]);
+            }
+        }
+        if (myToken === resultSpeakToken) stopResultSpeech();
+    }
+
     function renderResult(box, text, filename) {
         box.dataset.raw = text;
         box.classList.remove('hidden');
         box.classList.remove('reveal-in'); void box.offsetWidth; box.classList.add('reveal-in'); // حركة دخول ناعمة لكل نتيجة جديدة
-        box.innerHTML = `<div class="flex justify-end gap-2 mb-2">
-            <button data-x-onclick="hCopyResult" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-copy"></i> <span>${I18N[currentUiLang].copy}</span></button>
-            <button data-x-onclick="hDownloadResult" data-filename="${filename}" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-download"></i> <span>${I18N[currentUiLang].download}</span></button>
-        </div>` + formatReportText(text);
+        stopResultSpeech(); // نوقف أي استماع سابق شغال قبل ما نعرض نتيجة جديدة
+        box.innerHTML = `<div class="reading-progress-track"><div class="reading-progress-fill"></div></div>
+        <div class="flex justify-between items-center gap-2 mb-2 flex-wrap">
+            <div>${estimateReadTimeLabel(text)}</div>
+            <div class="flex gap-2 flex-wrap">
+                <button data-x-onclick="hListenResult" class="chip hover:bg-[var(--panel-2)] result-listen-btn">${RESULT_LISTEN_IDLE_HTML}</button>
+                <button data-x-onclick="hCopyResult" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-copy"></i> <span>${I18N[currentUiLang].copy}</span></button>
+                <button data-x-onclick="hDownloadResult" data-filename="${filename}" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-download"></i> <span>${I18N[currentUiLang].download}</span></button>
+            </div>
+        </div>` + formatReportTextResult(text);
+        ensureReadingProgressListener();
         try { saveToHistory((filename || 'result').replace(/\.[^.]+$/, ''), text); } catch (e) { console.warn('تعذر حفظ النتيجة في السجل الموحّد', e); }
     }
     function copyResult(btn) {
