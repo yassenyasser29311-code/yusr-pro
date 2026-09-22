@@ -252,25 +252,180 @@
 
 
 <style>
-/* ---- تحسينات شكل جدول المستخدمين في لوحة الأدمن: هيدر ثابت، تظليل صف عند المرور،
-   وأيقونة/مؤشر ترتيب واضح على الأعمدة القابلة للترتيب. مضافة هنا (inline) بدل
-   styles.css الخارجي عشان تفضل جوه نفس ملف الصفحة. ---- */
-#admin-users-table thead th { position: sticky; top: 0; background: var(--panel); z-index: 1; }
+/* =========================================================================
+   إعادة تصميم صفحة الأدمن فقط (لوحة التحكم + مودال الدخول + المودالات الفرعية)
+   كل القواعد هنا Scoped جوه #admin-gate-modal / #admin-dashboard /
+   #admin-allchats-modal / #admin-user-modal / #admin-confirm-modal
+   عشان miss تأثّرش أي حاجة تانية في الموقع. الألوان بتاخد من نفس متغيرات
+   الثيم (--panel/--accent/--border...) عشان تفضل متوافقة مع الوضع الليلي/النهاري.
+   ========================================================================= */
+
+/* ---------- أساسيات مشتركة ---------- */
+#admin-gate-modal, #admin-dashboard, #admin-allchats-modal, #admin-user-modal, #admin-confirm-modal {
+    --adm-r-lg: 1.4rem;
+    --adm-r-md: 1rem;
+    --adm-r-sm: .7rem;
+    letter-spacing: .005em;
+}
+#admin-gate-modal.modal-backdrop, #admin-allchats-modal.modal-backdrop,
+#admin-user-modal.modal-backdrop, #admin-confirm-modal.modal-backdrop { backdrop-filter: blur(8px); }
+
+/* خلفية هادية واحترافية للوحة نفسها (بديل عن الخلفية الفاضية) */
+#admin-dashboard {
+    background:
+        radial-gradient(60% 38% at 88% -8%, rgba(139,92,246,.14), transparent 60%),
+        radial-gradient(50% 32% at -8% 8%, rgba(34,211,201,.10), transparent 60%),
+        radial-gradient(45% 30% at 50% 100%, rgba(236,72,153,.05), transparent 60%),
+        var(--bg) !important;
+    scroll-behavior: smooth;
+}
+html.light-mode #admin-dashboard {
+    background:
+        radial-gradient(55% 34% at 88% -8%, rgba(47,111,237,.08), transparent 60%),
+        radial-gradient(45% 28% at -8% 8%, rgba(26,86,214,.05), transparent 60%),
+        var(--bg) !important;
+}
+
+/* سكرول بار أرق وأنضف جوه لوحة الأدمن والمودالات */
+#admin-dashboard *::-webkit-scrollbar, #admin-allchats-modal *::-webkit-scrollbar,
+#admin-user-modal *::-webkit-scrollbar { width: 6px; height: 6px; }
+#admin-dashboard *::-webkit-scrollbar-thumb, #admin-allchats-modal *::-webkit-scrollbar-thumb,
+#admin-user-modal *::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+#admin-dashboard *, #admin-allchats-modal *, #admin-user-modal * { scrollbar-width: thin; }
+
+/* ---------- مودال الدخول (Gate) ---------- */
+#admin-gate-modal .panel { border-radius: var(--adm-r-lg) !important; padding: 1.6rem 1.4rem !important; }
+#admin-gate-step1 .w-10, #admin-gate-step2 .w-10 {
+    width: 3.1rem !important; height: 3.1rem !important;
+    background: linear-gradient(135deg, rgba(167,139,250,.22), rgba(34,211,201,.16)) !important;
+    box-shadow: 0 0 0 1px rgba(167,139,250,.3), 0 8px 22px -8px rgba(139,92,246,.5);
+    color: var(--accent-strong) !important;
+    font-size: 1.05rem;
+}
+#admin-gate-modal h3 { font-size: .95rem !important; letter-spacing: .01em; }
+#admin-gate-modal .input-field { text-align: right; }
+#admin-gate-modal input[dir="ltr"] { text-align: left; }
+#admin-gate-login-btn, #admin-gate-confirm-btn { padding-block: .8rem !important; font-size: .8rem !important; letter-spacing: .02em; }
+#admin-gate-status { font-weight: 700; }
+
+/* ---------- شريط رأس اللوحة ---------- */
+#admin-dashboard .admin-header-row {
+    position: sticky; top: 0; z-index: 20;
+    margin: -1rem -1rem 1rem; padding: 1rem 1rem .9rem;
+    background: linear-gradient(180deg, var(--bg) 78%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+}
+@media (min-width: 640px) { #admin-dashboard .admin-header-row { margin: -1.5rem -1.5rem 1.25rem; padding: 1.5rem 1.5rem 1rem; } }
+#admin-dashboard .admin-header-row h1 {
+    background: linear-gradient(90deg, var(--text), var(--accent-strong));
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+#admin-dashboard .admin-header-row h1 i { -webkit-text-fill-color: initial; }
+#admin-dashboard .admin-toolbar { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-block: 2px; margin-inline: -2px; }
+#admin-dashboard .admin-toolbar::-webkit-scrollbar { display: none; }
+#admin-dashboard .admin-toolbar > button { flex: 0 0 auto; }
+#admin-dashboard .admin-toolbar .chip { padding: .5rem .8rem; border-radius: 999px; font-size: .68rem; }
+
+/* ---------- كروت الإحصائيات ---------- */
+#admin-dashboard .admin-stats-grid .stat-card-v2 {
+    border-radius: var(--adm-r-md) !important;
+    padding: 1.1rem .8rem !important;
+    background: linear-gradient(180deg, rgba(255,255,255,.03), transparent 55%), var(--panel) !important;
+    box-shadow: 0 12px 28px -18px rgba(0,0,0,.5);
+    transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+#admin-dashboard .admin-stats-grid .stat-card-v2:hover { transform: translateY(-3px); border-color: rgba(167,139,250,.35); box-shadow: 0 18px 34px -18px rgba(139,92,246,.35); }
+#admin-dashboard .admin-stats-grid .stat-icon { width: 2.6rem !important; height: 2.6rem !important; border-radius: .9rem !important; font-size: 1rem !important; box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
+#admin-dashboard .admin-stats-grid p.text-xl { font-size: 1.35rem !important; letter-spacing: -.01em; }
+
+/* ---------- بانلز الأقسام ---------- */
+#admin-dashboard .panel { border-radius: var(--adm-r-lg) !important; }
+#admin-dashboard .panel-2 { border-radius: var(--adm-r-md) !important; }
+#admin-dashboard .section-eyebrow, #admin-user-modal .section-eyebrow {
+    font-size: .72rem !important; text-transform: uppercase; letter-spacing: .04em;
+    padding-bottom: .5rem; margin-bottom: .75rem !important;
+    border-bottom: 1px dashed var(--border);
+}
+#admin-dashboard .section-eyebrow i:first-child, #admin-user-modal .section-eyebrow i:first-child {
+    width: 1.55rem; height: 1.55rem; display: inline-flex; align-items: center; justify-content: center;
+    border-radius: .55rem; background: rgba(167,139,250,.14); color: var(--accent-strong);
+    font-size: .68rem;
+}
+
+/* ---------- الجداول ---------- */
+#admin-dashboard .overflow-x-auto, #admin-user-modal .overflow-x-auto {
+    border: 1px solid var(--border); border-radius: var(--adm-r-sm); padding: 0 .35rem;
+}
+#admin-dashboard table thead th, #admin-user-modal table thead th {
+    font-size: .64rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted) !important;
+    padding-block: .7rem !important; background: var(--panel-2);
+}
+#admin-dashboard table tbody td, #admin-user-modal table tbody td { padding-block: .65rem !important; }
+#admin-dashboard table tbody tr, #admin-user-modal table tbody tr { border-bottom: 1px solid var(--border); }
+#admin-dashboard table tbody tr:last-child { border-bottom: 0; }
+#admin-dashboard table tbody tr:nth-child(even) { background: rgba(255,255,255,.015); }
+#admin-dashboard table tbody tr:hover, #admin-user-modal table tbody tr:hover { background: rgba(167,139,250,.06) !important; }
+@media (max-width: 640px) { #admin-dashboard table, #admin-user-modal table { font-size: .72rem !important; } }
+
+/* هيدر ثابت لجدول المستخدمين + مؤشر ترتيب واضح (كان هنا أصلًا) */
+#admin-users-table thead th { position: sticky; top: 0; z-index: 1; }
 #admin-users-table tbody tr { transition: background-color .12s ease; }
-#admin-users-table tbody tr:hover { background: var(--panel-2); }
 .admin-th-sort { cursor: pointer; user-select: none; white-space: nowrap; }
 .admin-th-sort:hover { color: var(--accent-strong); }
 .admin-sort-icon { font-size: 9px; opacity: .45; margin-inline-start: 3px; }
 .admin-th-sort.admin-sort-active .admin-sort-icon { opacity: 1; color: var(--accent-strong); }
+
+/* ---------- شارات الحالة (Badges) ---------- */
+#admin-dashboard .admin-badge, #admin-allchats-modal .admin-badge, #admin-user-modal .admin-badge {
+    padding: .28rem .65rem !important; font-weight: 800 !important; letter-spacing: .01em;
+    box-shadow: 0 1px 0 rgba(255,255,255,.04) inset;
+}
+#admin-dashboard .admin-badge-online .dot, #admin-allchats-modal .admin-badge-online .dot, #admin-user-modal .admin-badge-online .dot {
+    animation: adm-pulse-dot 1.6s ease-in-out infinite;
+}
+@keyframes adm-pulse-dot { 0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(52,211,153,.5); } 50% { opacity: .6; box-shadow: 0 0 0 4px rgba(52,211,153,0); } }
+
+/* ---------- أزرار وحقول اللوحة ---------- */
+#admin-dashboard .admin-mini-btn, #admin-user-modal .admin-mini-btn, #admin-allchats-modal .admin-mini-btn {
+    border-radius: .65rem !important; padding: .5rem .75rem !important; min-height: 2rem;
+    transition: all .15s ease;
+}
+#admin-dashboard .admin-mini-btn:hover, #admin-user-modal .admin-mini-btn:hover, #admin-allchats-modal .admin-mini-btn:hover { transform: translateY(-1px); }
+#admin-dashboard .admin-mini-input, #admin-user-modal .admin-mini-input, #admin-allchats-modal .admin-mini-input {
+    border-radius: .6rem !important; min-height: 2rem; transition: all .15s ease;
+}
+#admin-dashboard .admin-mini-input:focus, #admin-user-modal .admin-mini-input:focus {
+    outline: none; border-color: var(--accent) !important; box-shadow: 0 0 0 3px rgba(167,139,250,.16);
+}
+#admin-dashboard .chip { border-radius: .75rem; }
+
+/* ---------- مودال كل المحادثات ---------- */
+#admin-allchats-modal .panel { border-radius: var(--adm-r-lg) !important; }
+#admin-allchats-list > button { border-radius: .6rem; margin: .25rem; width: calc(100% - .5rem); }
+#admin-allchats-log span, #admin-user-modal-chat-log span {
+    border-radius: 1rem !important; box-shadow: 0 4px 14px -8px rgba(0,0,0,.4); line-height: 1.5;
+}
+
+/* ---------- مودال بيانات المستخدم ---------- */
+#admin-user-modal .panel { border-radius: var(--adm-r-lg) !important; }
+#admin-user-modal .panel-2 { border-radius: var(--adm-r-md) !important; margin: 0; }
+#admin-user-modal-activity-log > div { border-radius: .6rem; padding-inline: .5rem !important; }
+#admin-user-modal-activity-log > div:hover { background: rgba(167,139,250,.06); }
+
+/* ---------- مودال التأكيد ---------- */
+#admin-confirm-modal .panel { border-radius: var(--adm-r-lg) !important; }
+#admin-confirm-modal .w-11 { width: 3.1rem !important; height: 3.1rem !important; }
+#admin-confirm-modal-yes, #admin-confirm-modal-no { border-radius: .8rem !important; font-weight: 800; }
 </style>
 <div id="admin-dashboard" class="hidden fixed inset-0 z-[105] overflow-y-auto" style="background:var(--bg);">
     <div class="max-w-6xl mx-auto p-4 sm:p-6 space-y-5">
-        <div class="flex items-center justify-between gap-3 flex-wrap">
+        <div class="flex items-center justify-between gap-3 flex-wrap admin-header-row">
             <h1 class="font-tajawal font-bold text-lg text-slate-100 flex items-center gap-2">
                 <i class="fa-solid fa-user-shield text-amber-300"></i> لوحة تحكم الأدمن
                 <span id="admin-role-badge" class="hidden admin-badge" style="font-size:.6rem;"></span>
             </h1>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 admin-toolbar">
                 <button data-x-onclick="h18" class="chip hover:bg-[var(--panel-2)] relative">
                     <i class="fa-solid fa-comments"></i> كل المحادثات
                     <span id="admin-allchats-badge" class="hidden admin-badge admin-badge-suspended" style="font-size:.55rem; margin-inline-start:4px;">0</span>
@@ -283,7 +438,7 @@
         </div>
 
         
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 admin-stats-grid">
             <div class="stat-card-v2"><div class="stat-icon" style="background:rgba(138,180,248,.14); color:var(--accent-strong);"><i class="fa-solid fa-users"></i></div><p id="admin-stat-total" class="text-xl font-bold text-slate-100">-</p><p class="text-[10px] text-slate-500">إجمالي المستخدمين</p></div>
             <div class="stat-card-v2"><div class="stat-icon" style="background:rgba(52,211,153,.14); color:#34d399;"><i class="fa-solid fa-signal"></i></div><p id="admin-stat-online" class="text-xl font-bold text-slate-100">-</p><p class="text-[10px] text-slate-500">أونلاين دلوقتي</p></div>
             <div class="stat-card-v2"><div class="stat-icon" style="background:rgba(248,113,113,.14); color:#f87171;"><i class="fa-solid fa-ban"></i></div><p id="admin-stat-suspended" class="text-xl font-bold text-slate-100">-</p><p class="text-[10px] text-slate-500">حسابات موقوفة</p></div>
