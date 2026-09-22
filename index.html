@@ -251,6 +251,18 @@
 </div>
 
 
+<style>
+/* ---- تحسينات شكل جدول المستخدمين في لوحة الأدمن: هيدر ثابت، تظليل صف عند المرور،
+   وأيقونة/مؤشر ترتيب واضح على الأعمدة القابلة للترتيب. مضافة هنا (inline) بدل
+   styles.css الخارجي عشان تفضل جوه نفس ملف الصفحة. ---- */
+#admin-users-table thead th { position: sticky; top: 0; background: var(--panel); z-index: 1; }
+#admin-users-table tbody tr { transition: background-color .12s ease; }
+#admin-users-table tbody tr:hover { background: var(--panel-2); }
+.admin-th-sort { cursor: pointer; user-select: none; white-space: nowrap; }
+.admin-th-sort:hover { color: var(--accent-strong); }
+.admin-sort-icon { font-size: 9px; opacity: .45; margin-inline-start: 3px; }
+.admin-th-sort.admin-sort-active .admin-sort-icon { opacity: 1; color: var(--accent-strong); }
+</style>
 <div id="admin-dashboard" class="hidden fixed inset-0 z-[105] overflow-y-auto" style="background:var(--bg);">
     <div class="max-w-6xl mx-auto p-4 sm:p-6 space-y-5">
         <div class="flex items-center justify-between gap-3 flex-wrap">
@@ -382,17 +394,28 @@
         <div class="panel rounded-2xl p-4 sm:p-5 space-y-3">
             <div class="flex items-center justify-between gap-2 flex-wrap">
                 <p class="section-eyebrow mb-0"><i class="fa-solid fa-table-list"></i> كل المستخدمين</p>
-                <input id="admin-user-search" type="text" placeholder="دور بالإيميل أو الاسم..." class="input-field rounded-xl px-3 py-2 text-xs w-56" data-x-oninput="h28">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <select id="admin-user-filter-status" class="admin-mini-input" data-x-onchange="h28">
+                        <option value="">كل الحالات</option>
+                        <option value="online">أونلاين بس</option>
+                        <option value="offline">غير متصل بس</option>
+                        <option value="suspended">موقوف بس</option>
+                    </select>
+                    <select id="admin-user-filter-plan" class="admin-mini-input" data-x-onchange="h28">
+                        <option value="">كل الباقات</option>
+                    </select>
+                    <input id="admin-user-search" type="text" placeholder="دور بالإيميل أو الاسم..." class="input-field rounded-xl px-3 py-2 text-xs w-56">
+                </div>
             </div>
             <div class="overflow-x-auto">
-                <table class="w-full text-[11px] text-right border-collapse">
+                <table id="admin-users-table" class="w-full text-[11px] text-right border-collapse">
                     <thead>
                         <tr class="text-slate-500 border-b border-[var(--border)]">
-                            <th class="py-2 px-2 font-bold">المستخدم</th>
-                            <th class="py-2 px-2 font-bold">الباقة</th>
-                            <th class="py-2 px-2 font-bold">الاستخدام الشهري</th>
+                            <th class="py-2 px-2 font-bold admin-th-sort" data-sort-key="name" data-x-onclick="hAdminSortUsers">المستخدم <i class="fa-solid fa-sort admin-sort-icon"></i></th>
+                            <th class="py-2 px-2 font-bold admin-th-sort" data-sort-key="plan" data-x-onclick="hAdminSortUsers">الباقة <i class="fa-solid fa-sort admin-sort-icon"></i></th>
+                            <th class="py-2 px-2 font-bold admin-th-sort" data-sort-key="usage" data-x-onclick="hAdminSortUsers">الاستخدام الشهري <i class="fa-solid fa-sort admin-sort-icon"></i></th>
                             <th class="py-2 px-2 font-bold">سقف مخصص</th>
-                            <th class="py-2 px-2 font-bold">الحالة</th>
+                            <th class="py-2 px-2 font-bold admin-th-sort" data-sort-key="status" data-x-onclick="hAdminSortUsers">الحالة <i class="fa-solid fa-sort admin-sort-icon"></i></th>
                             <th class="py-2 px-2 font-bold">إجراءات</th>
                         </tr>
                     </thead>
@@ -551,14 +574,12 @@
 
         
         <div class="panel-2 rounded-xl p-3 space-y-2.5">
-            <p class="section-eyebrow mb-0"><i class="fa-solid fa-user-shield"></i> صلاحيات إضافية</p>
-            <p class="text-[10px] text-slate-500 -mt-1.5">فعّل أي صلاحية عايزها للمستخدم ده بالذات، بغض النظر عن باقته.</p>
-            <div id="admin-user-modal-permissions" class="grid grid-cols-2 gap-2"></div>
+            <p class="section-eyebrow mb-0"><i class="fa-solid fa-note-sticky"></i> ملاحظة إدارية</p>
             <div>
                 <label class="block text-[10px] text-slate-500 mb-1">ملاحظة إدارية داخلية (مش بتظهر للمستخدم)</label>
                 <textarea id="admin-user-modal-note" rows="2" class="w-full input-field rounded-xl px-3 py-2 text-xs" placeholder="مثلاً: تواصل بخصوص استرجاع فلوس..."></textarea>
             </div>
-            <button class="admin-mini-btn w-full justify-center" data-x-onclick="h42"><i class="fa-solid fa-floppy-disk"></i> حفظ الصلاحيات والملاحظة</button>
+            <button class="admin-mini-btn w-full justify-center" data-x-onclick="h42"><i class="fa-solid fa-floppy-disk"></i> حفظ الملاحظة</button>
         </div>
 
         
@@ -581,7 +602,7 @@
 
         <div class="rounded-xl p-3 space-y-2 border border-red-500/25 bg-red-500/5">
             <p class="section-eyebrow mb-0 text-red-300"><i class="fa-solid fa-triangle-exclamation"></i> منطقة خطر</p>
-            <p class="text-[10px] text-slate-500">حذف المستخدم نهائيًا بيشيل كل بياناته (الاسم/الصورة/النقط/الباقة/سجل الاستخدام/الصلاحيات) من قاعدة البيانات، ومينفعش يترجع. الووركر هيحاول كمان يمسح حساب الدخول نفسه (Firebase Auth) فعليًا؛ لو نجحت هتظهر لك رسالة تأكيد بكده، ولو فشلت هتتنبّه إن الحساب لسه ممكن يسجّل دخول بنفس الإيميل/جوجل.</p>
+            <p class="text-[10px] text-slate-500">حذف المستخدم نهائيًا بيشيل كل بياناته (الاسم/الصورة/النقط/الباقة/سجل الاستخدام) من قاعدة البيانات، ومينفعش يترجع. الووركر هيحاول كمان يمسح حساب الدخول نفسه (Firebase Auth) فعليًا؛ لو نجحت هتظهر لك رسالة تأكيد بكده، ولو فشلت هتتنبّه إن الحساب لسه ممكن يسجّل دخول بنفس الإيميل/جوجل.</p>
             <button class="admin-mini-btn w-full justify-center hover:bg-red-500/10 hover:text-red-300" data-x-onclick="h45"><i class="fa-solid fa-trash"></i> حذف المستخدم نهائيًا</button>
         </div>
     </div>
@@ -2307,7 +2328,7 @@
     </div>
 </div>
 
-<script src="app.js?v=12"></script>
-<script src="admin.js?v=1"></script>
+<script src="app.js?v=13"></script>
+<script src="admin.js?v=2"></script>
 </body>
 </html>

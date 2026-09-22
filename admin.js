@@ -4,6 +4,9 @@
     const ADMIN_API_BASE = "https://yusr-worker.yassen-yasser29311.workers.dev";
 
     const PLAN_NAMES = ["مجاني", "الأساسية", "الاحترافية", "النخبة", "السنوية"];
+    // نسخة عرض فقط من حدود الباقات الحقيقية المطبّقة في السيرفر (worker.js) -
+    // مستخدمة هنا بس عشان نوريك "الحد الفعلي" اللي هيتطبق على المستخدم، مش لتغييره.
+    const ADMIN_PLAN_LIMITS = { "مجاني": 5, "الأساسية": 25, "الاحترافية": 150, "النخبة": Infinity, "السنوية": 150 };
     let adminToken = sessionStorage.getItem("yusr_admin_token") || null;
     let adminRole = sessionStorage.getItem("yusr_admin_role") || null; // "superadmin" أو "viewer"
     let adminUsersCache = [];
@@ -185,7 +188,7 @@
     // ---- حساب حالة الأونلاين محليًا من lastSeen بدل الاعتماد على قيمة "online" الجامدة
     // اللي بتيجي من أول تحميل بس - كده الحالة بترجع "غير متصل" لوحدها بمجرد ما المستخدم
     // يقفل التطبيق (أو ينقطع)، من غير ما تفضل عالقة على "أونلاين" لحد ما تعمل ريفريش يدوي ----
-    const ADMIN_ONLINE_THRESHOLD_MS = 2 * 60 * 1000;
+    const ADMIN_ONLINE_THRESHOLD_MS = 45 * 1000;
     function adminIsOnline(u) {
         return typeof u.lastSeen === "number" && (Date.now() - u.lastSeen) < ADMIN_ONLINE_THRESHOLD_MS;
     }
@@ -198,13 +201,13 @@
         // تلات دقايق من غير نبضة يتحول لـ"غير متصل" بصريًا فورًا.
         adminOnlineTickTimer = setInterval(() => {
             if (!window.__adminDashboardOpen) return;
-            adminRenderUsers();
+            adminUpdateOnlineBadgesOnly();
             if (adminUserModalUid) {
                 const u = adminFindUser(adminUserModalUid);
                 if (u) refreshAdminUserModalStatusBadge(u);
             }
-        }, 15000);
-        // كل 30 ثانية: تحديث بيانات lastSeen فعليًا من السيرفر للمستخدمين المحمّلين حاليًا
+        }, 5000);
+        // كل 15 ثانية: تحديث بيانات lastSeen فعليًا من السيرفر للمستخدمين المحمّلين حاليًا
         adminOnlineRefreshTimer = setInterval(async () => {
             if (!window.__adminDashboardOpen || !adminUsersCache.length) return;
             try {
@@ -293,9 +296,7 @@
     // ---- بند 2: تحميل صفحة تانية من المستخدمين (Pagination) بدل ما نجيبهم كلهم مرة واحدة ----
     function updateAdminUsersLoadMoreUI() {
         const btn = document.getElementById("admin-users-loadmore-btn");
-        const label = document.getElementById("admin-users-count-label");
         btn.classList.toggle("hidden", !adminUsersNextCursor);
-        label.textContent = `اتحمّل ${adminUsersCache.length} مستخدم${adminUsersNextCursor ? " (فيه أكتر)" : ""}`;
     }
     window.adminLoadMoreUsers = async function () {
         if (!adminUsersNextCursor) return;
@@ -831,18 +832,26 @@
 
     window.adminRenderUsers = function () {
         const q = (document.getElementById("admin-user-search").value || "").trim().toLowerCase();
+        const statusFilter = (document.getElementById("admin-user-filter-status") || {}).value || "";
+        const planFilter = (document.getElementById("admin-user-filter-plan") || {}).value || "";
         const tbody = document.getElementById("admin-users-tbody");
         const empty = document.getElementById("admin-users-empty");
-        const filtered = adminUsersCache.filter(u => {
-            if (!q) return true;
-            return (u.email || "").toLowerCase().includes(q) || (u.displayName || "").toLowerCase().includes(q) || u.uid.toLowerCase().includes(q);
+        let filtered = adminUsersCache.filter(u => {
+            if (q && !((u.email || "").toLowerCase().includes(q) || (u.displayName || "").toLowerCase().includes(q) || u.uid.toLowerCase().includes(q))) return false;
+            if (planFilter && u.plan !== planFilter) return false;
+            if (statusFilter === "suspended" && !u.suspended) return false;
+            if (statusFilter === "online" && (u.suspended || !adminIsOnline(u))) return false;
+            if (statusFilter === "offline" && (u.suspended || adminIsOnline(u))) return false;
+            return true;
         });
+        filtered = adminSortUsersList(filtered);
         tbody.innerHTML = "";
         empty.classList.toggle("hidden", filtered.length > 0);
 
         const readOnly = isViewerRole();
         filtered.forEach(u => {
             const tr = document.createElement("tr");
+            tr.setAttribute("data-user-row-uid", u.uid);
             const planOptions = PLAN_NAMES.map(p => `<option value="${p}" ${p === u.plan ? "selected" : ""}>${p}</option>`).join("");
             tr.innerHTML = `
                 <td>
@@ -854,7 +863,7 @@
                 <td><select class="admin-mini-input" style="width:auto" ${readOnly ? "disabled" : ""} data-x-onchange="hAdminSetPlan" data-user-uid="${u.uid}">${planOptions}</select></td>
                 <td class="text-center">${u.usageThisMonth ?? 0}</td>
                 <td><input type="number" min="0" class="admin-mini-input" placeholder="افتراضي" value="${u.customLimit ?? ""}" ${readOnly ? "disabled" : ""} data-x-onchange="hAdminSetCustomLimit" data-user-uid="${u.uid}"></td>
-                <td>
+                <td data-user-status-cell>
                     ${u.suspended ? '<span class="admin-badge admin-badge-suspended">موقوف</span>' : (adminIsOnline(u) ? '<span class="admin-badge admin-badge-online"><span class="dot"></span>أونلاين</span>' : '<span class="admin-badge admin-badge-offline">غير متصل</span>')}
                 </td>
                 <td>
@@ -862,7 +871,81 @@
                 </td>`;
             tbody.appendChild(tr);
         });
+        const countLabel = document.getElementById("admin-users-count-label");
+        if (countLabel) countLabel.textContent = `${filtered.length} من ${adminUsersCache.length} محمّل${adminUsersNextCursor ? " (فيه أكتر ع السيرفر)" : ""}`;
+        adminPopulateUserFilterPlans();
     };
+
+    // ---- بدل ما كل "تيك" أونلاين (كل 5 ثواني) يعيد بناء الجدول بالكامل - اللي كان بيقفل
+    // أي select/input المستخدم بيعدّل فيه دلوقتي (زي سقف مخصص أو الباقة) - دلوقتي بس بنحدّث
+    // خلية الحالة (أونلاين/غير متصل) في كل صف موجودة بالفعل، من غير ما نلمس باقي الصف. ----
+    window.adminUpdateOnlineBadgesOnly = function () {
+        const tbody = document.getElementById("admin-users-tbody");
+        if (!tbody) return;
+        tbody.querySelectorAll("tr[data-user-row-uid]").forEach(tr => {
+            const uid = tr.getAttribute("data-user-row-uid");
+            const u = adminFindUser(uid);
+            const cell = tr.querySelector("[data-user-status-cell]");
+            if (!u || !cell) return;
+            cell.innerHTML = u.suspended ? '<span class="admin-badge admin-badge-suspended">موقوف</span>' : (adminIsOnline(u) ? '<span class="admin-badge admin-badge-online"><span class="dot"></span>أونلاين</span>' : '<span class="admin-badge admin-badge-offline">غير متصل</span>');
+        });
+    };
+
+    // ---- ترتيب جدول المستخدمين بالضغط على عنوان أي عمود قابل للترتيب ----
+    let adminUsersSort = { key: null, dir: 1 };
+    function adminSortUsersList(list) {
+        if (!adminUsersSort.key) return list;
+        const key = adminUsersSort.key, dir = adminUsersSort.dir;
+        const val = (u) => {
+            if (key === "name") return (u.displayName || u.email || u.uid || "").toLowerCase();
+            if (key === "plan") return (u.plan || "");
+            if (key === "usage") return u.usageThisMonth ?? 0;
+            if (key === "status") return u.suspended ? -1 : (adminIsOnline(u) ? 1 : 0);
+            return "";
+        };
+        return [...list].sort((a, b) => {
+            const va = val(a), vb = val(b);
+            if (va < vb) return -1 * dir;
+            if (va > vb) return 1 * dir;
+            return 0;
+        });
+    }
+    window.adminSortUsersBy = function (key) {
+        if (adminUsersSort.key === key) adminUsersSort.dir *= -1;
+        else { adminUsersSort.key = key; adminUsersSort.dir = 1; }
+        document.querySelectorAll("#admin-users-table .admin-th-sort").forEach(th => {
+            th.classList.toggle("admin-sort-active", th.getAttribute("data-sort-key") === key);
+            const icon = th.querySelector(".admin-sort-icon");
+            if (icon) icon.className = "fa-solid admin-sort-icon " + (th.getAttribute("data-sort-key") === key ? (adminUsersSort.dir === 1 ? "fa-sort-up" : "fa-sort-down") : "fa-sort");
+        });
+        adminRenderUsers();
+    };
+
+    // ---- تعبئة فلتر الباقة تلقائيًا من أسماء الباقات الموجودة فعليًا (مرة واحدة كفاية) ----
+    let adminUserFilterPlansPopulated = false;
+    function adminPopulateUserFilterPlans() {
+        if (adminUserFilterPlansPopulated) return;
+        const sel = document.getElementById("admin-user-filter-plan");
+        if (!sel || sel.options.length > 1) { adminUserFilterPlansPopulated = true; return; }
+        PLAN_NAMES.forEach(p => {
+            const opt = document.createElement("option");
+            opt.value = p; opt.textContent = p;
+            sel.appendChild(opt);
+        });
+        adminUserFilterPlansPopulated = true;
+    }
+
+    // ---- تأخير بسيط (debounce) لخانة البحث عشان منعملش إعادة رسم الجدول مع كل ضغطة زرار،
+    // وبس بعد ما المستخدم يوقف عن الكتابة لحظة. ----
+    let adminUserSearchDebounceTimer = null;
+    (function attachUserSearchDebounce() {
+        const input = document.getElementById("admin-user-search");
+        if (!input) return;
+        input.addEventListener("input", () => {
+            clearTimeout(adminUserSearchDebounceTimer);
+            adminUserSearchDebounceTimer = setTimeout(adminRenderUsers, 250);
+        });
+    })();
 
     window.adminUserAction = async function (uid, action, value) {
         if (isViewerRole()) { adminToast("دور المشاهدة مش مسموح له بالتعديل.", "error"); return; }
@@ -891,16 +974,7 @@
     // كل حاجة تخص مستخدم بعينه بقت في مكان واحد بيتفتح بالضغط على اسمه في
     // الجدول - مفيش داعي تطلع لأي أداة خارجية (Wrangler أو غيرها) عشان تدير
     // حساب حد. من هنا تقدر: تغيّر باقته/سقفه، توقفه/تفعّله، تصفّر استخدامه،
-    // تبعتله رابط استعادة باسورد، تدّيله أي صلاحية إضافية عايزها (أو تكتب
-    // ملاحظة إدارية داخلية عليه)، أو تمسحه نهائيًا.
-    const ADMIN_PERMISSION_DEFS = [
-        { key: "unlimitedUsage", label: "استخدام غير محدود" },
-        { key: "betaFeatures", label: "ميزات تجريبية (Beta)" },
-        { key: "moderator", label: "صلاحية مشرف" },
-        { key: "noAds", label: "بدون إعلانات" },
-        { key: "prioritySupport", label: "دعم أولوية" },
-        { key: "extraStorage", label: "تخزين إضافي" }
-    ];
+    // تبعتله رابط استعادة باسورد، تكتب ملاحظة إدارية داخلية عليه، أو تمسحه نهائيًا.
     let adminUserModalUid = null;
     function adminFindUser(uid) { return adminUsersCache.find(u => u.uid === uid); }
 
@@ -939,14 +1013,6 @@
         const resetPwBtn = document.getElementById("admin-user-modal-reset-pw-btn");
         resetPwBtn.style.display = u.email ? "" : "none";
         resetPwBtn.disabled = readOnly;
-
-        const permsWrap = document.getElementById("admin-user-modal-permissions");
-        const perms = u.permissions || {};
-        permsWrap.innerHTML = ADMIN_PERMISSION_DEFS.map(p => `
-            <label class="flex items-center gap-1.5 text-[11px] text-slate-300 panel rounded-lg px-2 py-1.5 ${readOnly ? "" : "cursor-pointer"}">
-                <input type="checkbox" data-perm-key="${p.key}" ${perms[p.key] ? "checked" : ""} ${readOnly ? "disabled" : ""}>
-                ${p.label}
-            </label>`).join("");
 
         const noteEl = document.getElementById("admin-user-modal-note");
         noteEl.value = u.adminNote || "";
@@ -1082,17 +1148,13 @@
         }
     };
 
-    window.adminModalSavePermissions = async function () {
+    window.adminModalSaveNote = async function () {
         if (!adminUserModalUid) return;
         if (isViewerRole()) { adminToast("دور المشاهدة مش مسموح له بالتعديل.", "error"); return; }
-        const permsWrap = document.getElementById("admin-user-modal-permissions");
-        const perms = {};
-        permsWrap.querySelectorAll("input[data-perm-key]").forEach(cb => { perms[cb.getAttribute("data-perm-key")] = cb.checked; });
         const note = document.getElementById("admin-user-modal-note").value;
         try {
-            await adminFetch("/adminUserAction", { method: "POST", body: JSON.stringify({ uid: adminUserModalUid, action: "setPermissions", value: perms }) });
             await adminFetch("/adminUserAction", { method: "POST", body: JSON.stringify({ uid: adminUserModalUid, action: "setNote", value: note }) });
-            adminToast("اتحفظت الصلاحيات والملاحظة.", "success");
+            adminToast("اتحفظت الملاحظة.", "success");
             adminRefreshAll();
         } catch (e) {
             adminToast("تعذر الحفظ.", "error");
@@ -1129,7 +1191,7 @@
         const label = (u && (u.displayName || u.email)) || uid;
         const ok1 = await adminConfirm(`متأكد إنك عايز تمسح "${label}" نهائيًا من قاعدة البيانات؟ الإجراء ده مينفعش يترجع.`);
         if (!ok1) return;
-        const ok2 = await adminConfirm("تأكيد أخير: هيتشال بالكامل (الاسم/الصورة/النقط/الباقة/الصلاحيات/سجل الاستخدام). لو سجّل دخول تاني بنفس حسابه هيدخل كمستخدم جديد من الصفر. متابعة؟");
+        const ok2 = await adminConfirm("تأكيد أخير: هيتشال بالكامل (الاسم/الصورة/النقط/الباقة/سجل الاستخدام). لو سجّل دخول تاني بنفس حسابه هيدخل كمستخدم جديد من الصفر. متابعة؟");
         if (!ok2) return;
         try {
             await adminFetch("/adminUserAction", { method: "POST", body: JSON.stringify({ uid, action: "delete" }) });

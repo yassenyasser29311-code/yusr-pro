@@ -374,10 +374,6 @@ async function checkPlanUsage(uid, idToken) {
     return { ok: false, error: "account_suspended" };
   }
 
-  if (userRaw.permissions && userRaw.permissions.unlimitedUsage === true) {
-    return { ok: true, monthKey, currentCount: 0 };
-  }
-
   const planName = PLAN_LIMITS.hasOwnProperty(userRaw.plan) ? userRaw.plan : "مجاني";
   let limit = PLAN_LIMITS[planName];
   if (typeof userRaw.customLimit === "number" && userRaw.customLimit >= 0) {
@@ -1242,7 +1238,7 @@ async function deleteFirebaseAuthAccount(uid, env) {
   }
 }
 
-const ONLINE_THRESHOLD_MS = 2 * 60 * 1000;
+const ONLINE_THRESHOLD_MS = 45 * 1000;
 
 const ADMIN_USERS_DEFAULT_PAGE_SIZE = 200;
 const ADMIN_USERS_MAX_PAGE_SIZE = 1000;
@@ -1298,7 +1294,6 @@ async function handleAdminListUsers(request, env, corsHeaders) {
         customLimit: typeof u.customLimit === "number" ? u.customLimit : null,
         points: typeof u.points === "number" ? u.points : 0,
         suspended: u.suspended === true,
-        permissions: (u.permissions && typeof u.permissions === "object") ? u.permissions : {},
         adminNote: typeof u.adminNote === "string" ? u.adminNote : "",
         usageThisMonth,
         lastSeen: typeof u.lastSeen === "number" ? u.lastSeen : null,
@@ -1572,7 +1567,6 @@ const ADMIN_VALID_ACTIONS = new Set([
   "setCustomLimit",
   "setPoints",
   "resetUsage",
-  "setPermissions",
   "setNote",
   "delete"
 ]);
@@ -1631,16 +1625,6 @@ async function handleAdminUserAction(request, env, corsHeaders, ctx) {
   } else if (action === "resetUsage") {
     path = `users/${uid}/usage/${getCurrentMonthKey()}`;
     value = 0;
-  } else if (action === "setPermissions") {
-    if (typeof body.value !== "object" || body.value === null || Array.isArray(body.value)) {
-      return json({ error: "invalid_permissions" }, 400, corsHeaders);
-    }
-    const cleanPerms = {};
-    for (const [k, v] of Object.entries(body.value)) {
-      if (typeof k === "string" && k.length <= 64) cleanPerms[k] = v === true;
-    }
-    path = `users/${uid}/permissions`;
-    value = cleanPerms;
   } else if (action === "setNote") {
     const note = typeof body.value === "string" ? body.value.slice(0, 2000) : "";
     path = `users/${uid}/adminNote`;

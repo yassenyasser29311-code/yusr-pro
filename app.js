@@ -46,7 +46,7 @@ window.__H = {
   h39: function(event) { adminModalToggleSuspend() },
   h40: function(event) { adminModalUserAction('resetUsage') },
   h41: function(event) { adminModalSendPasswordReset() },
-  h42: function(event) { adminModalSavePermissions() },
+  h42: function(event) { adminModalSaveNote() },
   h43: function(event) { if(event.key==='Enter'){event.preventDefault();adminModalSendChat();} },
   h44: function(event) { adminModalSendChat() },
   h45: function(event) { adminModalDeleteUser() },
@@ -201,6 +201,7 @@ window.__H = {
   hAdminOpenUserModal: function(event) { adminOpenUserModal(this.getAttribute('data-user-uid')) },
   hAdminSetPlan: function(event) { adminUserAction(this.getAttribute('data-user-uid'), 'setPlan', this.value) },
   hAdminSetCustomLimit: function(event) { adminUserAction(this.getAttribute('data-user-uid'), 'setCustomLimit', this.value === '' ? null : this.value) },
+  hAdminSortUsers: function(event) { adminSortUsersBy(this.getAttribute('data-sort-key')) },
   hCopyResult: function(event) { copyResult(this) },
   hDownloadResult: function(event) { downloadResult(this, this.getAttribute('data-filename')) },
   hToggleHistoryEntry: function(event) { toggleHistoryEntry(parseInt(this.getAttribute('data-idx'), 10)) },
@@ -682,28 +683,20 @@ window.__H = {
         return getLocalUsageCache().count; // لحد ما يوصل رد السيرفر أول مرة
     }
 
-    // ---- سقف الاستخدام المخصص (بيتحدّد من لوحة الأدمن) + صلاحية "استخدام غير محدود" ----
+    // ---- سقف الاستخدام المخصص (بيتحدّد من لوحة الأدمن) ----
     // ده كان بيتخزن ويتحفظ صح من الأدمن، بس الواجهة هنا كانت بتتجاهله تمامًا وبتحسب
     // الحد بس من PLAN_MONTHLY_LIMITS الثابت حسب اسم الباقة - فكان "سقف مخصص" مالوش أي تأثير
-    // فعلي على المستخدم. دلوقتي بنتابعهم لايف من نفس مكان تخزينهم في الأدمن.
+    // فعلي على المستخدم. دلوقتي بنتابعه لايف من نفس مكان تخزينه في الأدمن.
     let cloudCustomLimit = null; // رقم أو null (يعني مفيش سقف مخصص، استخدم حد الباقة العادي)
-    let cloudUnlimitedUsage = false;
     let cloudCustomLimitRef = null;
-    let cloudPermissionsRef = null;
     function attachCloudLimitListener(uid) {
         if (cloudCustomLimitRef) cloudCustomLimitRef.off();
-        if (cloudPermissionsRef) cloudPermissionsRef.off();
         cloudCustomLimitRef = db.ref('users/' + uid + '/customLimit');
         cloudCustomLimitRef.on('value', snap => {
             const v = snap.val();
             cloudCustomLimit = (typeof v === 'number' && v >= 0) ? v : null;
             checkDeviceTrial();
         }, err => console.warn('تعذر متابعة السقف المخصص من السيرفر', err));
-        cloudPermissionsRef = db.ref('users/' + uid + '/permissions/unlimitedUsage');
-        cloudPermissionsRef.on('value', snap => {
-            cloudUnlimitedUsage = snap.val() === true;
-            checkDeviceTrial();
-        }, err => console.warn('تعذر متابعة صلاحيات الاستخدام من السيرفر', err));
     }
 
     let cloudPlanRef = null;
@@ -815,7 +808,6 @@ window.__H = {
         }
     }
     function getEffectiveMonthlyLimit() {
-        if (cloudUnlimitedUsage) return Infinity; // صلاحية "استخدام غير محدود" من الأدمن
         if (typeof cloudCustomLimit === 'number' && cloudCustomLimit >= 0) return cloudCustomLimit; // "سقف مخصص" من الأدمن
         const plan = getCurrentPlanName();
         return PLAN_MONTHLY_LIMITS[plan];
@@ -987,12 +979,10 @@ window.__H = {
         detachSuspensionListener();
         detachAccountDeletionWatcher();
         if (cloudCustomLimitRef) { cloudCustomLimitRef.off(); cloudCustomLimitRef = null; }
-        if (cloudPermissionsRef) { cloudPermissionsRef.off(); cloudPermissionsRef = null; }
         if (cloudPlanRef) { cloudPlanRef.off(); cloudPlanRef = null; }
         if (cloudPurchasesRef) { cloudPurchasesRef.off(); cloudPurchasesRef = null; }
         if (cloudPointsRef) { cloudPointsRef.off(); cloudPointsRef = null; }
         cloudCustomLimit = null;
-        cloudUnlimitedUsage = false;
         hideSuspendedGate();
         showAuthGate();
     });
@@ -1490,8 +1480,7 @@ window.__H = {
     }
 
     // ---- مراقبة حذف الحساب: لو الأدمن مسح المستخدم من لوحة التحكم وهو لسه فاتح
-    // الموقع، بنطلعه فورًا لصفحة تسجيل الدخول - حتى لو عنده صلاحيات كاملة (unlimitedUsage/
-    // moderator/إلخ)، لأن العقدة كلها users/{uid} بتتمسح فمفيش حاجة تفرّق بينهم. ----
+    // الموقع، بنطلعه فورًا لصفحة تسجيل الدخول، لأن العقدة كلها users/{uid} بتتمسح. ----
     let accountExistsRef = null;
     let accountExistsSeen = false;
     function attachAccountDeletionWatcher(uid) {
