@@ -489,32 +489,35 @@ async function handleGroqChat(request, env, corsHeaders) {
 
   const GROQ_TEXT_MODEL = "openai/gpt-oss-120b";
   const GROQ_VISION_MODEL = "qwen/qwen3.8-27b";
-  const providerChain = [
-    {
-      name: "groq",
-      baseUrl: "https://api.groq.com/openai/v1/chat/completions",
-      apiKey: env.GROQ_API_KEY,
-      model: hasImage ? GROQ_VISION_MODEL : GROQ_TEXT_MODEL
-    },
-    {
-      name: "openai",
-      baseUrl: "https://api.openai.com/v1/chat/completions",
-      apiKey: env.OPENAI_API_KEY,
-      model: env.OPENAI_MODEL || "gpt-4o-mini"
-    },
-    {
-      name: "gemini",
-      baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-      apiKey: env.GEMINI_API_KEY,
-      model: env.GEMINI_MODEL || "gemini-3.6-flash"
-    },
-    {
-      name: "fallback",
-      baseUrl: env.FALLBACK_BASE_URL,
-      apiKey: env.FALLBACK_API_KEY,
-      model: env.FALLBACK_MODEL
-    }
-  ];
+  const groqProvider = {
+    name: "groq",
+    baseUrl: "https://api.groq.com/openai/v1/chat/completions",
+    apiKey: env.GROQ_API_KEY,
+    model: hasImage ? GROQ_VISION_MODEL : GROQ_TEXT_MODEL
+  };
+  const openaiProvider = {
+    name: "openai",
+    baseUrl: "https://api.openai.com/v1/chat/completions",
+    apiKey: env.OPENAI_API_KEY,
+    model: env.OPENAI_MODEL || "gpt-4o-mini"
+  };
+  const geminiProvider = {
+    name: "gemini",
+    baseUrl: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+    apiKey: env.GEMINI_API_KEY,
+    model: env.GEMINI_MODEL || "gemini-3.6-flash"
+  };
+  const fallbackProvider = {
+    name: "fallback",
+    baseUrl: env.FALLBACK_BASE_URL,
+    apiKey: env.FALLBACK_API_KEY,
+    model: env.FALLBACK_MODEL
+  };
+  // موديل الصور بتاع Groq (Qwen) بيدخل أحياناً في تكرار لا نهائي وبيتقطع عند سقف التوكنز الواطي بتاعه (شوف الملحوظة تحت)،
+  // فلو الرسالة فيها صورة بنجرب OpenAI/Gemini الأول (أوصف صور أدق وأثبت)، وGroq بيفضل آخر حل احتياطي بس.
+  const providerChain = hasImage
+    ? [openaiProvider, geminiProvider, groqProvider, fallbackProvider]
+    : [groqProvider, openaiProvider, geminiProvider, fallbackProvider];
 
   let lastReason = "no_provider_configured";
   const attemptLog = [];

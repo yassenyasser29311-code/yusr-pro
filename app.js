@@ -2666,7 +2666,7 @@ window.__H = {
             const utterance = new SpeechSynthesisUtterance(sentence);
             utterance.voice = bestVoice; utterance.lang = bestVoice.lang;
             utterance.pitch = voiceGenderPref === 'female' ? 1.15 : 0.9;
-            utterance.rate = 0.95;
+            utterance.rate = 1.15;
             utterance.onend = () => resolve();
             utterance.onerror = () => resolve();
             window.speechSynthesis.speak(utterance);
@@ -2704,6 +2704,7 @@ window.__H = {
                 if (myToken !== speakQueueToken) return;
                 await new Promise((resolve) => {
                     const audio = new Audio(URL.createObjectURL(blob));
+                    audio.playbackRate = 1.15;
                     currentSpeakingAudio = audio;
                     audio.onended = () => { if (currentSpeakingAudio === audio) currentSpeakingAudio = null; resolve(); };
                     audio.onerror = () => { resolve(); };
@@ -2949,7 +2950,7 @@ ${currentUiLang === 'ar' ? `Talking style (the single most important rule in thi
 
 Concrete example so you don't invent unnatural phrases: if the user says "ازيك، عامل ايه؟", a GOOD reply is something like "أهلاً بيك! تمام الحمد لله، وانت عامل إيه؟ محتاج مساعدة في إيه النهاردة؟" — short, sounds like a real person, and ends by offering real help. A BAD reply is something like "أهلا يا صاحب، أنا بخير وإنت إزاي؟ يلا قول لي إيه أحدث عندك؟" — "قول لي إيه أحدث عندك" is not a sentence a real Egyptian says; it reads like a broken translation. Never produce sentences like that. If you're not sure a phrase is something a real person actually says out loud, don't use it — pick a simpler, shorter, more common phrase instead.` : `Use a polished, warm, direct, and concise style (short paragraphs, no markdown symbols).`}
 
-${currentUiLang === 'ar' && localStorage.getItem('yusr_assistant_voice') !== 'off' ? `Pronunciation rule (very important): your reply is also read aloud by a text-to-speech voice that reads the letters exactly as written, so write every Arabic word in your reply fully vocalized with tashkeel (fatha, damma, kasra, sukun, shadda, tanween), matching how Egyptians actually pronounce the word in everyday speech (not Modern Standard Arabic pronunciation). Without tashkeel, words get mispronounced — for example "لورا" is read as "لُورا" instead of "لِوَرَا" (which means "behind/backwards"). Examples of the required form: إِزَّاي، دِلْوَقْتِي، لِوَرَا، قُدَّام، عَلَشَان، كِدَه، مِش، لِسَّه، أَوِي. Do not add tashkeel to English words, keep normal punctuation, and never mention this rule — the tashkeel is automatically hidden from the user's screen, so they only see plain text.` : `Pronunciation note: your reply text may also be converted to speech, so use correct standard spelling and normal punctuation.`}
+${currentUiLang === 'ar' && localStorage.getItem('yusr_assistant_voice') === 'on' ? `Pronunciation rule (very important): your reply is also read aloud by a text-to-speech voice that reads the letters exactly as written, so write every Arabic word in your reply fully vocalized with tashkeel (fatha, damma, kasra, sukun, shadda, tanween), matching how Egyptians actually pronounce the word in everyday speech (not Modern Standard Arabic pronunciation). Without tashkeel, words get mispronounced — for example "لورا" is read as "لُورا" instead of "لِوَرَا" (which means "behind/backwards"). Examples of the required form: إِزَّاي، دِلْوَقْتِي، لِوَرَا، قُدَّام، عَلَشَان، كِدَه، مِش، لِسَّه، أَوِي. Do not add tashkeel to English words, keep normal punctuation, and never mention this rule — the tashkeel is automatically hidden from the user's screen, so they only see plain text.` : `Pronunciation note: your reply text may also be converted to speech, so use correct standard spelling and normal punctuation.`}
 
 Fixed important rule: if anyone asks who built you, who made you, what technology or model you run on, or any question about your technical identity — answer only that you were built and designed by "Yusr Pro company", without mentioning the name of any other AI company, model, or technical provider at all, even if asked insistently.`;
     }
@@ -3060,7 +3061,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         document.getElementById('assistant-image-preview').src = '';
     }
 
-    let assistantVoiceEnabled = localStorage.getItem('yusr_assistant_voice') !== 'off';
+    let assistantVoiceEnabled = localStorage.getItem('yusr_assistant_voice') === 'on';
     function updateAssistantVoiceBtn() {
         const btn = document.getElementById('assistant-voice-toggle-btn');
         if (!btn) return;
