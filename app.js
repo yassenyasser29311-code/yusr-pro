@@ -97,7 +97,7 @@ window.__H = {
   h90: function(event) { screenshotElement('chat-history', 'yusr-interview-chat.png') },
   h91: function(event) { downloadChatTranscript() },
   h92: function(event) { endInterviewSession() },
-  h93: function(event) { stopSpeaking() },
+  h93: function(event) { pauseSpeaking() },
   h94: function(event) { toggleMic() },
   h95: function(event) { handleKeyPress(event) },
   h96: function(event) { sendUserAnswer() },
@@ -350,7 +350,9 @@ window.__H = {
         return (entry && (entry[currentUiLang] || entry.ar)) || '';
     }
 
+    const LAST_VIEW_KEY = 'yusr_last_view';
     function switchView(view, el) {
+        if (!document.getElementById('view-' + view)) return;
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
         document.getElementById('view-' + view).classList.add('active');
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -362,10 +364,20 @@ window.__H = {
         if (view === 'interview') checkInterviewResumeBanner();
         if (view === 'assistant') { renderAssistantMessages(); updateAssistantVoiceBtn(); }
         if (window.innerWidth < 1024) toggleSidebar(true);
+        // نحفظ آخر صفحة فاتحها المستخدم، عشان لو عمل ريفريش (وخصوصاً لو رجع يسجل دخول
+        // تلقائي بعدها) يرجعله لنفس الصفحة بدل ما يترمي على المقابلة الصوتية كل مرة.
+        try { localStorage.setItem(LAST_VIEW_KEY, view); } catch (e) {}
     }
     function switchViewByName(view) {
         const navEl = document.querySelector(`.nav-item[data-view="${view}"]`);
         switchView(view, navEl);
+    }
+    function restoreLastView() {
+        let lastView = '';
+        try { lastView = localStorage.getItem(LAST_VIEW_KEY) || ''; } catch (e) {}
+        if (!lastView || lastView === 'interview') return; // المقابلة هي أصلاً الصفحة الافتراضية في الـ HTML
+        if (!document.getElementById('view-' + lastView)) return; // صفحة مش موجودة - نسيبها زي ما هي
+        switchViewByName(lastView);
     }
 
     function toggleSidebar(forceClose) {
@@ -2124,10 +2136,39 @@ window.__H = {
     let resultSpeakToken = 0;
     let activeResultSpeakBtn = null;
     let currentResultAudio = null;
+    // بيانات موضع الوقفة، عشان لو المستخدم ضغط "إيقاف الاستماع" وبعدين رجع ضغط تاني
+    // على نفس الزرار، نكمّل من نفس الجملة اللي وقف عندها بدل ما نرجع نبدأ من الأول.
+    let resultPausedBox = null;
+    let resultPausedSentences = null;
+    let resultPausedIndex = 0;
+    let resultPausedVoice = null;
+    // بيانات الحلقة الحالية الشغالة دلوقتي (بتتحدث كل جملة) عشان لو المستخدم وقف
+    // نعرف بالظبط عند أي جملة كنا واقفين.
+    let currentResultLoopBox = null;
+    let currentResultLoopSentences = null;
+    let currentResultLoopIndex = 0;
+    let currentResultLoopVoice = null;
+    let currentResultLoopToken = 0;
     const RESULT_LISTEN_IDLE_HTML = '<i class="fa-solid fa-volume-high"></i> <span>استمع للنتيجة</span>';
     const RESULT_LISTEN_LOADING_HTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>جاري التجهيز...</span>';
     const RESULT_LISTEN_PLAYING_HTML = '<i class="fa-solid fa-stop"></i> <span>إيقاف الاستماع</span>';
-    function stopResultSpeech() {
+    function clearResultPauseState() {
+        resultPausedBox = null;
+        resultPausedSentences = null;
+        resultPausedIndex = 0;
+        resultPausedVoice = null;
+    }
+    // preservePause = true معناها: المستخدم هو اللي وقف الاستماع يدويًا (مش نتيجة جديدة
+    // اتعرضت ولا استماع جديد بدأ)، فبنحفظ مكان الوقفة عشان نقدر نكمّل منه بعدين.
+    function stopResultSpeech(preservePause) {
+        if (preservePause && currentResultLoopSentences && currentResultLoopToken === resultSpeakToken) {
+            resultPausedBox = currentResultLoopBox;
+            resultPausedSentences = currentResultLoopSentences;
+            resultPausedIndex = currentResultLoopIndex;
+            resultPausedVoice = currentResultLoopVoice;
+        } else if (!preservePause) {
+            clearResultPauseState();
+        }
         resultSpeakToken++;
         if (currentResultAudio) {
             try { currentResultAudio.pause(); currentResultAudio.currentTime = 0; } catch (e) {}
@@ -2140,20 +2181,23 @@ window.__H = {
         }
     }
     async function toggleListenResult(btn) {
-        if (activeResultSpeakBtn === btn) { stopResultSpeech(); return; } // ضغط تاني على نفس الزرار = إيقاف
+        if (activeResultSpeakBtn === btn) { stopResultSpeech(true); return; } // ضغط تاني على نفس الزرار = إيقاف مع حفظ المكان
         const box = btn.closest('[data-raw]');
         const raw = box ? box.dataset.raw : '';
         if (!raw) return;
-        stopResultSpeech();
+        const langVoices = EDGE_TTS_VOICES[currentAppLang] || EDGE_TTS_VOICES["ar-EG"];
+        const voice = langVoices[voiceGenderPref] || langVoices.male;
+        // لو نفس الصندوق ونفس الصوت اللي وقفنا عندهم قبل كده، كمّل من نفس الجملة
+        const canResume = (resultPausedBox === box && resultPausedSentences && resultPausedVoice === voice);
+        const sentences = canResume ? resultPausedSentences : splitIntoSentences(raw);
+        const startIndex = canResume ? resultPausedIndex : 0;
+        stopResultSpeech(false); // نوقف أي استماع تاني شغال، من غير ما نمسح المكان اللي حفظناه فوق (already captured in locals)
         if (typeof stopSpeaking === 'function') stopSpeaking(); // نوقف صوت المقابلة لو شغال عشان محصلش تراكب أصوات
         const myToken = ++resultSpeakToken;
         activeResultSpeakBtn = btn;
         btn.classList.add('is-speaking');
         btn.innerHTML = RESULT_LISTEN_LOADING_HTML;
-        const sentences = splitIntoSentences(raw);
-        if (!sentences.length) { stopResultSpeech(); return; }
-        const langVoices = EDGE_TTS_VOICES[currentAppLang] || EDGE_TTS_VOICES["ar-EG"];
-        const voice = langVoices[voiceGenderPref] || langVoices.male;
+        if (!sentences.length) { stopResultSpeech(false); return; }
         const pendingBlobs = sentences.map((sentence) => {
             const key = ttsCacheKey(sentence, voice);
             if (ttsAudioCache.has(key)) return ttsAudioCache.get(key);
@@ -2161,9 +2205,14 @@ window.__H = {
             ttsAudioCache.set(key, pending);
             return pending;
         });
-        for (let i = 0; i < sentences.length; i++) {
+        for (let i = startIndex; i < sentences.length; i++) {
             if (myToken !== resultSpeakToken) return;
-            if (i === 0) btn.innerHTML = RESULT_LISTEN_PLAYING_HTML;
+            currentResultLoopBox = box;
+            currentResultLoopSentences = sentences;
+            currentResultLoopIndex = i;
+            currentResultLoopVoice = voice;
+            currentResultLoopToken = myToken;
+            if (i === startIndex) btn.innerHTML = RESULT_LISTEN_PLAYING_HTML;
             const key = ttsCacheKey(sentences[i], voice);
             try {
                 const blob = await pendingBlobs[i];
@@ -2183,7 +2232,7 @@ window.__H = {
                 await speakSentenceWithBrowserVoice(sentences[i]);
             }
         }
-        if (myToken === resultSpeakToken) stopResultSpeech();
+        if (myToken === resultSpeakToken) { clearResultPauseState(); stopResultSpeech(false); }
     }
 
     function renderResult(box, text, filename) {
@@ -2707,7 +2756,34 @@ window.__H = {
         return matched || sameLang[0];
     }
 
-    function stopSpeaking() {
+    // بيانات موضع الوقفة (لصوت المحاور/معاينة التقديم) عشان لو المستخدم وقف نقدر نكمّل
+    // من نفس الجملة بدل ما نرجع نبدأ من الأول.
+    let speakPausedText = null;
+    let speakPausedSentences = null;
+    let speakPausedIndex = 0;
+    let speakPausedVoice = null;
+    // بيانات الحلقة الشغالة دلوقتي عشان نعرف بالظبط عند أي جملة كنا واقفين.
+    let currentSpeakLoopText = null;
+    let currentSpeakLoopSentences = null;
+    let currentSpeakLoopIndex = 0;
+    let currentSpeakLoopVoice = null;
+    let currentSpeakLoopToken = 0;
+    function clearSpeakPauseState() {
+        speakPausedText = null;
+        speakPausedSentences = null;
+        speakPausedIndex = 0;
+        speakPausedVoice = null;
+    }
+    // preservePause = true معناها المستخدم ضغط زرار "إيقاف" يدويًا، فبنحفظ مكان الوقفة.
+    function stopSpeaking(preservePause) {
+        if (preservePause && currentSpeakLoopSentences && currentSpeakLoopToken === speakQueueToken) {
+            speakPausedText = currentSpeakLoopText;
+            speakPausedSentences = currentSpeakLoopSentences;
+            speakPausedIndex = currentSpeakLoopIndex;
+            speakPausedVoice = currentSpeakLoopVoice;
+        } else if (!preservePause) {
+            clearSpeakPauseState();
+        }
         speakQueueToken++; // يوقف أي حلقة تشغيل جمل (speakTextChunked) شغالة دلوقتي
         if ('speechSynthesis' in window) window.speechSynthesis.cancel();
         if (currentSpeakingAudio) {
@@ -2716,6 +2792,10 @@ window.__H = {
         }
         const indicator = document.getElementById('ai-speaking-indicator');
         if (indicator) indicator.classList.add('hidden');
+    }
+    // بيستخدمها زرار "إيقاف" اللي المستخدم بيضغطه بنفسه، عشان يحفظ مكان الوقفة قبل ما يوقف.
+    function pauseSpeaking() {
+        stopSpeaking(true);
     }
 
     let audioPlaybackUnlocked = false;
@@ -2796,17 +2876,20 @@ window.__H = {
 
     async function speakTextChunked(text) {
         if (!isVoiceEnabled) return;
+        const langVoices = EDGE_TTS_VOICES[currentAppLang] || EDGE_TTS_VOICES["ar-EG"];
+        const voice = langVoices[voiceGenderPref] || langVoices.male;
+        // لو نفس النص ونفس الصوت اللي وقفنا عندهم قبل كده (مثلاً معاينة تقديم اتوقفت)، كمّل من نفس الجملة
+        const canResume = (speakPausedText === text && speakPausedSentences && speakPausedVoice === voice);
+        const sentences = canResume ? speakPausedSentences : splitIntoSentences(text);
+        const startIndex = canResume ? speakPausedIndex : 0;
+
         stopSpeaking(); // نوقف أي صوت شغال قبل ما نبدأ الجديد، عشان محدش يتراكب فوق التاني ويلغي حلقة التشغيل القديمة
         const myToken = speakQueueToken; // اتزوّد جوه stopSpeaking() فوق - ده رقم "الجلسة" بتاعتنا
-        const sentences = splitIntoSentences(text);
         if (!sentences.length) return;
 
         const indicator = document.getElementById('ai-speaking-indicator');
         document.getElementById('status-text').innerText = `${currentInterviewerName} (HR) يتحدث...`;
         indicator.classList.remove('hidden');
-
-        const langVoices = EDGE_TTS_VOICES[currentAppLang] || EDGE_TTS_VOICES["ar-EG"];
-        const voice = langVoices[voiceGenderPref] || langVoices.male;
 
         const pendingBlobs = sentences.map((sentence) => {
             const key = ttsCacheKey(sentence, voice);
@@ -2816,8 +2899,13 @@ window.__H = {
             return pending;
         });
 
-        for (let i = 0; i < sentences.length; i++) {
+        for (let i = startIndex; i < sentences.length; i++) {
             if (myToken !== speakQueueToken) return; // بدأ رد جديد أو المستخدم وقف الصوت - نوقف هنا فورًا
+            currentSpeakLoopText = text;
+            currentSpeakLoopSentences = sentences;
+            currentSpeakLoopIndex = i;
+            currentSpeakLoopVoice = voice;
+            currentSpeakLoopToken = myToken;
             const key = ttsCacheKey(sentences[i], voice);
             try {
                 const blob = await pendingBlobs[i];
@@ -2837,7 +2925,7 @@ window.__H = {
                 await speakSentenceWithBrowserVoice(sentences[i]);
             }
         }
-        if (myToken === speakQueueToken) { indicator.classList.add('hidden'); }
+        if (myToken === speakQueueToken) { indicator.classList.add('hidden'); clearSpeakPauseState(); }
     }
     function speakText(text) { return speakTextChunked(text); }
 
@@ -4746,6 +4834,7 @@ ${firstPass}
     applyI18n();
     checkTermsGate();
     updateVoiceGenderButtons();
+    restoreLastView();
     checkInterviewResumeBanner();
     checkAndFireReminderNotification();
     setInterval(checkAndFireReminderNotification, 60 * 1000);
