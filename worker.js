@@ -443,7 +443,7 @@ async function handleGroqChat(request, env, corsHeaders) {
   const MAX_IMAGES_PER_REQUEST = 4;
   let totalChars = 0;
   let imageCount = 0;
-  let hasImage = false; // بيبقى true لو أي رسالة فيها صورة - محتاجينه عشان نختار موديل يدعم الصور بدل موديل نصي بس
+  let hasImage = false; // بيبقى true لو أي رسالة في الهيستوري كله فيها صورة - مستخدم بس في التحقق من عدد الصور والـ retry، مش في اختيار الموديل (شوف lastMsgHasImage تحت)
   for (const m of messages) {
     if (!m || typeof m !== "object") return json({ error: "invalid_message" }, 400, corsHeaders);
     if (!ALLOWED_ROLES.has(m.role)) return json({ error: "invalid_role" }, 400, corsHeaders);
@@ -487,13 +487,21 @@ async function handleGroqChat(request, env, corsHeaders) {
 
   const cleanMessages = messages.map(m => ({ role: m.role, content: m.content }));
 
+  // مهم: قرار اختيار الموديل/سلسلة المزوّدين لازم يتبني على آخر رسالة من المستخدم بس، مش على
+  // "فيه صورة في أي حتة في الهيستوري" — عشان لو المستخدم بعت صورة مرة واحدة وبعدين باقي المحادثة
+  // نص عادي (زي "وصف تاني"، "اشرحلي أكتر")، كانت كل رسالة بعد كده بتتوجه لموديلات الرؤية (اللي أبطأ
+  // وأكتر عرضة للفشل/التكرار) من غير أي داعي، وده كان بيسبب فشل متكرر ("تعذر الرد") في المتابعة.
+  const lastMsgHasImage = lastUserMessageHasImage(cleanMessages);
+  // ولو آخر رسالة مفيهاش صورة، بنشيل أي صور قديمة من الهيستوري قبل ما نبعته لأي موديل (حتى لو موديل
+  // بيدعم صور) — عشان الرد يتحسم بسرعة وميعتمدش على موديل الرؤية أصلاً في المتابعات النصية.
+  const routingMessages = lastMsgHasImage ? cleanMessages : stripImagesFromMessages(cleanMessages);
   const GROQ_TEXT_MODEL = "openai/gpt-oss-120b";
   const GROQ_VISION_MODEL = "qwen/qwen3.8-27b";
   const groqProvider = {
     name: "groq",
     baseUrl: "https://api.groq.com/openai/v1/chat/completions",
     apiKey: env.GROQ_API_KEY,
-    model: hasImage ? GROQ_VISION_MODEL : GROQ_TEXT_MODEL
+    model: lastMsgHasImage ? GROQ_VISION_MODEL : GROQ_TEXT_MODEL
   };
   const openaiProvider = {
     name: "openai",
@@ -515,7 +523,7 @@ async function handleGroqChat(request, env, corsHeaders) {
   };
   // موديل الصور بتاع Groq (Qwen) بيدخل أحياناً في تكرار لا نهائي وبيتقطع عند سقف التوكنز الواطي بتاعه (شوف الملحوظة تحت)،
   // فلو الرسالة فيها صورة بنجرب OpenAI/Gemini الأول (أوصف صور أدق وأثبت)، وGroq بيفضل آخر حل احتياطي بس.
-  const providerChain = hasImage
+  const providerChain = lastMsgHasImage
     ? [openaiProvider, geminiProvider, groqProvider, fallbackProvider]
     : [groqProvider, openaiProvider, geminiProvider, fallbackProvider];
 
@@ -528,9 +536,9 @@ async function handleGroqChat(request, env, corsHeaders) {
     }
     // طلبات الصور: موديل Qwen على Groq بيدخل في تكرار لا نهائي (ههههه...) مع temperature واطية، فبنستخدم
     // القيم اللي Groq نفسه بيوصي بيها في الدوكيومنتيشن بتاع الرؤية (temperature=1, top_p=1)، وبنحط سقف لطول الرد. (سقف Groq هنا 700 لأن الخطة الحالية على موديل الصور محدودة بـ 1000 توكن خرج في الدقيقة.)
-    const sampling = !hasImage ? undefined
+    const sampling = !lastMsgHasImage ? undefined
       : (provider.name === "groq" ? { temperature: 1, topP: 1, maxTokens: 700 } : { maxTokens: 4096 });
-    const attempt = await tryChatProvider(provider.baseUrl, provider.apiKey, provider.model, cleanMessages, sampling);
+    const attempt = await tryChatProvider(provider.baseUrl, provider.apiKey, provider.model, routingMessages, sampling);
     if (attempt.ok) {
       if (provider.name !== "groq") {
         console.warn(`تم الرد عن طريق مزوّد بديل (${provider.name}) بعد فشل اللي قبله`);
