@@ -3282,7 +3282,15 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         assistantVoiceEnabled = !assistantVoiceEnabled;
         localStorage.setItem('yusr_assistant_voice', assistantVoiceEnabled ? 'on' : 'off');
         updateAssistantVoiceBtn();
-        if (!assistantVoiceEnabled && typeof stopSpeaking === 'function') { try { stopSpeaking(); } catch (e) {} }
+        if (!assistantVoiceEnabled && typeof stopSpeaking === 'function') {
+            try { stopSpeaking(); } catch (e) {}
+        } else if (assistantVoiceEnabled) {
+            const lastMsg = [...assistantChatHistory].reverse().find(m => m.role === 'assistant' && !m.error);
+            if (lastMsg) {
+                const text = typeof lastMsg.content === 'string' ? lastMsg.content : '';
+                if (text) { try { speakTextChunked(text); } catch (e) {} }
+            }
+        }
     }
 
     async function sendAssistantMessage() {
