@@ -353,6 +353,8 @@ window.__H = {
     const LAST_VIEW_KEY = 'yusr_last_view';
     function switchView(view, el) {
         if (!document.getElementById('view-' + view)) return;
+        // لو المستخدم سايب صفحة مقابلة الفيديو والكاميرا شغالة، نقفلها عشان الكاميرا وتحليل الوجه والصوت ميفضلوش شغالين في الخلفية ويتقّلوا الموقع.
+        try { if (view !== 'video' && videoMockStream) stopVideoMockCamera(); } catch (e) {}
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
         document.getElementById('view-' + view).classList.add('active');
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
@@ -3600,13 +3602,34 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
     }
     function previewCvLiPhoto(e) {
         const file = e.target.files[0]; if (!file) return;
-        const reader = new FileReader();
-        reader.onload = () => {
-            document.getElementById('cv-li-photo-preview').src = reader.result;
+        const applyPhoto = (src) => {
+            document.getElementById('cv-li-photo-preview').src = src;
             document.getElementById('cv-li-photo-preview').classList.remove('hidden');
             document.getElementById('cv-li-photo-icon').classList.add('hidden');
         };
-        reader.readAsDataURL(file);
+        const fallbackRead = () => {
+            const reader = new FileReader();
+            reader.onload = () => applyPhoto(reader.result);
+            reader.readAsDataURL(file);
+        };
+        // بنصغّر الصورة (أقصى 600px) بدل ما نستخدم صورة الموبايل الأصلية الضخمة، عشان حفظ الصورة ميتقلش ويجمّد الصفحة.
+        const objUrl = URL.createObjectURL(file);
+        const probe = new Image();
+        probe.onload = () => {
+            try {
+                const ratio = Math.min(1, 600 / Math.max(probe.naturalWidth, probe.naturalHeight));
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.max(1, Math.round(probe.naturalWidth * ratio));
+                canvas.height = Math.max(1, Math.round(probe.naturalHeight * ratio));
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(probe, 0, 0, canvas.width, canvas.height);
+                applyPhoto(canvas.toDataURL('image/jpeg', 0.9));
+            } catch (err) { fallbackRead(); }
+            URL.revokeObjectURL(objUrl);
+        };
+        probe.onerror = () => { URL.revokeObjectURL(objUrl); fallbackRead(); };
+        probe.src = objUrl;
     }
     async function runCvBuilder(variant) {
         variant = variant === 'linkedin' ? 'linkedin' : 'plain';
@@ -3656,7 +3679,9 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         </div>` + formatReportText(text);
     }
 
+    let cvLiExportBusy = false;
     async function exportCvLinkedInImage() {
+        if (cvLiExportBusy) return; // منع الضغط المتكرر اللي كان بيشغّل أكتر من تصوير تقيل في نفس الوقت ويجمّد الصفحة
         if (typeof html2canvas === 'undefined') { showToast('تعذر تحميل أداة التصوير، تأكد من الاتصال بالإنترنت وحاول تاني.', 'error'); return; }
         const box = document.getElementById('cv-result-linkedin');
         const text = (box && box.dataset.raw) || '';
@@ -3680,22 +3705,36 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         contactParts.forEach(p => { const span = document.createElement('span'); span.textContent = p; contactEl.appendChild(span); });
         document.getElementById('cv-li-card-body').textContent = text;
 
+        cvLiExportBusy = true;
+        showToast('جاري تجهيز الصورة... ثواني', 'info');
         card.classList.remove('hidden');
         card.style.left = '0'; card.style.top = '0'; card.style.zIndex = '-1'; card.style.opacity = '0'; card.style.pointerEvents = 'none';
         try {
-            const canvas = await html2canvas(card, { backgroundColor: '#ffffff', scale: 2, useCORS: true });
-            canvas.toBlob((blob) => {
-                if (!blob) { showToast('تعذر إنشاء الصورة، حاول تاني.', 'error'); return; }
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a'); a.href = url; a.download = 'cv-linkedin-style.png';
-                document.body.appendChild(a); a.click(); a.remove();
-                URL.revokeObjectURL(url);
-            }, 'image/png');
+            // نسيب المتصفح يرسم الكارت والتنبيه الأول قبل التصوير التقيل، بدل ما الصفحة تتجمد من غير أي إشارة.
+            await new Promise(r => setTimeout(r, 80));
+            if (photoImg.style.display !== 'none' && photoImg.decode) { try { await photoImg.decode(); } catch (e) {} }
+            // الـ scale بيتحدد حسب حجم الكارت الفعلي عشان السيرة الطويلة متعملش canvas ضخم يقفّل الموبايل أو يفشل.
+            const cardW = Math.max(1, card.offsetWidth), cardH = Math.max(1, card.scrollHeight || card.offsetHeight);
+            const exportScale = Math.max(1, Math.min(2, Math.sqrt(9e6 / (cardW * cardH))));
+            // بنصوّر الكارت بس ونتجاهل باقي عناصر الصفحة، بدل ما المكتبة تنسخ الصفحة كلها.
+            const keepTags = { HEAD: 1, STYLE: 1, LINK: 1, META: 1, TITLE: 1, BASE: 1 };
+            const canvas = await html2canvas(card, {
+                backgroundColor: '#ffffff', scale: exportScale, useCORS: true, logging: false,
+                ignoreElements: (n) => !(keepTags[n.tagName] || n === card || card.contains(n) || n.contains(card))
+            });
+            const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+            canvas.width = 0; canvas.height = 0; // تحرير ذاكرة الـ canvas فوراً
+            if (!blob) { showToast('تعذر إنشاء الصورة، حاول تاني.', 'error'); return; }
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = 'cv-linkedin-style.png';
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 15000); // التأخير بيمنع فشل التحميل في بعض المتصفحات/الموبايلات
         } catch (e) {
             console.warn('CV LinkedIn image export failed:', e);
             showToast('تعذر تصوير السيرة الذاتية، حاول تاني.', 'error');
         } finally {
             card.classList.add('hidden'); card.style.left = '-9999px'; card.style.zIndex = ''; card.style.opacity = ''; card.style.pointerEvents = '';
+            cvLiExportBusy = false;
         }
     }
 
@@ -4007,7 +4046,10 @@ ${firstPass}
     }
     let videoMockAnalysisSamples = [], videoMockAnalysisTimer = null;
     let videoMockAudioCtx = null, videoMockAnalyser = null, videoMockVolumeSamples = [];
+    let videoMockSamplingSession = 0;
     async function startVideoMockAnalysisSampling(statusEl) {
+        stopVideoMockAnalysisSampling();
+        const samplingSession = videoMockSamplingSession;
         videoMockAnalysisSamples = [];
         videoMockVolumeSamples = [];
         try {
@@ -4018,24 +4060,32 @@ ${firstPass}
             src.connect(videoMockAnalyser);
         } catch (e) { console.warn('تعذر تجهيز تحليل شدة الصوت المباشر:', e); }
         const faceReady = await ensureFaceApiModels(statusEl);
+        // لو المستخدم وقف التسجيل/الكاميرا وإحنا لسه بنحمّل النموذج، منشغّلش التايمر خالص (كان بيفضل شغال للأبد).
+        if (samplingSession !== videoMockSamplingSession) return;
         const vid = document.getElementById('video-mock-preview');
         const volData = videoMockAnalyser ? new Uint8Array(videoMockAnalyser.frequencyBinCount) : null;
+        let faceDetecting = false; // منع تراكم عمليات كشف الوجه فوق بعض لو الجهاز بطيء
         videoMockAnalysisTimer = setInterval(async () => {
+            if (samplingSession !== videoMockSamplingSession) return;
             if (volData && videoMockAnalyser) {
                 videoMockAnalyser.getByteTimeDomainData(volData);
                 let sumSq = 0;
                 for (let i = 0; i < volData.length; i++) { const v = (volData[i] - 128) / 128; sumSq += v * v; }
                 videoMockVolumeSamples.push(Math.sqrt(sumSq / volData.length));
             }
-            if (!faceReady || !vid || vid.readyState < 2) return;
+            if (!faceReady || !vid || vid.readyState < 2 || faceDetecting) return;
+            faceDetecting = true;
             try {
-                const det = await faceapi.detectSingleFace(vid, new faceapi.TinyFaceDetectorOptions({ inputSize: 512, scoreThreshold: 0.5 })).withFaceExpressions();
+                const det = await faceapi.detectSingleFace(vid, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 })).withFaceExpressions();
+                if (samplingSession !== videoMockSamplingSession) return;
                 const confidentDet = det && det.detection && det.detection.score >= 0.6 ? det : null;
                 videoMockAnalysisSamples.push(confidentDet ? { expressions: confidentDet.expressions, box: confidentDet.detection.box, videoW: vid.videoWidth, videoH: vid.videoHeight } : { expressions: null });
             } catch (e) { /* تجاهل عينة فشلت وكمّل اللي بعدها */ }
-        }, 700);
+            finally { faceDetecting = false; }
+        }, 900);
     }
     function stopVideoMockAnalysisSampling() {
+        videoMockSamplingSession++;
         if (videoMockAnalysisTimer) { clearInterval(videoMockAnalysisTimer); videoMockAnalysisTimer = null; }
         if (videoMockAudioCtx) { try { videoMockAudioCtx.close(); } catch (e) {} videoMockAudioCtx = null; videoMockAnalyser = null; }
     }
@@ -4122,8 +4172,12 @@ ${firstPass}
         }
     }
 
+    let videoMockStarting = false;
     async function startVideoMockCamera() {
+        if (videoMockStarting) return; // ضغطتين ورا بعض كانتا بيفتحوا كاميرتين والأولى بتفضل شغالة في الخلفية
+        videoMockStarting = true;
         const status = document.getElementById('video-mock-status');
+        stopVideoMockAnalysisSampling();
         if (videoMockStream) {
             try { videoMockStream.getTracks().forEach(t => t.stop()); } catch (e) {}
             videoMockStream = null;
@@ -4175,6 +4229,8 @@ ${firstPass}
             status.innerText = "الكاميرا شغالة. تقدر تتدرب على الرد على أسئلة صفحة 'مقابلة تدريبية صوتية' وانت قدامها، أو تسجل مقطع وهيتحلل تلقائياً بعد ما توقف التسجيل.";
         } catch (e) {
             status.innerText = "تعذر فتح الكاميرا. تأكد إنك سامح للمتصفح بالوصول للكاميرا والمايك.";
+        } finally {
+            videoMockStarting = false;
         }
     }
     function toggleVideoMockRecording() {
@@ -4190,9 +4246,10 @@ ${firstPass}
                 videoMockRecorder.ondataavailable = (e) => { if (e.data.size > 0) videoMockChunks.push(e.data); };
                 videoMockRecorder.onstop = () => {
                     const blob = new Blob(videoMockChunks, { type: 'video/webm' });
+                    videoMockChunks = [];
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a'); a.href = url; a.download = 'yusr-mock-interview-practice.webm'; document.body.appendChild(a); a.click(); a.remove();
-                    URL.revokeObjectURL(url);
+                    setTimeout(() => URL.revokeObjectURL(url), 30000);
                     const durationSec = (Date.now() - videoMockRecordStartTime) / 1000;
                     stopVideoMockAnalysisSampling();
                     status.innerText = "✓ اتسجل المقطع ونزل تلقائياً، راجعه واحكم على نفسك بعين ناقدة. وجاري تجهيز تحليل الأداء تحت...";
