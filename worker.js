@@ -1,8 +1,7 @@
 
 
 const ALLOWED_ORIGINS = [
-  "https://yusr-pro.vercel.app",
-  "http://localhost:2435" // للتجربة المحلية بس — شيله وقت ما توديه production لو حابب
+  "https://yusr-pro.vercel.app"
 ];
 
 const FIREBASE_PROJECT_ID = "yusr-d054e";
