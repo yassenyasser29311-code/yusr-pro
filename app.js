@@ -3708,7 +3708,11 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         cvLiExportBusy = true;
         showToast('جاري تجهيز الصورة... ثواني', 'info');
         card.classList.remove('hidden');
-        card.style.left = '0'; card.style.top = '0'; card.style.zIndex = '-1'; card.style.opacity = '0'; card.style.pointerEvents = 'none';
+        // بنستخدم إحداثيات بره الشاشة (مش opacity: 0) لإخفاء الكارت وقت التصوير:
+        // html2canvas فيه bug قديم ومعروف إن opacity: 0 بيتصوّر فاضي/شفاف، فبيطلع صورة بيضا بالكامل
+        // (لأن خلفية الكانفس اللي تحت متظبطة #ffffff). الإحداثيات السالبة كده بتخلي الكارت غير مرئي
+        // للمستخدم فعلياً من غير ما تأثر على إزاي html2canvas بيرسمه.
+        card.style.left = '-9999px'; card.style.top = '0'; card.style.zIndex = '-1'; card.style.pointerEvents = 'none';
         try {
             // نسيب المتصفح يرسم الكارت والتنبيه الأول قبل التصوير التقيل، بدل ما الصفحة تتجمد من غير أي إشارة.
             await new Promise(r => setTimeout(r, 80));
@@ -3733,7 +3737,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
             console.warn('CV LinkedIn image export failed:', e);
             showToast('تعذر تصوير السيرة الذاتية، حاول تاني.', 'error');
         } finally {
-            card.classList.add('hidden'); card.style.left = '-9999px'; card.style.zIndex = ''; card.style.opacity = ''; card.style.pointerEvents = '';
+            card.classList.add('hidden'); card.style.left = '-9999px'; card.style.zIndex = ''; card.style.pointerEvents = '';
             cvLiExportBusy = false;
         }
     }
@@ -4020,7 +4024,12 @@ ${firstPass}
     }
 
     const FACE_API_SCRIPT = 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js';
-    const FACE_MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
+    // بنستخدم تاج ثابت (0.22.2) بدل ما نستخدم @master اللي بيتغيّر باستمرار وممكن يبوّظ فجأة.
+    // وبنسيب رابط احتياطي تاني لو الأول فشل (مشكلة شبكة/CDN وقتية) بدل ما نستسلم من أول مرة.
+    const FACE_MODEL_URLS = [
+        'https://cdn.jsdelivr.net/gh/justadudewhohacks/[email protected]/weights',
+        'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/refs/tags/0.22.2/weights'
+    ];
     let faceApiModelsLoaded = false, faceApiLoadPromise = null;
     function ensureFaceApiModels(statusEl) {
         if (faceApiModelsLoaded) return Promise.resolve(true);
@@ -4030,14 +4039,21 @@ ${firstPass}
                 if (statusEl) statusEl.innerText = 'جاري تحميل نموذج تحليل تعبيرات الوجه (أول مرة بس)...';
                 await loadScriptOnce(FACE_API_SCRIPT);
                 if (typeof faceapi === 'undefined') throw new Error('مكتبة تحليل الوجه مش متاحة.');
-                await Promise.all([
-                    faceapi.nets.tinyFaceDetector.loadFromUri(FACE_MODEL_URL),
-                    faceapi.nets.faceExpressionNet.loadFromUri(FACE_MODEL_URL)
-                ]);
-                faceApiModelsLoaded = true;
-                return true;
+                let lastErr = null;
+                for (const modelUrl of FACE_MODEL_URLS) {
+                    try {
+                        await Promise.all([
+                            faceapi.nets.tinyFaceDetector.loadFromUri(modelUrl),
+                            faceapi.nets.faceExpressionNet.loadFromUri(modelUrl)
+                        ]);
+                        faceApiModelsLoaded = true;
+                        return true;
+                    } catch (err) { lastErr = err; }
+                }
+                throw lastErr || new Error('تعذر تحميل الموديل من كل المصادر المتاحة.');
             } catch (e) {
                 console.warn('تعذر تحميل نموذج تحليل الوجه، هيتم الاكتفاء بتحليل الصوت فقط:', e);
+                if (statusEl) statusEl.innerText = 'تعذر تحميل نموذج تحليل تعبيرات الوجه (مشكلة اتصال بالسيرفر)، هيتم الاكتفاء بتحليل الصوت بس.';
                 faceApiLoadPromise = null;
                 return false;
             }
