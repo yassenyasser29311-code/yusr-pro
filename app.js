@@ -4094,7 +4094,9 @@ ${firstPass}
             try {
                 const det = await faceapi.detectSingleFace(vid, new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 })).withFaceExpressions();
                 if (samplingSession !== videoMockSamplingSession) return;
-                const confidentDet = det && det.detection && det.detection.score >= 0.6 ? det : null;
+                // detectSingleFace بيرجع بس النتائج اللي عدّت الـ scoreThreshold (0.5) اللي فوق أصلاً،
+                // فمش محتاجين نرفض تاني بحد أعلى (كان 0.6) — ده كان بيلغي عينات سليمة كتير في إضاءة الموبايل العادية.
+                const confidentDet = det && det.detection ? det : null;
                 videoMockAnalysisSamples.push(confidentDet ? { expressions: confidentDet.expressions, box: confidentDet.detection.box, videoW: vid.videoWidth, videoH: vid.videoHeight } : { expressions: null });
             } catch (e) { /* تجاهل عينة فشلت وكمّل اللي بعدها */ }
             finally { faceDetecting = false; }
