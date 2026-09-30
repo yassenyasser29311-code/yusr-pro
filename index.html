@@ -109,6 +109,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Tajawal:wght@500;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css?v=7">
+<link rel="stylesheet" href="landing.css?v=1">
 </head>
 <body class="min-h-screen">
 
@@ -133,8 +134,10 @@
 </div>
 
 
+<div id="landing-page" class="hidden" dir="rtl"></div>
 <div id="auth-gate-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4" style="background:#000000;">
     <div class="panel modal-pop max-w-sm w-full rounded-2xl p-5 space-y-4 text-right">
+        <button id="auth-back-home" type="button"><i class="fa-solid fa-arrow-right"></i> الصفحة الرئيسية</button>
         <div class="text-center space-y-1">
             <div class="w-12 h-12 rounded-full bg-gradient-to-tr from-slate-400 to-slate-600 flex items-center justify-center mx-auto font-extrabold text-slate-950 text-base">يس</div>
             <h3 class="text-sm font-bold text-slate-100" data-i18n="authgate.title">سجّل دخولك</h3>
@@ -2483,7 +2486,8 @@ html.light-mode #admin-dashboard {
     </div>
 </div>
 
-<script src="app.js?v=13"></script>
+<script src="app.js?v=14"></script>
+<script src="landing.js?v=1"></script>
 <script src="admin.js?v=2"></script>
 </body>
 </html>

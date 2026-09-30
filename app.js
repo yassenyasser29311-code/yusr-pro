@@ -1289,12 +1289,14 @@ window.__H = {
     }
 
     function showAuthGate() {
+        if (window.__landing && window.__landing.show()) { document.getElementById('app-root').classList.add('hidden'); return; }
         document.getElementById('auth-gate-modal').classList.remove('hidden');
         document.getElementById('app-root').classList.add('hidden');
     }
     function hideAuthGate() {
         document.getElementById('auth-gate-modal').classList.add('hidden');
         document.getElementById('app-root').classList.remove('hidden');
+        if (window.__landing) { window.__landing.hide(); const pv = window.__landing.takePending(); if (pv) setTimeout(() => switchViewByName(pv), 0); }
     }
     window.showAuthGateFromAdminCancel = function () { showAuthGate(); };
     let authGateMode = 'login';

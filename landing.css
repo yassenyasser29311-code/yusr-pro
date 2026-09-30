@@ -1,0 +1,36 @@
+#landing-page{position:fixed;inset:0;z-index:110;overflow-y:auto;background:#070b1f;color:#e8eaf6;font-family:'Cairo','Tajawal',sans-serif;scroll-behavior:smooth}
+#landing-page.hidden{display:none}
+#landing-page::before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(600px 400px at 85% 5%,rgba(124,58,237,.35),transparent 70%),radial-gradient(500px 400px at 5% 60%,rgba(37,99,235,.22),transparent 70%)}
+.lp-wrap{position:relative;max-width:1080px;margin:0 auto;padding:0 20px}
+.lp-nav{position:sticky;top:0;z-index:5;backdrop-filter:blur(14px);background:rgba(7,11,31,.75);border-bottom:1px solid rgba(255,255,255,.06)}
+.lp-nav .lp-wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;height:64px}
+.lp-logo{display:flex;align-items:center;gap:8px;font-weight:800;font-size:18px}
+.lp-logo b{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#8b2be2,#3b82f6);display:grid;place-items:center;font-size:14px;color:#fff}
+.lp-links{display:flex;gap:22px;font-size:14px;color:#c5c9e6}
+.lp-links a{cursor:pointer;transition:.2s}.lp-links a:hover{color:#fff}
+.lp-btn{background:linear-gradient(135deg,#9333ea,#7c3aed);color:#fff;border:0;border-radius:999px;padding:9px 22px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;box-shadow:0 6px 24px rgba(124,58,237,.45);transition:.2s}
+.lp-btn:hover{transform:translateY(-2px);filter:brightness(1.1)}
+.lp-btn.ghost{background:transparent;border:1px solid rgba(255,255,255,.2);box-shadow:none}
+.lp-hero{display:grid;grid-template-columns:1.1fr .9fr;gap:24px;align-items:center;padding:56px 0 36px}
+.lp-hero h1{font-size:clamp(30px,5vw,50px);line-height:1.25;font-weight:800;margin:0 0 14px;font-family:'Tajawal',sans-serif}
+.lp-hero h1 span{background:linear-gradient(90deg,#c084fc,#60a5fa);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lp-hero p{color:#aab0d4;line-height:1.9;margin:0 0 22px;font-size:16px}
+.lp-cta{display:flex;gap:10px;flex-wrap:wrap}
+.lp-wave{height:240px;border-radius:24px;border:1px solid rgba(255,255,255,.14);background:linear-gradient(145deg,rgba(255,255,255,.09),rgba(255,255,255,.02));backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;gap:4px;padding:0 20px;box-shadow:0 20px 60px rgba(124,58,237,.3)}
+.lp-wave i{display:block;width:5px;border-radius:4px;background:linear-gradient(#e879f9,#38bdf8);animation:lpw 1.3s ease-in-out infinite}
+@keyframes lpw{0%,100%{transform:scaleY(.25)}50%{transform:scaleY(1)}}
+.lp-h2{font-size:24px;font-weight:800;margin:44px 0 6px;font-family:'Tajawal',sans-serif}
+.lp-sub{color:#8f96bf;font-size:14px;margin:0 0 18px}
+.lp-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.lp-card{border:1px solid rgba(139,92,246,.35);border-radius:18px;padding:18px;background:linear-gradient(180deg,rgba(124,58,237,.14),rgba(255,255,255,.02));display:flex;flex-direction:column;gap:10px}
+.lp-ic{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#9333ea,#6d28d9);display:grid;place-items:center;color:#fff;font-size:18px}
+.lp-card h3{font-size:16px;font-weight:800;margin:0}.lp-card p{font-size:13px;color:#aab0d4;margin:0;line-height:1.7;flex:1}
+.lp-card .lp-btn{align-self:flex-start;padding:7px 18px;font-size:13px}
+.lp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.lp-tool{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);cursor:pointer;font-size:14px;transition:.2s;text-align:right;color:inherit;font-family:inherit}
+.lp-tool:hover{border-color:#a855f7;background:rgba(147,51,234,.14);transform:translateY(-2px)}
+.lp-tool i{color:#c084fc;width:20px;text-align:center}
+.lp-foot{margin-top:48px;border-top:1px solid rgba(255,255,255,.08);padding:22px 0 40px;display:flex;flex-wrap:wrap;gap:14px 24px;justify-content:space-between;font-size:13px;color:#8f96bf}
+.lp-foot div{display:flex;gap:16px;flex-wrap:wrap}.lp-foot a{cursor:pointer}.lp-foot a:hover{color:#fff}
+#auth-back-home{position:absolute;top:14px;right:14px;background:transparent;border:0;color:#9ca3af;font-size:13px;cursor:pointer;font-family:inherit}
+@media(max-width:800px){.lp-hero{grid-template-columns:1fr}.lp-links{display:none}.lp-cards{grid-template-columns:1fr}.lp-wave{height:160px}}
