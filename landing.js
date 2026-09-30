@@ -49,10 +49,28 @@ var body=reader.querySelector('.lpr-body');body.innerHTML='';body.appendChild(c)
 reader.classList.remove('hidden');reader.scrollTop=0;return true;}
 reader.addEventListener('click',function(e){var b=e.target.closest('[data-r]');if(!b)return;
 if(b.dataset.r==='back'){reader.classList.add('hidden');}else{reader.classList.add('hidden');openAuth('login');}});
+
+function phoneFix(){
+var coarse=window.matchMedia&&matchMedia('(pointer:coarse)').matches;
+var devW=Math.min(screen.width,screen.height),vv=window.visualViewport,k=1;
+if(coarse&&devW<=600&&window.innerWidth>devW*1.3)k=window.innerWidth/devW;
+else if(coarse&&vv&&vv.scale<0.8)k=1/vv.scale;
+var cssW=window.innerWidth/k;
+function set(el,w){if(!el)return;if(k>1){el.style.zoom=k;el.style.width=w+'px';el.style.maxWidth='none';}else{el.style.zoom='';el.style.width='';el.style.maxWidth='';}}
+set(document.querySelector('#auth-gate-modal>.panel'),cssW-32);
+set(document.querySelector('#forgot-password-modal>.panel'),cssW-32);
+set(reader.querySelector('.lpr-bar'),cssW);
+set(reader.querySelector('.lpr-body'),cssW);
+}
+window.addEventListener('resize',phoneFix);window.addEventListener('orientationchange',phoneFix);phoneFix();
 root.addEventListener('click',function(e){
 var el=e.target.closest('[data-go],[data-auth],[data-scroll]');if(!el)return;
 if(el.dataset.scroll){var t=document.getElementById(el.dataset.scroll);if(t){var nav=root.querySelector('.lp-nav'),nh=nav?nav.getBoundingClientRect().height:0;
-root.scrollTo({top:root.scrollTop+t.getBoundingClientRect().top-root.getBoundingClientRect().top-nh-8,behavior:'smooth'});}return;}
+root.scrollTo({top:root.scrollTop+t.getBoundingClientRect().top-root.getBoundingClientRect().top-nh-8,behavior:'smooth'});
+var fl=[t],n=t.nextElementSibling;while(n&&n.tagName!=='H2'&&n.tagName!=='FOOTER'){fl.push(n);n=n.nextElementSibling;}
+var items=[];fl.forEach(function(x){items.push(x);[].slice.call(x.querySelectorAll('.lp-card,.lp-tool')).forEach(function(y){items.push(y);});});
+items.forEach(function(x){x.classList.remove('lp-flash');void x.offsetWidth;x.classList.add('lp-flash');});
+setTimeout(function(){items.forEach(function(x){x.classList.remove('lp-flash');});},1900);}return;}
 if(el.dataset.go&&PUBLIC.indexOf(el.dataset.go)>-1&&openReader(el.dataset.go))return;
 if(el.dataset.go){try{sessionStorage.setItem(KEY,el.dataset.go);}catch(x){}}
 openAuth(el.dataset.auth||'login');});
