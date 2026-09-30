@@ -33,4 +33,4 @@
 .lp-foot{margin-top:48px;border-top:1px solid rgba(255,255,255,.08);padding:22px 0 40px;display:flex;flex-wrap:wrap;gap:14px 24px;justify-content:space-between;font-size:13px;color:#8f96bf}
 .lp-foot div{display:flex;gap:16px;flex-wrap:wrap}.lp-foot a{cursor:pointer}.lp-foot a:hover{color:#fff}
 #auth-back-home{position:absolute;top:14px;right:14px;background:transparent;border:0;color:#9ca3af;font-size:13px;cursor:pointer;font-family:inherit}
-@media(max-width:800px){.lp-hero{grid-template-columns:1fr}.lp-links{display:none}.lp-cards{grid-template-columns:1fr}.lp-wave{height:160px}}
+#landing-page{overflow-x:hidden}#lp-inner{margin:0 auto}
