@@ -33,7 +33,7 @@
 .lp-foot{margin-top:48px;border-top:1px solid rgba(255,255,255,.08);padding:22px 0 40px;display:flex;flex-wrap:wrap;gap:14px 24px;justify-content:space-between;font-size:13px;color:#8f96bf}
 .lp-foot div{display:flex;gap:16px;flex-wrap:wrap}.lp-foot a{cursor:pointer}.lp-foot a:hover{color:#fff}
 #auth-back-home{position:absolute;top:14px;right:14px;background:transparent;border:0;color:#9ca3af;font-size:13px;cursor:pointer;font-family:inherit}
-#landing-page{overflow-x:hidden}#lp-inner{margin:0 auto}
+#landing-page{overflow-x:hidden;width:100%;max-width:100vw}#lp-inner{margin:0 auto}
 
 /* ===== شاشة تسجيل الدخول (مقاس طبيعي حسب الجهاز) ===== */
 #auth-gate-modal{background:radial-gradient(700px 450px at 80% 0%,rgba(124,58,237,.35),transparent 70%),radial-gradient(600px 450px at 0% 100%,rgba(37,99,235,.22),transparent 70%),#070b1f!important;align-items:flex-start!important;overflow-y:auto;padding:16px!important}
