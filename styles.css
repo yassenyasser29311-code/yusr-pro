@@ -1,30 +1,30 @@
     :root{
         
-        --bg: #07110E; --panel: #0C1A15; --panel-2: #112419; --border: #1F3A2E;
+        --bg: #080B0A; --panel: #0E1412; --panel-2: #141C19; --border: #25332D;
         --text: #ffffff; --muted: #A9BDB3; --accent: #9FD8B8; --accent-strong:#4FA78B;
         --accent-gold: #D9B66B;
-        --grad1:#6FBF95; --grad2:#B8E6CC; --grad3:#4FA78B; --grad4:#D9B66B;
+        --grad1:#35A57C; --grad2:#5CC9A0; --grad3:#1F7A5C; --grad4:#D9B66B;
     }
     
     body {
         background:
-            radial-gradient(60% 45% at 85% -8%, rgba(111,191,149,.16), transparent 60%),
-            radial-gradient(55% 40% at -10% 15%, rgba(79,167,139,.10), transparent 60%),
-            radial-gradient(40% 35% at 50% 105%, rgba(159,216,184,.08), transparent 60%),
+            radial-gradient(60% 45% at 85% -8%, rgba(53,165,124,.08), transparent 60%),
+            radial-gradient(55% 40% at -10% 15%, rgba(53,165,124,.04), transparent 60%),
+            radial-gradient(40% 35% at 50% 105%, rgba(53,165,124,.03), transparent 60%),
             var(--bg) !important;
         background-attachment: fixed;
     }
     body, #sidebar, .input-field, .avatar-upload, .signedin-avatar,
     .app-toast, .modal-backdrop { color-scheme: dark; }
-    #sidebar { background: rgba(7,17,14,.92) !important; backdrop-filter: blur(14px); border-inline-start: 1px solid var(--border); }
-    .input-field, .avatar-upload, .signedin-avatar { background: #112419 !important; }
+    #sidebar { background: rgba(8,11,10,.92) !important; backdrop-filter: blur(14px); border-inline-start: 1px solid var(--border); }
+    .input-field, .avatar-upload, .signedin-avatar { background: #141C19 !important; }
     .nav-item.active {
         background: linear-gradient(135deg, rgba(159,216,184,.22), rgba(79,167,139,.14)) !important;
         color: #ffffff !important;
         box-shadow: inset 0 0 0 1px rgba(159,216,184,.45) !important;
     }
     .modal-backdrop { background: rgba(3,8,6,.84) !important; backdrop-filter: blur(3px); }
-    .app-toast { background: #112419 !important; border-color: rgba(159,216,184,.25) !important; }
+    .app-toast { background: #141C19 !important; border-color: rgba(159,216,184,.25) !important; }
     .profile-cover { background: linear-gradient(120deg,#0f2018,#06100c 60%,#07100f) !important; }
     .profile-avatar-lg { background: #1a1a1a !important; }
     .text-slate-100 { color: #ffffff !important; }
@@ -121,7 +121,7 @@
     .panel-2 { background: var(--panel-2); border: 1px solid var(--border); }
     .input-field { background: #14171b; border: 1px solid var(--border); color: var(--text); transition: all .15s ease; }
     .input-field:focus { border-color: #6b7280; outline: none; box-shadow: 0 0 0 3px rgba(107,114,128,0.15); }
-    .btn-primary { background: linear-gradient(135deg,var(--grad1),#4FA78B); color:#06130E; box-shadow: 0 4px 18px -4px rgba(111,191,149,.55); transition: all .18s ease; }
+    .btn-primary { background: linear-gradient(135deg,var(--grad1),#4FA78B); color:#fff; box-shadow: 0 4px 18px -4px rgba(111,191,149,.55); transition: all .18s ease; }
     .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
     .apk-promo-card { background: linear-gradient(135deg,rgba(34,197,94,.14),rgba(14,165,233,.14)); border: 1px solid rgba(14,165,233,.3); color: var(--text); }
     .apk-promo-icon { background: linear-gradient(135deg,#34d399,#0ea5e9); color:#04140f; }
@@ -205,7 +205,7 @@
     .btn-accent { color:#0b0d10; font-weight:800; }
     .btn-accent:hover { filter: brightness(1.08); }
     .acc-interview  { background: linear-gradient(135deg,#B8E6CC,#4FA78B); color:#0b1220; }
-    .acc-faq        { background: linear-gradient(135deg,#CFEBDD,#4FA78B); color:#06130E; }
+    .acc-faq        { background: linear-gradient(135deg,#CFEBDD,#4FA78B); color:#fff; }
     .acc-career     { background: linear-gradient(135deg,#6ee7b7,#059669); color:#052e21; }
     .acc-cv         { background: linear-gradient(135deg,#fcd34d,#d97706); color:#3a2400; }
     .acc-portfolio  { background: linear-gradient(135deg,#f9a8d4,#db2777); color:#3a0620; }
@@ -213,9 +213,9 @@
     .acc-summarizer { background: linear-gradient(135deg,#a5b4fc,#4f46e5); color:#fff; }
     .acc-transcribe { background: linear-gradient(135deg,#5eead4,#0d9488); color:#042e28; }
     .acc-pitch      { background: linear-gradient(135deg,#fbbf24,#f97316); color:#3a1c00; }
-    .acc-profile    { background: linear-gradient(135deg,#B8E6CC,#6366f1); color:#06130E; }
+    .acc-profile    { background: linear-gradient(135deg,#B8E6CC,#6366f1); color:#fff; }
     .acc-donations  { background: linear-gradient(135deg,#fde68a,#f59e0b); color:#3a2400; }
-    .acc-subs       { background: linear-gradient(135deg,#CFEBDD,#6FBF95); color:#06130E; }
+    .acc-subs       { background: linear-gradient(135deg,#CFEBDD,#6FBF95); color:#fff; }
     .acc-support    { background: linear-gradient(135deg,#86efac,#16a34a); color:#052e16; }
     .acc-about      { background: linear-gradient(135deg,#fbbf24,#fb7185); color:#3a0a12; }
     .acc-match      { background: linear-gradient(135deg,#fdba74,#ea580c); color:#3a1600; }
@@ -504,7 +504,7 @@
 @keyframes typingBounce { 0%,60%,100% { transform: translateY(0); opacity: .5; } 30% { transform: translateY(-4px); opacity: 1; } }
 .assistant-chat-inputbar { display: flex; gap: .5rem; padding: .75rem; border-top: 1px solid var(--border); background: var(--panel); }
 .assistant-chat-inputbar textarea {
-    flex: 1; resize: none; max-height: 110px; background: #112419; border: 1px solid var(--border);
+    flex: 1; resize: none; max-height: 110px; background: #141C19; border: 1px solid var(--border);
     color: var(--text); border-radius: .85rem; padding: .65rem .85rem; font-size: .82rem; line-height: 1.5;
     font-family: inherit;
 }
@@ -633,7 +633,7 @@ html.light-mode .input-field:focus { box-shadow: 0 0 0 4px rgba(47,111,237,.14) 
     border: 1px solid rgba(159,216,184,.22) !important;
     background:
         radial-gradient(120% 60% at 15% -10%, rgba(111,191,149,.14), transparent 55%),
-        radial-gradient(90% 50% at 100% 0%, rgba(79,167,139,.10), transparent 55%),
+        radial-gradient(90% 50% at 100% 0%, rgba(53,165,124,.04), transparent 55%),
         var(--panel) !important;
     box-shadow: 0 25px 70px -30px rgba(111,191,149,.45), 0 0 0 1px rgba(0,0,0,.2);
 }

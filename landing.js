@@ -9,24 +9,32 @@ var G=[
 ['قانوني',[['terms','file-contract','شروط الاستخدام'],['privacy','shield-halved','سياسة الخصوصية']]]];
 var PUBLIC=['about','terms','privacy','support','donations'];
 var root=document.getElementById('landing-page');if(!root)return;
-var bars='';for(var i=0;i<38;i++){var h=20+Math.abs(Math.sin(i*.7)*70)+(i%5)*4;bars+='<i style="height:'+Math.min(h,100)+'%;animation-delay:'+(i*.06)+'s"></i>';}
+var CNT=0;G.forEach(function(g){CNT+=g[1].length});var bars='';for(var i=0;i<38;i++){var h=20+Math.abs(Math.sin(i*.7)*70)+(i%5)*4;bars+='<i style="height:'+Math.min(h,100)+'%;animation-delay:'+(i*.06)+'s"></i>';}
 function tool(t){return '<button class="lp-tool" data-go="'+t[0]+'"><i class="fa-solid fa-'+t[1]+'"></i>'+t[2]+'</button>';}
 var grid=G.map(function(g){return '<h3 class="lp-sub" style="margin:22px 0 10px;color:#9FD8B8;font-weight:700">'+g[0]+'</h3><div class="lp-grid">'+g[1].map(tool).join('')+'</div>';}).join('');
 root.innerHTML='<div id="lp-inner">'+
 '<div class="lp-nav"><div class="lp-wrap"><div class="lp-logo"><b>يس</b>يُسْر Pro</div>'+
 '<div class="lp-links"><a data-scroll="lp-features">المميزات</a><a data-scroll="lp-tools">كل الأدوات</a><a data-go="subscriptions">الأسعار</a><a data-go="about">من نحن</a><a data-go="support">الدعم</a></div>'+
 '<button class="lp-btn" data-auth="login">ابدأ الآن</button></div></div>'+
-'<div class="lp-wrap"><section class="lp-hero"><div><h1>أتقن مقابلتك <span>بالذكاء الاصطناعي</span></h1>'+
-'<p>مقابلات تدريبية صوتية، تقييم فوري، سيرة ذاتية وبورتفوليو، وأدوات مهنية كاملة بالعربي في مكان واحد.</p>'+
+'<div class="lp-wrap"><section class="lp-hero"><div class="lp-ht"><span class="lp-pill"><i></i>ابدأ مجانًا النهاردة</span><h1>مقابلتك الجاية <span>هتبقى أسهل</span> بكتير</h1>'+
+'<p>تدرّب بالصوت قدام مُحاور ذكي، وخد تقييم فوري، وجهّز سيرتك وبورتفوليو من مكان واحد وبالعربي.</p>'+
 '<div class="lp-cta"><button class="lp-btn" data-auth="signup">ابدأ تجربتك المجانية</button><button class="lp-btn ghost" data-auth="login">تسجيل الدخول</button></div></div>'+
-'<div class="lp-wave">'+bars+'</div></section>'+
-'<h2 class="lp-h2" id="lp-features">كل اللي تحتاجه للوظيفة</h2><p class="lp-sub">اضغط على أي ميزة وهنوديك ليها بعد تسجيل الدخول.</p>'+
-'<div class="lp-cards">'+
-'<div class="lp-card"><div class="lp-ic"><i class="fa-solid fa-headset"></i></div><h3>مقابلات تدريبية صوتية</h3><p>محاكاة واقعية بالصوت مع تقييم أداء تفصيلي.</p><button class="lp-btn" data-go="interview">جرّب الآن</button></div>'+
+'<div class="lp-demo"><div class="lp-dh"><span>مقابلة تدريبية</span><em><i></i>مباشر</em></div><div class="lp-wave">'+bars+'</div>'+
+'<div class="lp-q">احكيلي عن موقف قدرت فيه تحل مشكلة صعبة في شغلك؟</div>'+
+'<div class="lp-m"><label>الوضوح<b style="--w:88%"></b></label><label>الثقة<b style="--w:76%"></b></label><label>الإقناع<b style="--w:92%"></b></label></div></div></section>'+
+'<div class="lp-stats rv"><div><b data-n="'+CNT+'">0</b><span>أداة في مكان واحد</span></div><div><b data-n="'+G.length+'">0</b><span>أقسام متكاملة</span></div><div><b>24/7</b><span>متاح في أي وقت</span></div><div><b>عربي</b><span>مبني لك من الأساس</span></div></div>'+
+'<h2 class="lp-h2 rv" id="lp-features">كل اللي تحتاجه للوظيفة</h2><p class="lp-sub rv">اضغط على أي ميزة وهنوديك ليها بعد تسجيل الدخول.</p>'+
+'<div class="lp-cards rv">'+
+'<div class="lp-card"><div class="lp-ic"><i class="fa-solid fa-headset"></i></div><h3>مقابلات تدريبية صوتية</h3><p>محاكاة واقعية بالصوت مع تقييم أداء تفصيلي بعد كل إجابة.</p><button class="lp-btn" data-go="interview">جرّب الآن</button></div>'+
 '<div class="lp-card"><div class="lp-ic"><i class="fa-solid fa-sack-dollar"></i></div><h3>تقدير الراتب</h3><p>اعرف الراتب المتوقع واستعد للتفاوض بثقة.</p><button class="lp-btn" data-go="salary">استكشف</button></div>'+
-'<div class="lp-card"><div class="lp-ic"><i class="fa-solid fa-route"></i></div><h3>التطوير المهني</h3><p>خطة تطور، سيرة ذاتية، ومراجعة مخصصة ليك.</p><button class="lp-btn" data-go="career">اعرف أكتر</button></div></div>'+
-'<h2 class="lp-h2" id="lp-tools">كل أدوات الموقع</h2>'+grid+
-'<footer class="lp-foot"><span>© يُسْر Pro</span><div><a data-go="terms">شروط الاستخدام</a><a data-go="privacy">سياسة الخصوصية</a><a data-go="donations">التبرعات</a><a data-go="support">الدعم</a></div></footer></div></div>';
+'<div class="lp-card"><div class="lp-ic"><i class="fa-solid fa-route"></i></div><h3>التطوير المهني</h3><p>خطة تطور وسيرة ذاتية ومراجعة مخصصة ليك.</p><button class="lp-btn" data-go="career">اعرف أكتر</button></div></div>'+
+'<h2 class="lp-h2 rv">إزاي تبدأ؟</h2><div class="lp-steps rv"><div><b>1</b><h3>سجّل حسابك</h3><p>في ثواني، من غير تعقيد.</p></div><div><b>2</b><h3>اختار الأداة</h3><p>مقابلة، سيرة ذاتية أو أي أداة تانية.</p></div><div><b>3</b><h3>اتقدّم بثقة</h3><p>خد تقييمك وحسّن أدائك مع كل محاولة.</p></div></div>'+
+'<h2 class="lp-h2 rv" id="lp-tools">كل أدوات الموقع</h2>'+grid+
+'<div class="lp-final rv"><h2>جاهز تبدأ؟</h2><p>جرّب أول مقابلة مجانًا وشوف الفرق بنفسك.</p><button class="lp-btn" data-auth="signup">ابدأ الآن</button></div><footer class="lp-foot"><span>© يُسْر Pro</span><div><a data-go="terms">شروط الاستخدام</a><a data-go="privacy">سياسة الخصوصية</a><a data-go="donations">التبرعات</a><a data-go="support">الدعم</a></div></footer></div></div>';
+var io=new IntersectionObserver(function(es){es.forEach(function(x){if(!x.isIntersecting)return;x.target.classList.add('in');io.unobserve(x.target);x.target.querySelectorAll('[data-n]').forEach(function(e){var n=+e.dataset.n,v=0,t=setInterval(function(){v++;e.textContent=v;if(v>=n)clearInterval(t)},Math.max(30,900/n))})})},{root:root,threshold:.15});
+root.querySelectorAll('.rv').forEach(function(e){io.observe(e)});
+root.querySelectorAll('.lp-card').forEach(function(c){c.addEventListener('pointermove',function(e){var r=c.getBoundingClientRect();c.style.setProperty('--mx',(e.clientX-r.left)+'px');c.style.setProperty('--my',(e.clientY-r.top)+'px')})});
+
 var DESIGN_W=1100,inner=document.getElementById('lp-inner');
 function fit(){var w=window.innerWidth,z=Math.min(1,w/DESIGN_W);inner.style.width=z<1?DESIGN_W+'px':'';inner.style.zoom=z;}
 window.addEventListener('resize',fit);window.addEventListener('orientationchange',fit);fit();
