@@ -151,3 +151,14 @@
 .lf-cols h4{margin:0 0 14px;font-size:18px;font-weight:800;color:#5FD0D0}
 .lf-cols a{display:flex;align-items:center;gap:10px;color:#DFDEDC;font-size:16px;padding:6px 0;cursor:pointer;transition:color .2s}.lf-cols a:hover{color:#00ACAC}.lf-cols a i{color:#00ACAC;font-size:18px;width:22px}
 @media(min-width:760px){.lp-foot2{display:grid;grid-template-columns:1.2fr 1fr;gap:0 48px}.lf-cols{grid-row:1/5;grid-column:2}}
+
+/* ===== logo size/blend + mobile overflow fix ===== */
+.lp-logo{gap:10px}.lp-logo img{height:48px;width:auto;margin:-4px 0;filter:drop-shadow(0 4px 14px rgba(0,0,0,.55))}
+.lf-brand img{height:96px;width:auto;filter:drop-shadow(0 8px 22px rgba(0,0,0,.6))}
+#auth-gate-modal>.panel>div:first-of-type>div:first-child{width:96px!important;height:96px!important}
+#landing-page,#lp-inner,.lp-wrap{overflow-x:hidden}
+.lp-hero>*,.lp-ht,.lp-demo,.lp-cards>*,.lp-steps>*{min-width:0}
+.lp-demo .lp-wave{width:100%;gap:0;justify-content:space-between;overflow:hidden;padding:0 2px}
+.lp-wave i{flex:0 0 auto}
+.lp-m label{grid-template-columns:62px minmax(0,1fr)}
+@media(max-width:760px){.lp-hero{grid-template-columns:minmax(0,1fr)!important}.lp-cards,.lp-steps{grid-template-columns:minmax(0,1fr)!important}.lp-cta{flex-wrap:nowrap}.lp-cta .lp-btn{min-width:0;padding-inline:12px;white-space:nowrap}.lp-hero p{max-width:100%}.lp-logo img{height:42px}.lp-nav .lp-btn{padding:8px 18px}}
