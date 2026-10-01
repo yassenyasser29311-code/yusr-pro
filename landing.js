@@ -11,7 +11,7 @@ var PUBLIC=['about','terms','privacy','support','donations'];
 var root=document.getElementById('landing-page');if(!root)return;
 var CNT=0;G.forEach(function(g){CNT+=g[1].length});var bars='';for(var i=0;i<38;i++){var h=20+Math.abs(Math.sin(i*.7)*70)+(i%5)*4;bars+='<i style="height:'+Math.min(h,100)+'%;animation-delay:'+(i*.06)+'s"></i>';}
 function tool(t){return '<button class="lp-tool" data-go="'+t[0]+'"><i class="fa-solid fa-'+t[1]+'"></i>'+t[2]+'</button>';}
-var grid=G.map(function(g){return '<h3 class="lp-sub" style="margin:22px 0 10px;color:#5FD0D0;font-weight:700">'+g[0]+'</h3><div class="lp-grid">'+g[1].map(tool).join('')+'</div>';}).join('');
+var grid=G.map(function(g){return '<h3 class="lp-sub" style="margin:22px 0 10px;color:#5FD0D0;font-weight:700">'+g[0]+'</h3><div class="lp-grid rv">'+g[1].map(tool).join('')+'</div>';}).join('');
 root.innerHTML='<div id="lp-inner">'+
 '<div class="lp-nav"><div class="lp-wrap"><div class="lp-logo"><img src="logo.png" alt="">يُسْر Pro</div>'+
 '<div class="lp-links"><a data-scroll="lp-features">المميزات</a><a data-scroll="lp-tools">كل الأدوات</a><a data-go="subscriptions">الأسعار</a><a data-go="about">من نحن</a><a data-go="support">الدعم</a></div>'+
@@ -35,6 +35,14 @@ var io=new IntersectionObserver(function(es){es.forEach(function(x){if(!x.isInte
 root.querySelectorAll('.rv').forEach(function(e){io.observe(e)});
 root.querySelectorAll('.lp-card').forEach(function(c){c.addEventListener('pointermove',function(e){var r=c.getBoundingClientRect();c.style.setProperty('--mx',(e.clientX-r.left)+'px');c.style.setProperty('--my',(e.clientY-r.top)+'px')})});
 
+
+var bar=document.createElement('div');bar.className='lp-prog';bar.innerHTML='<i></i>';root.appendChild(bar);
+var up=document.createElement('button');up.className='lp-up';up.setAttribute('aria-label','للأعلى');
+up.innerHTML='<svg viewBox="0 0 48 48"><circle cx="24" cy="24" r="21"/><circle class="pg" cx="24" cy="24" r="21"/></svg><i class="fa-solid fa-arrow-up"></i>';root.appendChild(up);
+var nav=root.querySelector('.lp-nav'),pg=up.querySelector('.pg'),CC=2*Math.PI*21;pg.style.strokeDasharray=CC;
+function onS(){var m=root.scrollHeight-root.clientHeight,p=m>0?root.scrollTop/m:0;bar.firstChild.style.transform='scaleX('+p+')';pg.style.strokeDashoffset=CC*(1-p);up.classList.toggle('on',root.scrollTop>420);if(nav)nav.classList.toggle('sc',root.scrollTop>20);}
+root.addEventListener('scroll',onS,{passive:true});onS();
+up.onclick=function(){root.scrollTo({top:0,behavior:'smooth'})};
 var DESIGN_W=1100,inner=document.getElementById('lp-inner');
 function fit(){inner.style.width='';inner.style.zoom='';}
 window.addEventListener('resize',fit);window.addEventListener('orientationchange',fit);fit();
