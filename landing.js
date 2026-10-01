@@ -11,7 +11,7 @@ var PUBLIC=['about','terms','privacy','support','donations'];
 var root=document.getElementById('landing-page');if(!root)return;
 var bars='';for(var i=0;i<38;i++){var h=20+Math.abs(Math.sin(i*.7)*70)+(i%5)*4;bars+='<i style="height:'+Math.min(h,100)+'%;animation-delay:'+(i*.06)+'s"></i>';}
 function tool(t){return '<button class="lp-tool" data-go="'+t[0]+'"><i class="fa-solid fa-'+t[1]+'"></i>'+t[2]+'</button>';}
-var grid=G.map(function(g){return '<h3 class="lp-sub" style="margin:22px 0 10px;color:#c084fc;font-weight:700">'+g[0]+'</h3><div class="lp-grid">'+g[1].map(tool).join('')+'</div>';}).join('');
+var grid=G.map(function(g){return '<h3 class="lp-sub" style="margin:22px 0 10px;color:#9FD8B8;font-weight:700">'+g[0]+'</h3><div class="lp-grid">'+g[1].map(tool).join('')+'</div>';}).join('');
 root.innerHTML='<div id="lp-inner">'+
 '<div class="lp-nav"><div class="lp-wrap"><div class="lp-logo"><b>يس</b>يُسْر Pro</div>'+
 '<div class="lp-links"><a data-scroll="lp-features">المميزات</a><a data-scroll="lp-tools">كل الأدوات</a><a data-go="subscriptions">الأسعار</a><a data-go="about">من نحن</a><a data-go="support">الدعم</a></div>'+
