@@ -11,7 +11,7 @@ var PUBLIC=['about','terms','privacy','support','donations'];
 var root=document.getElementById('landing-page');if(!root)return;
 var CNT=0;G.forEach(function(g){CNT+=g[1].length});var bars='';for(var i=0;i<38;i++){var h=20+Math.abs(Math.sin(i*.7)*70)+(i%5)*4;bars+='<i style="height:'+Math.min(h,100)+'%;animation-delay:'+(i*.06)+'s"></i>';}
 function tool(t){return '<button class="lp-tool" data-go="'+t[0]+'"><i class="fa-solid fa-'+t[1]+'"></i>'+t[2]+'</button>';}
-var grid=G.map(function(g){return '<h3 class="lp-sub" style="margin:22px 0 10px;color:#9FD8B8;font-weight:700">'+g[0]+'</h3><div class="lp-grid">'+g[1].map(tool).join('')+'</div>';}).join('');
+var grid=G.map(function(g){return '<h3 class="lp-sub" style="margin:22px 0 10px;color:#5FD0D0;font-weight:700">'+g[0]+'</h3><div class="lp-grid">'+g[1].map(tool).join('')+'</div>';}).join('');
 root.innerHTML='<div id="lp-inner">'+
 '<div class="lp-nav"><div class="lp-wrap"><div class="lp-logo"><b>يس</b>يُسْر Pro</div>'+
 '<div class="lp-links"><a data-scroll="lp-features">المميزات</a><a data-scroll="lp-tools">كل الأدوات</a><a data-go="subscriptions">الأسعار</a><a data-go="about">من نحن</a><a data-go="support">الدعم</a></div>'+
@@ -36,7 +36,7 @@ root.querySelectorAll('.rv').forEach(function(e){io.observe(e)});
 root.querySelectorAll('.lp-card').forEach(function(c){c.addEventListener('pointermove',function(e){var r=c.getBoundingClientRect();c.style.setProperty('--mx',(e.clientX-r.left)+'px');c.style.setProperty('--my',(e.clientY-r.top)+'px')})});
 
 var DESIGN_W=1100,inner=document.getElementById('lp-inner');
-function fit(){var w=window.innerWidth,z=Math.min(1,w/DESIGN_W);inner.style.width=z<1?DESIGN_W+'px':'';inner.style.zoom=z;}
+function fit(){inner.style.width='';inner.style.zoom='';}
 window.addEventListener('resize',fit);window.addEventListener('orientationchange',fit);fit();
 function show(){root.classList.remove('hidden');fit();}
 function hide(){root.classList.add('hidden');var r=document.getElementById('lp-reader');if(r)r.classList.add('hidden');}
