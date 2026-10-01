@@ -704,3 +704,21 @@ html.light-mode .assistant-msg.from-bot { border-color: rgba(47,111,237,.15) !im
 @media (prefers-reduced-motion: reduce) {
     .assistant-chat-header, .assistant-chat-avatar, .assistant-chat-send, #support-chat-fab { animation: none !important; }
 }
+
+/* ===== INKED: header inset + profile redesign ===== */
+body header.sticky{margin:10px 12px 0!important;top:10px!important;border-radius:20px!important;border:1px solid #2A2B2B!important;background:rgba(11,12,12,.9)!important;backdrop-filter:blur(14px)}
+#view-title{white-space:nowrap;font-size:15px}
+#view-profile .profile-hero{background:radial-gradient(420px 240px at 50% 0%,rgba(0,172,172,.16),transparent 70%),#0B0C0C!important;border:1px solid #2A2B2B!important;border-radius:28px!important}
+#view-profile .profile-hero>div>div:first-child{flex-direction:column!important;align-items:center!important;text-align:center;gap:18px}
+#view-profile .profile-hero .flex-1{width:100%;display:flex;flex-direction:column;align-items:center;gap:12px}
+#view-profile .profile-hero .flex-1>div{justify-content:center}
+#view-profile .profile-avatar-xl{width:116px!important;height:116px!important;border-radius:50%!important;background:#000!important;border:2px solid #00ACAC!important;color:#5FD0D0!important;box-shadow:0 0 0 7px rgba(0,172,172,.1),0 20px 44px -14px rgba(0,172,172,.55)!important;display:grid;place-items:center;overflow:hidden}
+#view-profile .profile-hero .input-field{width:100%!important;max-width:380px!important;height:50px;text-align:center;background:#000!important;border:1px solid #2A2B2B!important;border-radius:14px!important;color:#F2F1EF!important}
+#view-profile .profile-hero .input-field:focus{border-color:#00ACAC!important;box-shadow:0 0 0 3px rgba(0,172,172,.18)!important;outline:0}
+#view-profile .points-badge{background:#141515!important;color:#DFDEDC!important;border:1px solid #2A2B2B!important}#view-profile .points-badge i{color:#00ACAC}
+#view-profile .plan-pill{background:rgba(0,172,172,.1)!important;border:1px solid rgba(0,172,172,.45)!important;color:#5FD0D0!important}
+#view-profile .acc-profile{width:100%;max-width:380px;justify-content:center;align-self:center!important;height:50px;border-radius:14px!important;background:linear-gradient(135deg,#00A3A3,#007F7F)!important;color:#fff!important;box-shadow:0 14px 30px -12px rgba(0,172,172,.65)!important;border:0!important}
+#view-profile .quick-pill{background:#141515!important;border:1px solid #2A2B2B!important;color:#DFDEDC!important}#view-profile .quick-pill i{color:#00ACAC}
+#view-profile .profile-hero .overflow-x-auto{justify-content:flex-start;border-color:#2A2B2B!important}
+#view-profile .stat-card-v2{background:#0B0C0C!important;border:1px solid #2A2B2B!important;border-radius:20px!important;text-align:center;padding:18px 8px!important}
+#view-profile .stat-icon{background:rgba(0,172,172,.12)!important;color:#00ACAC!important;border-radius:14px!important;margin-inline:auto}
