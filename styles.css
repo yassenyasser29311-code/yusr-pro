@@ -722,3 +722,19 @@ body header.sticky{margin:10px 12px 0!important;top:10px!important;border-radius
 #view-profile .profile-hero .overflow-x-auto{justify-content:flex-start;border-color:#2A2B2B!important}
 #view-profile .stat-card-v2{background:#0B0C0C!important;border:1px solid #2A2B2B!important;border-radius:20px!important;text-align:center;padding:18px 8px!important}
 #view-profile .stat-icon{background:rgba(0,172,172,.12)!important;color:#00ACAC!important;border-radius:14px!important;margin-inline:auto}
+
+/* ===== header: long titles + language picker fix ===== */
+body header.sticky{gap:8px!important;padding-inline:12px!important}
+body header.sticky #view-title{flex:1 1 0;min-width:0;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px;line-height:1.5}
+body header.sticky>.mr-auto{flex:0 0 auto;margin-inline-start:0!important;gap:6px!important}
+body header.sticky #lang-picker{width:auto!important;min-width:0!important;max-width:96px;height:32px!important;padding:0 8px!important;font-size:12px!important;border-radius:10px!important;flex:0 0 auto}
+body header.sticky .header-trial-badge{padding:4px 8px!important}
+@media(max-width:400px){body header.sticky [data-x-onclick="h78"]{display:none!important}body header.sticky #lang-picker{max-width:84px}}
+
+/* هيدر الموبايل: العنوان الطويل ما يخبيش أزرار اللغة والثيم — الأزرار تنزل في صف تحته */
+@media (max-width:639px){
+  header.sticky.top-0{flex-wrap:wrap;row-gap:10px}
+  header.sticky.top-0 #view-title{flex:1 1 0;min-width:0;line-height:1.5}
+  header.sticky.top-0 > div.mr-auto{flex:0 0 100%;width:100%;margin:0!important;justify-content:space-between;gap:8px}
+  header.sticky.top-0 #lang-picker{flex-shrink:0;max-width:112px;font-size:12px}
+}
