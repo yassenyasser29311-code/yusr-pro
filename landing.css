@@ -183,6 +183,10 @@
 .lp-btn:active{transform:scale(.96)}.lp-tool:active{transform:scale(.97)}
 @media(prefers-reduced-motion:reduce){.lp-cards>*,.lp-steps>*,.lp-stats>*,.lp-grid>*{opacity:1!important;transform:none!important}.lp-prog i{transition:none}}
 
-.lp-lang,.auth-lang{background:rgba(255,255,255,.07);color:inherit;border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:6px 8px;font:inherit;font-size:12px;cursor:pointer;max-width:130px}
-.lp-lang option,.auth-lang option{color:#111;background:#fff}
+.lang-seg{display:inline-flex;align-items:center;gap:2px;direction:ltr;padding:3px;border-radius:999px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(8px);flex-shrink:0}
+.lang-seg>i{font-size:12px;color:#5FD0D0;padding:0 7px 0 9px}
+.lang-seg button{border:0;background:transparent;color:#A6A7A2;font:inherit;font-size:12px;font-weight:800;letter-spacing:.04em;padding:6px 12px;border-radius:999px;cursor:pointer;transition:.2s;outline:0}
+.lang-seg button:hover{color:#fff}
+.lang-seg button.on{color:#fff;background:linear-gradient(135deg,#00A3A3,#007F7F);box-shadow:0 4px 14px -4px rgba(0,163,163,.7),inset 0 1px 0 rgba(255,255,255,.18)}
+@media(max-width:380px){.lang-seg>i{display:none}.lang-seg button{padding:6px 10px}}
 .auth-top{display:flex;align-items:center;justify-content:space-between;gap:8px}

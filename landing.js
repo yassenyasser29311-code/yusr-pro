@@ -183,15 +183,22 @@ function run(root) {
   } finally { busy = false; }
 }
 function addPickers() {
-  function mk(id, cls) { var s = document.createElement('select'); s.id = id; s.className = cls; s.setAttribute('aria-label', 'Language');
-    NAMES.forEach(function (x) { var o = document.createElement('option'); o.value = x[0]; o.textContent = x[1]; s.appendChild(o); });
-    s.addEventListener('change', function () { Y.set(s.value); }); return s; }
+  function mk(id, cls) {
+    var w = document.createElement('div'); w.id = id; w.className = 'lang-seg ' + cls; w.setAttribute('role', 'group'); w.setAttribute('aria-label', 'Language');
+    w.innerHTML = '<i class="fa-solid fa-globe"></i>';
+    [['ar-EG', 'AR'], ['en-US', 'EN']].forEach(function (x) {
+      var b = document.createElement('button'); b.type = 'button'; b.dataset.l = x[0]; b.textContent = x[1];
+      b.addEventListener('click', function () { Y.set(x[0]); }); w.appendChild(b);
+    });
+    return w; }
   var nav = document.querySelector('#landing-page .lp-nav .lp-wrap');
   if (nav && !document.getElementById('lp-lang')) nav.insertBefore(mk('lp-lang', 'lp-lang'), nav.querySelector('.lp-btn'));
   var back = document.getElementById('auth-back-home');
   if (back && !document.getElementById('auth-lang')) { var w = document.createElement('div'); w.className = 'auth-top'; back.parentNode.insertBefore(w, back); w.appendChild(back); w.appendChild(mk('auth-lang', 'auth-lang')); }
 }
-function sync() { ['lp-lang', 'auth-lang', 'lang-picker'].forEach(function (id) { var s = document.getElementById(id); if (s) s.value = Y.getFull(); }); }
+function sync() { ['lp-lang', 'auth-lang', 'lang-picker'].forEach(function (id) { var s = document.getElementById(id); if (!s) return;
+    if (s.tagName === 'SELECT') s.value = Y.getFull();
+    else [].forEach.call(s.querySelectorAll('button'), function (b) { b.classList.toggle('on', b.dataset.l === Y.getFull()); }); }); }
 addPickers();
 document.addEventListener('yusr:lang', function () { run(); sync(); });
 var pend = false;
