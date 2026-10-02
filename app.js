@@ -511,7 +511,7 @@ window.__H = {
         return s;
     }
     function applyI18n() {
-        const dict = I18N[currentUiLang] || I18N.ar;
+        const dict = Object.assign({}, currentUiLang === 'ar' ? {} : I18N.en, I18N[currentUiLang] || I18N.ar);
         document.querySelectorAll('[data-i18n]').forEach(el => {
             const key = el.getAttribute('data-i18n');
             if (dict[key]) el.textContent = dict[key];
@@ -552,7 +552,11 @@ window.__H = {
         const RTL_LANGS = ['ar', 'ur', 'fa'];
         document.documentElement.dir = RTL_LANGS.includes(currentUiLang) ? 'rtl' : 'ltr';
         applyI18n();
+        applyI18n();
+        try { localStorage.setItem('yusr_lang', lang); } catch (e) {}
+        document.dispatchEvent(new Event('yusr:lang'));
     }
+    window.__yusr = { I18N: I18N, getLang: () => currentUiLang, getFull: () => currentAppLang, set: setAppLanguage };
 
     function applyTheme(theme) {
         const isLight = theme === 'light';
@@ -1306,7 +1310,7 @@ window.__H = {
         document.getElementById('auth-gate-confirm-wrap').classList.toggle('hidden', mode !== 'signup');
         const forgotWrap = document.getElementById('auth-gate-forgot-wrap');
         if (forgotWrap) forgotWrap.classList.toggle('hidden', mode === 'signup');
-        const authDict = I18N[currentUiLang] || I18N.ar;
+        const authDict = Object.assign({}, currentUiLang === 'ar' ? {} : I18N.en, I18N[currentUiLang] || I18N.ar);
         document.getElementById('auth-gate-submit-btn').innerText = mode === 'signup' ? (authDict['authgate.submitSignup'] || 'إنشاء الحساب') : (authDict['authgate.submitLogin'] || 'تسجيل الدخول');
         document.getElementById('auth-gate-tab-login').classList.toggle('auth-tab-active', mode === 'login');
         document.getElementById('auth-gate-tab-signup').classList.toggle('auth-tab-active', mode === 'signup');
@@ -4916,7 +4920,7 @@ ${firstPass}
     showApkPromoIfEligible();
     checkDeviceTrial();
     updateAccountChip();
-    applyI18n();
+    (function () { let saved = null; try { saved = localStorage.getItem('yusr_lang'); } catch (e) {} if (saved === 'en-US') setAppLanguage(saved); else applyI18n(); })();
     checkTermsGate();
     updateVoiceGenderButtons();
     restoreLastView();

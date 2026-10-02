@@ -182,3 +182,7 @@
 .lp-cards.in>.lp-card:hover{transform:translateY(-4px);transition-delay:0s}.lp-grid.in>.lp-tool:hover{transform:translateY(-2px);transition-delay:0s}
 .lp-btn:active{transform:scale(.96)}.lp-tool:active{transform:scale(.97)}
 @media(prefers-reduced-motion:reduce){.lp-cards>*,.lp-steps>*,.lp-stats>*,.lp-grid>*{opacity:1!important;transform:none!important}.lp-prog i{transition:none}}
+
+.lp-lang,.auth-lang{background:rgba(255,255,255,.07);color:inherit;border:1px solid rgba(255,255,255,.2);border-radius:10px;padding:6px 8px;font:inherit;font-size:12px;cursor:pointer;max-width:130px}
+.lp-lang option,.auth-lang option{color:#111;background:#fff}
+.auth-top{display:flex;align-items:center;justify-content:space-between;gap:8px}

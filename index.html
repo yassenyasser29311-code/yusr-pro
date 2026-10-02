@@ -109,7 +109,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Tajawal:wght@500;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css?v=7">
-<link rel="stylesheet" href="landing.css?v=4">
+<link rel="stylesheet" href="landing.css?v=5">
 </head>
 <body class="min-h-screen">
 
@@ -134,8 +134,8 @@
 </div>
 
 
-<div id="landing-page" class="hidden" dir="rtl"></div>
-<div id="auth-gate-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4" style="background:#000000;">
+<div id="landing-page" dir="rtl"></div>
+<div id="auth-gate-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4" style="background:#000000;">
     <div class="panel modal-pop max-w-sm w-full rounded-2xl p-5 space-y-4 text-right">
         <button id="auth-back-home" type="button"><i class="fa-solid fa-arrow-right"></i> الصفحة الرئيسية</button>
         <div class="text-center space-y-1">
@@ -995,13 +995,6 @@ html.light-mode #admin-dashboard {
                 <select id="lang-picker" class="input-field rounded-lg text-[11px] px-2 py-1.5" data-x-onchange="h80">
                     <option value="ar-EG" data-i18n="common.auto2Text">العربية</option>
                     <option value="en-US">English</option>
-                    <option value="fr-FR">Français</option>
-                    <option value="es-ES">Español</option>
-                    <option value="tr-TR">Türkçe</option>
-                    <option value="de-DE">Deutsch</option>
-                    <option value="hi-IN">हिन्दी</option>
-                    <option value="ur-PK" data-i18n="common.auto3Text">اردو</option>
-                    <option value="fa-IR" data-i18n="common.auto4Text">فارسی</option>
                 </select>
             </div>
         </header>
@@ -2486,8 +2479,9 @@ html.light-mode #admin-dashboard {
     </div>
 </div>
 
-<script src="app.js?v=14"></script>
+<script src="app.js?v=15"></script>
 <script src="landing.js?v=4"></script>
+<script src="i18n-entry.js?v=1"></script>
 <script src="admin.js?v=2"></script>
 </body>
 </html>
