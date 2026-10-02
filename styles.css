@@ -731,10 +731,11 @@ body header.sticky #lang-picker{width:auto!important;min-width:0!important;max-w
 body header.sticky .header-trial-badge{padding:4px 8px!important}
 @media(max-width:400px){body header.sticky [data-x-onclick="h78"]{display:none!important}body header.sticky #lang-picker{max-width:84px}}
 
-/* هيدر الموبايل: العنوان الطويل ما يخبيش أزرار اللغة والثيم — الأزرار تنزل في صف تحته */
+/* هيدر الموبايل: صف واحد، والعنوان الطويل يتقص بنقط (...) والأزرار تفضل ظاهرة جنبه */
 @media (max-width:639px){
-  header.sticky.top-0{flex-wrap:wrap;row-gap:10px}
-  header.sticky.top-0 #view-title{flex:1 1 0;min-width:0;line-height:1.5}
-  header.sticky.top-0 > div.mr-auto{flex:0 0 100%;width:100%;margin:0!important;justify-content:space-between;gap:8px}
-  header.sticky.top-0 #lang-picker{flex-shrink:0;max-width:112px;font-size:12px}
+  header.sticky.top-0{flex-wrap:nowrap;gap:8px;padding-inline:12px}
+  header.sticky.top-0 #view-title{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  header.sticky.top-0 > div.mr-auto{flex:0 0 auto;margin:0!important;gap:6px}
+  header.sticky.top-0 > div.mr-auto > button{flex-shrink:0}
+  header.sticky.top-0 #lang-picker{flex-shrink:0;width:78px;max-width:78px;font-size:11px;padding-inline:6px;text-overflow:ellipsis}
 }
