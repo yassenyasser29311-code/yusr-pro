@@ -48,7 +48,7 @@ function fit(){inner.style.width='';inner.style.zoom='';}
 window.addEventListener('resize',fit);window.addEventListener('orientationchange',fit);fit();
 function show(){root.classList.remove('hidden');fit();}
 function hide(){root.classList.add('hidden');var r=document.getElementById('lp-reader');if(r)r.classList.add('hidden');}
-function openAuth(mode){window.__landing.dismissed=true;hide();try{if(window.switchAuthGateTab)switchAuthGateTab(mode||'login');}catch(e){}}
+function openAuth(mode){window.__landing.dismissed=true;hide();var m=document.getElementById('auth-gate-modal');if(m)m.classList.remove('hidden');var ar=document.getElementById('app-root');if(ar)ar.classList.add('hidden');try{if(window.switchAuthGateTab)switchAuthGateTab(mode||'login');}catch(e){}}
 
 var reader=document.createElement('div');reader.id='lp-reader';reader.className='hidden';reader.setAttribute('dir','rtl');
 reader.innerHTML='<div class="lpr-bar"><button class="lp-btn ghost" data-r="back">→ رجوع</button><b></b><button class="lp-btn" data-r="login">تسجيل الدخول</button></div><div class="lpr-body"></div>';
