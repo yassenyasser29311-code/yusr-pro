@@ -213,6 +213,8 @@ window.__H = {
   hDownloadResultLinkedin: function(event) { downloadResult(this, 'cv-linkedin-style.txt') },
   hExportCvLinkedInImage: function(event) { exportCvLinkedInImage() },
   hPackBuy: function(event) { buyReadyPack(this); },
+  hWalSelect: function(event) { selectDeductSource(this.getAttribute('data-src')); },
+  hAdminSetWallet: function(event) { adminModalUserAction('setPackWallet', this.value === '' ? 0 : this.value, { category: this.getAttribute('data-cat') }); },
   hPackStep: function(event) { stepCustomPack(this.getAttribute('data-item'), parseInt(this.getAttribute('data-d'), 10)); },
   hPackCustomBuy: function(event) { buyCustomPack(); },
   hShareResult: function(event) { shareResultCard(this); },
@@ -725,6 +727,9 @@ window.__H = {
     // ---- رصيد الحزم (بيتزود بموافقة الأدمن وبيتخصم لما سقف الباقة الشهري يخلص) ----
     let cloudPackCredits = 0;
     let cloudPackRef = null;
+    // رصيد كل نوع لوحده (بالطلبات): مقابلة صوتية / فيديو / سيرة-مطابقة-خطاب / أدوات سريعة
+    let cloudPackWallet = { voice: 0, video: 0, cv: 0, tool: 0 };
+    let cloudPackWalletRef = null;
     function attachCloudPackListener(uid) {
         if (cloudPackRef) cloudPackRef.off();
         cloudPackRef = db.ref('users/' + uid + '/packCredits');
@@ -734,6 +739,15 @@ window.__H = {
             checkDeviceTrial();
             try { renderMyRequestsCard(); } catch (_) {}
         }, err => console.warn('تعذر متابعة رصيد الحزم', err));
+        if (cloudPackWalletRef) cloudPackWalletRef.off();
+        cloudPackWalletRef = db.ref('users/' + uid + '/packWallet');
+        cloudPackWalletRef.on('value', snap => {
+            const v = snap.val() || {};
+            const n = k => (typeof v[k] === 'number' && v[k] > 0) ? v[k] : 0;
+            cloudPackWallet = { voice: n('voice'), video: n('video'), cv: n('cv'), tool: n('tool') };
+            checkDeviceTrial();
+            try { renderMyRequestsCard(); } catch (_) {}
+        }, err => console.warn('تعذر متابعة رصيد الأنواع', err));
     }
 
     let cloudPlanRef = null;
@@ -816,7 +830,7 @@ window.__H = {
             else if (credits === 0 && remaining <= Math.max(2, Math.ceil(limit * 0.2))) level = 'warning';
         }
         const trialEl = document.getElementById('trial-left');
-        if (trialEl) trialEl.innerText = isUnlimited ? '∞' : (credits > 0 ? `${remaining} / ${limit} + ${credits} حزمة` : `${remaining} / ${limit}`);
+        if (trialEl) trialEl.innerText = isUnlimited ? '∞' : (walletTotalUnits() > 0 ? `${remaining} / ${limit} + رصيد حزم` : `${remaining} / ${limit}`);
         const chip = document.getElementById('trial-chip');
         if (chip) { chip.classList.remove('trial-ok', 'trial-warning', 'trial-danger'); chip.classList.add('trial-' + level); }
         const fill = document.getElementById('trial-progress-fill');
@@ -830,7 +844,7 @@ window.__H = {
             headerBadge.classList.remove('trial-ok', 'trial-warning', 'trial-danger');
             headerBadge.classList.add('trial-' + level);
         }
-        if (headerCount) headerCount.innerText = isUnlimited ? '∞' : String(remaining + credits);
+        if (headerCount) headerCount.innerText = isUnlimited ? '∞' : (String(remaining) + (walletTotalUnits() > 0 ? '+' : ''));
         try { renderBalanceBreakdown(); } catch (_) {}
     }
     function maybeFireTrialWarning(remaining, limit) {
@@ -846,6 +860,49 @@ window.__H = {
             state.low = true; setTrialWarnState(state);
         }
     }
+    // ---- أنواع الرصيد + مصدر الخصم اللي المستخدم بيختاره ----
+    // الحزمة المخصصة بتتحسب بالنوع: مقابلتين صوتيتين مينفعوش غير في المقابلة الصوتية.
+    const WALLET_CATS = ['voice', 'video', 'cv', 'tool'];
+    let lastToolCategory = null;
+    function getDeductSource() {
+        try { return localStorage.getItem('yusr_deduct_source') || 'auto'; } catch (_) { return 'auto'; }
+    }
+    function categoryForLabel(label) {
+        const t = String(label || '');
+        if (/فيديو/.test(t)) return 'video';
+        if (/المقابلة التجريبية|جلسة مقابلة/.test(t)) return 'voice';
+        if (/سيرة|خطاب تقديم/.test(t)) return 'cv';
+        return 'tool';
+    }
+    function activeViewCategories() {
+        const el = document.querySelector('.view.active');
+        const id = el ? el.id.replace(/^view-/, '') : '';
+        if (id === 'interview') return ['voice'];
+        if (id === 'video') return ['video', 'tool'];
+        if (id === 'cv' || id === 'match' || id === 'cover') return ['cv'];
+        if (['assistant', 'faq', 'career', 'salary', 'progress', 'portfolio', 'writing', 'summarizer', 'transcribe', 'pitch'].indexOf(id) !== -1) return ['tool'];
+        return null; // صفحات مش أدوات (الملف الشخصي، الاشتراكات...)
+    }
+    function requestCategory() {
+        const cats = activeViewCategories();
+        if (!cats) return lastToolCategory || 'tool';
+        if (cats.length === 1) return cats[0];
+        return (lastToolCategory && cats.indexOf(lastToolCategory) !== -1) ? lastToolCategory : cats[cats.length - 1];
+    }
+    // بيتبعت مع طلبات الذكاء الاصطناعي عشان الخصم يتم من النوع المناسب ومن المصدر اللي المستخدم اختاره
+    function requestMeta() { return { category: requestCategory(), source: getDeductSource() }; }
+    function walletTotalUnits() {
+        let n = cloudPackCredits > 0 ? cloudPackCredits : 0;
+        WALLET_CATS.forEach(c => { n += cloudPackWallet[c] > 0 ? cloudPackWallet[c] : 0; });
+        return n;
+    }
+    // رصيد الحزم اللي ينفع للأداة المفتوحة دلوقتي (رصيد النوع + الرصيد العام القديم)
+    function walletApplicable() {
+        const cats = activeViewCategories() || WALLET_CATS;
+        let n = cloudPackCredits > 0 ? cloudPackCredits : 0;
+        cats.forEach(c => { n += cloudPackWallet[c] > 0 ? cloudPackWallet[c] : 0; });
+        return n;
+    }
     function getEffectiveMonthlyLimit() {
         if (typeof cloudCustomLimit === 'number' && cloudCustomLimit >= 0) return cloudCustomLimit; // "سقف مخصص" من الأدمن
         const plan = getCurrentPlanName();
@@ -855,7 +912,7 @@ window.__H = {
         const limit = getEffectiveMonthlyLimit();
         const count = getEffectiveUsageCount();
         const remaining = (limit === Infinity) ? Infinity : Math.max(0, limit - count);
-        const credits = cloudPackCredits > 0 ? cloudPackCredits : 0;
+        const credits = walletApplicable();
         updateTrialUsageUI(remaining, limit, count, credits);
         if (limit !== Infinity && credits === 0) maybeFireTrialWarning(remaining, limit);
         if (limit !== Infinity && count >= limit && credits === 0) { openPricingModal(); return false; }
@@ -863,6 +920,7 @@ window.__H = {
     }
     function incrementDeviceUsage(toolLabel) {
         const user = fbAuth.currentUser;
+        lastToolCategory = categoryForLabel(toolLabel);
         setLocalUsageCache(getEffectiveUsageCount() + 1);
         checkDeviceTrial();
         if (user && !user.isAnonymous) {
@@ -1021,7 +1079,9 @@ window.__H = {
         detachAccountDeletionWatcher();
         if (cloudCustomLimitRef) { cloudCustomLimitRef.off(); cloudCustomLimitRef = null; }
         if (cloudPackRef) { cloudPackRef.off(); cloudPackRef = null; }
+        if (cloudPackWalletRef) { cloudPackWalletRef.off(); cloudPackWalletRef = null; }
         cloudPackCredits = 0;
+        cloudPackWallet = { voice: 0, video: 0, cv: 0, tool: 0 };
         if (cloudPlanRef) { cloudPlanRef.off(); cloudPlanRef = null; }
         if (cloudPurchasesRef) { cloudPurchasesRef.off(); cloudPurchasesRef = null; }
         if (cloudPointsRef) { cloudPointsRef.off(); cloudPointsRef = null; }
@@ -1182,7 +1242,7 @@ window.__H = {
     function getPurchases() { return JSON.parse(localStorage.getItem('yusr_purchases') || '[]'); }
     function savePurchases(list) { localStorage.setItem('yusr_purchases', JSON.stringify(list)); }
     let pendingPlanRequest = null;
-    function openPaymentRequest(name, price, period, label, details) {
+    function openPaymentRequest(name, price, period, label, details, wallet) {
         if (isEmailVerificationRequired()) {
             closePricingModal();
             showToast(uiStr('verifyEmailFirst'), 'error');
@@ -1190,7 +1250,7 @@ window.__H = {
             setTimeout(() => { const el = document.getElementById('email-verify-banner'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 300);
             return;
         }
-        pendingPlanRequest = { name, price, period, label: label || name, details: details || '' };
+        pendingPlanRequest = { name, price, period, label: label || name, details: details || '', wallet: wallet || null };
         closePricingModal();
         const summary = document.getElementById('payment-request-summary');
         summary.innerHTML = pendingPlanRequest.details !== undefined && label ? `<b class="text-slate-100">${label}</b> — <b class="text-slate-100">${price} ج.م</b> / مرة واحدة` + (details ? `<br><span class="text-slate-400">${details}</span>` : '') : `باقة <b class="text-slate-100">${name}</b> — <b class="text-slate-100">${price} ج.م</b> / ${period}`;
@@ -1291,7 +1351,8 @@ window.__H = {
             period: pendingPlanRequest.period,
             name, phone, ref,
             deviceId: getDeviceId(),
-            proof: pendingProofDataUrl || ''
+            proof: pendingProofDataUrl || '',
+            wallet: pendingPlanRequest.wallet || undefined
         };
         const submitBtn = document.getElementById('pr-submit-btn');
         status.classList.remove('hidden', 'text-red-400', 'text-emerald-400');
@@ -3059,7 +3120,7 @@ window.__H = {
         const response = await fetch(`${CLOUD_FUNCTIONS_BASE}/edgeTtsSpeak`, {
             method: "POST",
             headers: { "Content-Type": "application/json", ...(await getAuthHeader()) },
-            body: JSON.stringify({ text, voice })
+            body: JSON.stringify({ text, voice, ...requestMeta() })
         });
         if (!response.ok) throw new Error(`Edge TTS error: ${response.status}`);
         return await response.blob();
@@ -3357,7 +3418,7 @@ ${jobAdPromptLine()}
             const response = await fetchWithTimeout(`${CLOUD_FUNCTIONS_BASE}/groqChat`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", ...(await getAuthHeader()) },
-                body: JSON.stringify({ messages })
+                body: JSON.stringify({ messages, ...requestMeta() })
             });
             if (response.ok) {
                 const data = await response.json();
@@ -4908,6 +4969,7 @@ ${firstPass}
             ? 'أيوه، تمام، يعني بص، أنا اشتغلت على المشروع ده مع الفريق وكنت مسؤول عن المتابعة والتنفيذ وحل المشاكل اللي بتظهر أول بأول.'
             : 'طيب، هقول اللي في دماغي عادي زي ما بتكلم بالظبط، بصوتي وبنفس كلامي، من غير ما حد يغيّر فيه حاجة.';
         form.append('prompt', prompt);
+        { const meta = requestMeta(); form.append('category', meta.category); form.append('source', meta.source); }
         let lastErr;
         for (let attempt = 0; attempt < 2; attempt++) {
             try {
@@ -5182,9 +5244,9 @@ const PACK_ITEMS = [
       hint: 'طلب واحد لكل مرة: تلخيص، تحسين نص، رسالة توظيف، Elevator Pitch، أسئلة شائعة، رسالة في الشات…' }
 ];
 const READY_PACKS = [
-    { name: 'تجربة',         units: 10, price: 35,  note: 'مقابلة صوتية كاملة + 3 أدوات' },
-    { name: 'جاهز للمقابلة', units: 25, price: 85,  note: '3 مقابلات صوتية + 4 أدوات', popular: true },
-    { name: 'مكثّف',         units: 50, price: 165, note: '5 مقابلات صوتية + سيرة وخطابات وأدوات' }
+    { name: 'تجربة',         units: 10, price: 35,  note: 'مقابلة صوتية كاملة + 3 أدوات', wallet: { voice: 7, tool: 3 } },
+    { name: 'جاهز للمقابلة', units: 25, price: 85,  note: '3 مقابلات صوتية + 4 أدوات', popular: true, wallet: { voice: 21, tool: 4 } },
+    { name: 'مكثّف',         units: 50, price: 165, note: '5 مقابلات صوتية + 5 سير وخطابات + 10 أدوات', wallet: { voice: 35, cv: 5, tool: 10 } }
 ];
 const PACK_MIN_PRICE = 10;
 const customPackCounts = { voice: 0, video: 0, cv: 0, tool: 0 };
@@ -5194,6 +5256,11 @@ function customPackTotals() {
     PACK_ITEMS.forEach(it => { const n = customPackCounts[it.id] || 0; units += n * it.units; price += n * it.price; });
     return { units, price: Math.ceil(price) };
 }
+function customPackWallet() {
+    const w = {};
+    PACK_ITEMS.forEach(it => { const n = customPackCounts[it.id] || 0; if (n > 0) w[it.id] = n * it.units; });
+    return w;
+}
 function customPackDetail() {
     return PACK_ITEMS.filter(it => customPackCounts[it.id] > 0).map(it => it.label + ' ×' + customPackCounts[it.id]).join('، ');
 }
@@ -5202,7 +5269,7 @@ function renderPacksSection() {
     if (!host) return;
     try { loadMyPaymentRequests(); } catch (_) {}
     const t = customPackTotals();
-    const ready = READY_PACKS.map(p => `
+    const ready = READY_PACKS.map((p, i) => `
         <div class="rounded-xl p-4 space-y-2 lift-hover ${p.popular ? 'border-2 border-emerald-400/70 relative bg-[#16221f]' : 'panel-2'}">
             ${p.popular ? '<span class="absolute top-0 left-0 bg-emerald-400 text-slate-950 text-[9px] font-bold px-2 py-0.5 rounded-br-lg rounded-tl-xl">الأنسب للبداية</span>' : ''}
             <h4 class="text-xs font-bold text-slate-100">${p.name}</h4>
@@ -5212,7 +5279,7 @@ function renderPacksSection() {
                 <li><i class="fa-solid fa-check text-slate-400"></i> بدون اشتراك ولا تجديد شهري</li>
                 
             </ul>
-            <button data-x-onclick="hPackBuy" data-units="${p.units}" data-price="${p.price}" data-name="${p.name}" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl">اشترك</button>
+            <button data-x-onclick="hPackBuy" data-idx="${i}" data-units="${p.units}" data-price="${p.price}" data-name="${p.name}" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl">اشترك</button>
         </div>`).join('');
     const rows = PACK_ITEMS.map(it => {
         const n = customPackCounts[it.id] || 0;
@@ -5241,7 +5308,7 @@ function renderPacksSection() {
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">${ready}</div>
         <div class="panel rounded-2xl p-4 sm:p-5 space-y-3">
             <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2"><i class="fa-solid fa-sliders"></i> <span>اصنع باقتك بنفسك</span></h3>
-            <p class="text-xs text-slate-400">اختار اللي محتاجه والسعر بيتحسب لحظيًا.</p>
+            <p class="text-xs text-slate-400">اختار اللي محتاجه والسعر بيتحسب لحظيًا. وكل نوع بتشتريه بيتصرف في نوعه بس (مثلًا مقابلتين صوتيتين تتصرفوا في المقابلات الصوتية بس).</p>
             <div class="space-y-2">${rows}</div>
             <div class="flex items-center justify-between panel-2 rounded-xl px-4 py-3">
                 <div><p class="text-[10px] text-slate-500">الإجمالي (مرة واحدة)</p><p class="text-xl font-extrabold text-white">${t.price} <span class="text-xs">ج.م</span></p></div>
@@ -5261,12 +5328,13 @@ function stepCustomPack(id, d) {
 function buyReadyPack(btn) {
     const units = parseInt(btn.getAttribute('data-units'), 10), price = parseInt(btn.getAttribute('data-price'), 10);
     if (!units || !price) return;
-    openPaymentRequest('حزمة ' + units + ' طلب', price, 'مرة واحدة (' + btn.getAttribute('data-name') + ')', 'باقة ' + btn.getAttribute('data-name'), '');
+    const pack = READY_PACKS[parseInt(btn.getAttribute('data-idx'), 10)] || null;
+    openPaymentRequest('حزمة ' + units + ' طلب', price, 'مرة واحدة (' + btn.getAttribute('data-name') + ')', 'باقة ' + btn.getAttribute('data-name'), '', pack ? pack.wallet : null);
 }
 function buyCustomPack() {
     const t = customPackTotals();
     if (t.price < PACK_MIN_PRICE) { showToast('الحد الأدنى للباقة ' + PACK_MIN_PRICE + ' ج.م، زوّد اختياراتك.', 'error'); return; }
-    openPaymentRequest('حزمة ' + t.units + ' طلب', t.price, 'مرة واحدة — ' + customPackDetail(), 'باقتك المخصصة', customPackDetail());
+    openPaymentRequest('حزمة ' + t.units + ' طلب', t.price, 'مرة واحدة — ' + customPackDetail(), 'باقتك المخصصة', customPackDetail(), customPackWallet());
 }
 
 // ---- بطاقة "جاهزيتك للمقابلة" ----
@@ -5370,144 +5438,77 @@ function shareResultCard(btn) {
 
 
 // ======================================================================
-// رصيدك الحالي: الباقة الشهرية + رصيد الحزم (تفاصيل في صفحة الاشتراكات + ملخص في الملف الشخصي)
-// ملاحظة: رصيد الحزم متخزّن كرقم واحد (عدد الطلبات المتبقية)، وكل طلب = طلب واحد في أي أداة.
-// عشان كده بنعرض الباقي كـ "بيكفي لكام مقابلة/سيرة/أداة" (من نفس الرصيد) + اللي اشتراه المستخدم من سجل طلباته.
+// رصيدك: الباقة الشهرية + رصيد كل نوع لوحده (مقابلات صوتية / فيديو / سيرة / أدوات)
+// المستخدم بيشوف اللي معاه بالنوع مش بعدد طلبات عامة، وهو اللي بيدوس ويحدد يتخصم من إيه الأول.
+// ولو اللي اختاره خلص (أو مش مناسب للأداة اللي فاتحها) الخصم بيكمل تلقائي على اللي بعده لحد ما كله يبقى صفر.
 // ======================================================================
 function balEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 function balNum(n) { return Number(n).toLocaleString('ar-EG'); }
-function balEscRe(s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
-
 // "حزمة 14 طلب" -> 14
 function balPackUnits(r) {
     const m = /^حزمة\s+(\d+)/.exec((r && r.plan) || '');
     return m ? parseInt(m[1], 10) : 0;
 }
-// بيطلّع محتوى الحزمة من نص الطلب: "مقابلة صوتية ×2، أداة سريعة ×3" أو وصف الباقة الجاهزة
-function balPackContents(r) {
-    const text = [r && r.period, r && r.details, r && r.label].filter(Boolean).join(' | ');
-    const parts = [];
-    PACK_ITEMS.forEach(it => {
-        const m = new RegExp(balEscRe(it.label) + '\\s*[×xX]\\s*(\\d+)').exec(text);
-        if (m) parts.push(it.short + ' ×' + m[1]);
-    });
-    if (parts.length) return parts.join('، ');
-    const ready = READY_PACKS.find(p => text.indexOf(p.name) !== -1);
-    return ready ? ready.note : '';
-}
-function balSnapshot() {
+const WAL_TITLES = { voice: 'مقابلة صوتية', video: 'مقابلة فيديو', cv: 'سيرة / مطابقة / خطاب', tool: 'أدوات سريعة' };
+
+function walSources() {
     const limit = getEffectiveMonthlyLimit();
     const used = getEffectiveUsageCount();
-    const unlimited = limit === Infinity;
-    const planLeft = unlimited ? Infinity : Math.max(0, limit - used);
-    const credits = cloudPackCredits > 0 ? cloudPackCredits : 0;
-    const reqs = Array.isArray(myPaymentRequests) ? myPaymentRequests : [];
-    const packs = reqs.filter(r => balPackUnits(r) > 0);
-    const approved = packs.filter(r => r.status === 'approved')
-        .sort((a, b) => (b.reviewedAt || b.createdAt || 0) - (a.reviewedAt || a.createdAt || 0));
-    const pending = packs.filter(r => r.status === 'pending');
-    const bought = approved.reduce((t, r) => t + balPackUnits(r), 0);
-    return { limit, used, unlimited, planLeft, credits, approved, pending, bought, plan: getCurrentPlanName() };
-}
-
-function balPlanRow(s) {
-    const pct = s.unlimited ? 100 : (s.limit > 0 ? Math.min(100, Math.round((s.used / s.limit) * 100)) : 100);
-    const lvl = s.unlimited ? 'ok' : (s.planLeft <= 0 ? 'danger' : (s.planLeft <= Math.max(2, Math.ceil(s.limit * 0.2)) ? 'warn' : 'ok'));
-    const val = s.unlimited ? '∞' : balNum(s.planLeft) + ' <small>طلب باقي</small>';
-    const body = s.unlimited
-        ? '<div class="bal-sub text-slate-400">طلبات غير محدودة، مفيش سقف شهري.</div>'
-        : `<div class="bal-bar"><span class="bal-fill bal-${lvl}" style="width:${pct}%"></span></div>
-           <div class="bal-sub text-slate-400">استخدمت ${balNum(s.used)} من ${balNum(s.limit)} الشهر ده، وبيتجدد أول الشهر الجاي.</div>`;
-    return `<div class="bal-row">
-        <div class="bal-head"><span class="bal-title text-slate-200"><i class="fa-solid fa-gem"></i> باقتك الشهرية: ${balEsc(s.plan)}</span><b class="bal-val text-slate-100">${val}</b></div>
-        ${body}
-    </div>`;
-}
-
-function balEquivalents(s) {
-    const vUnits = (PACK_ITEMS.find(i => i.id === 'voice') || { units: 7 }).units;
-    const v = Math.floor(s.credits / vUnits), rest = s.credits - v * vUnits;
-    const cells = PACK_ITEMS.map(it => {
-        const n = Math.floor(s.credits / it.units);
-        const note = it.units > 1 ? `<span class="bal-eq-note text-slate-500">${balNum(it.units)} طلبات للواحدة</span>` : '<span class="bal-eq-note text-slate-500">طلب واحد للمرة</span>';
-        return `<div class="bal-eq-i"><i class="fa-solid ${it.icon} text-slate-400"></i><b class="text-slate-100">×${balNum(n)}</b><span class="text-slate-300">${balEsc(it.short)}</span>${note}</div>`;
-    }).join('');
-    const mixParts = [];
-    if (v) mixParts.push(balNum(v) + ' مقابلة صوتية كاملة');
-    if (rest) mixParts.push(balNum(rest) + ' طلب لأي أداة تانية');
-    const mix = mixParts.length ? `<p class="bal-sub text-slate-300"><i class="fa-solid fa-lightbulb text-amber-300"></i> يعني ممكن تعمل: ${mixParts.join(' + ')}.</p>` : '';
-    return `<div class="bal-eq-wrap">
-        <p class="bal-sub text-slate-400">رصيدك يكفيك لكل حاجة من دول لو صرفته كله عليها (الأرقام من نفس الرصيد، مش كل واحدة لوحدها):</p>
-        <div class="bal-eq">${cells}</div>
-        ${mix}
-    </div>`;
-}
-
-function balPackRow(s, withEquivalents) {
-    if (!s.credits && !s.approved.length) {
-        return `<div class="bal-row bal-muted">
-            <div class="bal-head"><span class="bal-title text-slate-200"><i class="fa-solid fa-bolt"></i> رصيد الحزم</span><b class="bal-val text-slate-100">0</b></div>
-            <div class="bal-sub text-slate-400">مفيش رصيد حزم حاليًا. الحزمة بتتضاف هنا أول ما نراجع التحويل ونوافق عليه.</div>
-        </div>`;
+    const out = [];
+    if (limit === Infinity) {
+        out.push({ id: 'plan', icon: 'fa-gem', title: 'باقة ' + getCurrentPlanName(), big: '∞', small: 'غير محدودة' });
+    } else if (limit > 0) {
+        const left = Math.max(0, limit - used);
+        out.push({ id: 'plan', icon: 'fa-gem', title: 'باقة ' + getCurrentPlanName(), big: balNum(left), small: 'من ' + balNum(limit) + ' الشهر ده', low: left <= 0 });
     }
-    const spent = (s.bought > 0 && s.bought >= s.credits) ? (s.bought - s.credits) : null;
-    const spentLine = spent !== null ? ` اتصرف تقريبًا ${balNum(spent)} من ${balNum(s.bought)} طلب اشتريتهم.` : '';
-    return `<div class="bal-row">
-        <div class="bal-head"><span class="bal-title text-slate-200"><i class="fa-solid fa-bolt"></i> رصيد الحزم</span><b class="bal-val text-slate-100">${balNum(s.credits)} <small>طلب باقي</small></b></div>
-        <div class="bal-sub text-slate-400">بيتخصم تلقائيًا بعد ما سقف باقتك الشهري يخلص، ومبيتجددش ولا بيتصفّر أول الشهر.${spentLine}</div>
-        ${(withEquivalents && s.credits > 0) ? balEquivalents(s) : ''}
-    </div>`;
+    PACK_ITEMS.forEach(it => {
+        const u = cloudPackWallet[it.id] > 0 ? cloudPackWallet[it.id] : 0;
+        if (!u) return;
+        const n = Math.floor(u / it.units), rest = u - n * it.units;
+        if (n === 0 && rest > 0) out.push({ id: it.id, icon: it.icon, title: WAL_TITLES[it.id], big: balNum(rest), small: 'رد' });
+        else out.push({ id: it.id, icon: it.icon, title: WAL_TITLES[it.id], big: '×' + balNum(n), small: rest ? ('+ ' + balNum(rest) + ' رد') : '' });
+    });
+    if (cloudPackCredits > 0) out.push({ id: 'general', icon: 'fa-bolt', title: 'رصيد عام', big: balNum(cloudPackCredits), small: 'طلب لأي أداة' });
+    return out;
 }
 
-function balTotalRow(s) {
-    if (s.unlimited) return '';
-    return `<div class="bal-total"><span class="text-slate-300">إجمالي المتاح لك دلوقتي</span><b class="text-slate-100">${balNum(s.planLeft + s.credits)} <small>طلب</small></b></div>`;
-}
-
-function balPurchasesHtml(s) {
-    const pendingHtml = s.pending.length
-        ? `<div class="bal-pending"><i class="fa-solid fa-clock"></i> ${balNum(s.pending.length)} طلب حزمة قيد المراجعة، والرصيد بيتضاف أول ما نوافق عليه.</div>` : '';
-    if (!s.approved.length) return pendingHtml;
-    const rows = s.approved.slice(0, 6).map(r => {
-        const units = balPackUnits(r);
-        const contents = balPackContents(r) || ('حزمة ' + units + ' طلب');
-        return `<div class="bal-buy">
-            <div class="min-w-0"><b class="text-slate-100">${balEsc(r.label || r.plan)}</b><span class="text-slate-400">${balEsc(contents)}</span></div>
-            <div class="bal-buy-r"><b class="text-slate-100">${balNum(units)} طلب</b><small class="text-slate-500">${balEsc(reqDate(r.reviewedAt || r.createdAt))}</small></div>
-        </div>`;
-    }).join('');
-    return `<div class="space-y-2">
-        <p class="text-xs font-bold text-slate-300 flex items-center gap-2"><i class="fa-solid fa-receipt"></i> الحزم اللي اشتريتها</p>
-        ${rows}
-        ${pendingHtml}
-    </div>`;
+function selectDeductSource(id) {
+    try { localStorage.setItem('yusr_deduct_source', id || 'auto'); } catch (_) {}
+    try { renderBalanceBreakdown(); } catch (_) {}
+    const hit = walSources().find(s => s.id === id);
+    showToast(id === 'auto' || !hit ? 'تمام، الخصم تلقائي.' : ('تمام، هيتخصم الأول من: ' + hit.title), 'success');
 }
 
 function renderBalanceBreakdown() {
-    const full = document.getElementById('balance-breakdown-subs');
-    const compact = document.getElementById('balance-breakdown-profile');
-    if (!full && !compact) return;
-    const s = balSnapshot();
-    if (full) {
-        full.innerHTML = `<div class="panel rounded-2xl p-4 sm:p-5 space-y-3">
-            <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2"><i class="fa-solid fa-wallet"></i> <span>رصيدك الحالي</span></h3>
-            ${balPlanRow(s)}
-            ${balPackRow(s, true)}
-            ${balTotalRow(s)}
-            ${balPurchasesHtml(s)}
+    const hosts = ['balance-breakdown-subs', 'balance-breakdown-profile'].map(id => document.getElementById(id)).filter(Boolean);
+    if (!hosts.length) return;
+    const src = walSources();
+    const reqs = Array.isArray(myPaymentRequests) ? myPaymentRequests : [];
+    const pending = reqs.filter(r => balPackUnits(r) > 0 && r.status === 'pending').length;
+    const pendingHtml = pending ? `<div class="bal-pending"><i class="fa-solid fa-clock"></i> ${balNum(pending)} طلب حزمة قيد المراجعة، والرصيد بيتضاف أول ما نوافق عليه.</div>` : '';
+    let html = '';
+    if (src.length) {
+        const choosable = src.length > 1;
+        const pref = getDeductSource();
+        const active = (pref !== 'auto' && src.some(s => s.id === pref)) ? pref : 'auto';
+        const chip = (c, selectable) => `<button type="button" class="wal-chip${active === c.id ? ' wal-on' : ''}${c.low ? ' wal-low' : ''}"${selectable ? ` data-x-onclick="hWalSelect" data-src="${c.id}" aria-pressed="${active === c.id}"` : ' disabled'}>
+            <i class="fa-solid ${c.icon}"></i><span class="wal-t">${balEsc(c.title)}</span>${c.big ? `<b class="wal-n">${c.big}</b>` : ''}${c.small ? `<span class="wal-s">${balEsc(c.small)}</span>` : ''}
+        </button>`;
+        const chips = (choosable ? [{ id: 'auto', icon: 'fa-wand-magic-sparkles', title: 'تلقائي', big: '', small: 'الباقة ثم الحزم' }].concat(src) : src)
+            .map(c => chip(c, choosable)).join('');
+        const activeTitle = (src.find(s => s.id === active) || {}).title;
+        const hint = !choosable ? '' : (active === 'auto'
+            ? 'التلقائي: بيتخصم من الباقة الشهرية الأول، وبعدها من رصيد النوع اللي بتستخدمه. وأي واحد يخلص اللي بعده بيشتغل على طول لحد ما كله يبقى صفر.'
+            : `بيتخصم الأول من <b>${balEsc(activeTitle)}</b>. ولو خلص (أو مش مناسب للأداة اللي فاتحها) بيكمل تلقائي على الباقي.`);
+        html = `<div class="wal-card">
+            <div class="wal-head"><p class="wal-title"><i class="fa-solid fa-wallet"></i> رصيدك</p>${choosable ? '<span class="wal-tip">اضغط على اللي عايزه يتخصم الأول</span>' : ''}</div>
+            <div class="wal-chips">${chips}</div>
+            ${hint ? `<p class="wal-hint text-slate-400">${hint}</p>` : ''}
+            ${pendingHtml}
         </div>`;
+    } else if (pendingHtml) {
+        html = `<div class="wal-card">${pendingHtml}</div>`;
     }
-    if (compact) {
-        compact.innerHTML = `<div class="space-y-2">
-            <div class="flex items-center justify-between gap-2">
-                <p class="text-xs font-bold text-slate-300 flex items-center gap-2"><i class="fa-solid fa-battery-three-quarters"></i> رصيدك الحالي</p>
-                <button data-x-onclick="hGoSubs" class="chip hover:bg-[var(--panel-2)]">التفاصيل</button>
-            </div>
-            ${balPlanRow(s)}
-            ${balPackRow(s, false)}
-            ${balTotalRow(s)}
-            ${s.pending.length ? `<div class="bal-pending"><i class="fa-solid fa-clock"></i> ${balNum(s.pending.length)} طلب حزمة قيد المراجعة.</div>` : ''}
-        </div>`;
-    }
+    hosts.forEach(h => { h.innerHTML = html; });
 }
 try { renderBalanceBreakdown(); } catch (_) {}

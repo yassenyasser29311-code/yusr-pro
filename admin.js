@@ -459,6 +459,7 @@
         box = document.createElement("div");
         box.id = "admin-proof-lightbox";
         box.className = "rq-lightbox";
+        box.style.zIndex = "300"; // فوق لوحة الأدمن (105) وكل المودالات (لحد 135)
         box.innerHTML = `
             <div class="rq-lb-bar">
                 <span class="rq-lb-title">${escapeHtml(title || "صورة التحويل")}</span>
@@ -475,8 +476,7 @@
         document.addEventListener("keydown", onKey);
         box.querySelector("#rq-lb-close").addEventListener("click", close);
         box.addEventListener("click", (e) => { if (e.target === box || e.target.classList.contains("rq-lb-stage")) close(); });
-        try {
-            const src = await adminGetProof(id);
+        const showSrc = (src) => {
             const stage = box.querySelector(".rq-lb-stage");
             stage.innerHTML = "";
             const img = document.createElement("img");
@@ -484,6 +484,10 @@
             img.addEventListener("click", (e) => { e.stopPropagation(); stage.classList.toggle("zoomed"); });
             stage.appendChild(img);
             const dl = box.querySelector("#rq-lb-dl"); dl.href = src; dl.classList.remove("hidden");
+        };
+        if (adminProofCache[id]) { showSrc(adminProofCache[id]); return; } // الصورة اتحمّلت قبل كده -> تفتح فورًا من غير انتظار
+        try {
+            showSrc(await adminGetProof(id));
         } catch (e) {
             box.querySelector(".rq-lb-stage").innerHTML = '<span style="color:#fca5a5;">تعذر تحميل الصورة.</span>';
         }
@@ -491,13 +495,45 @@
 
     // ---- الحزم الصغيرة (دفع مرة واحدة): بتزوّد سقف المستخدم بعدد طلبات الحزمة ----
     function adminIsPackRequest(r) { return /^حزمة\s+\d+/.test((r && r.plan) || ""); }
+    // محتوى الحزمة بالنوع (بالطلبات). المقابلة الصوتية الكاملة = 7 طلبات.
+    const ADMIN_PACK_KINDS = [
+        { cat: "voice", label: "مقابلة صوتية كاملة", units: 7, name: "مقابلة صوتية" },
+        { cat: "video", label: "مقابلة فيديو تجريبية", units: 1, name: "مقابلة فيديو" },
+        { cat: "cv", label: "سيرة ذاتية / مطابقة / خطاب", units: 1, name: "سيرة/مطابقة/خطاب" },
+        { cat: "tool", label: "أداة سريعة", units: 1, name: "أداة سريعة" }
+    ];
+    const ADMIN_READY_PACKS = {
+        "تجربة": { voice: 7, tool: 3 },
+        "جاهز للمقابلة": { voice: 21, tool: 4 },
+        "مكثّف": { voice: 35, cv: 5, tool: 10 }
+    };
+    function adminPackWallet(req, credits) {
+        let w = null;
+        if (req && req.wallet && typeof req.wallet === "object") w = Object.assign({}, req.wallet);
+        if (!w) {
+            const text = [req && req.period, req && req.details, req && req.label].filter(Boolean).join(" | ");
+            const found = {};
+            ADMIN_PACK_KINDS.forEach(k => { const m = new RegExp(k.label + "\\s*[×xX]\\s*(\\d+)").exec(text); if (m) found[k.cat] = parseInt(m[1], 10) * k.units; });
+            if (Object.keys(found).length) w = found;
+            else { const nm = Object.keys(ADMIN_READY_PACKS).find(n => text.indexOf(n) !== -1); if (nm) w = Object.assign({}, ADMIN_READY_PACKS[nm]); }
+        }
+        if (!w) return null;
+        const sum = Object.keys(w).reduce((t, k) => t + (Number(w[k]) || 0), 0);
+        return sum === credits ? w : null; // لو الحساب مش مطابق لحجم الحزمة منبعتش حاجة غلط
+    }
+    function adminWalletText(w) {
+        return ADMIN_PACK_KINDS.filter(k => w[k.cat] > 0).map(k => k.cat === "voice" ? `${Math.floor(w.voice / 7)} ${k.name}` : `${w[k.cat]} ${k.name}`).join(" + ");
+    }
     async function adminApprovePack(req, credits) {
         if (!credits) { adminToast("مش قادر أقرأ حجم الحزمة.", "error"); return; }
         if (!req.uid) { adminToast("الطلب مالوش حساب مسجّل.", "error"); return; }
-        const sure = confirm(`تفعيل حزمة ${credits} للمستخدم ${req.name || req.email || ""}؟\nهتتضاف على رصيده وبتتخصم منه بس لما سقف باقته الشهري يخلص، ومبتتجددش.`);
+        const wallet = adminPackWallet(req, credits);
+        const sure = confirm(wallet
+            ? `تفعيل حزمة (${adminWalletText(wallet)}) للمستخدم ${req.name || req.email || ""}؟\nكل نوع هيتضاف لنوعه بس، ومبيتجددش.`
+            : `تفعيل حزمة ${credits} طلب للمستخدم ${req.name || req.email || ""}؟\nهتتضاف كرصيد عام وبتتخصم منه بعد سقف باقته الشهري، ومبتتجددش.`);
         if (!sure) return;
         try {
-            const d = await adminFetch("/adminReviewSubscriptionRequest", { method: "POST", body: JSON.stringify({ requestId: req.id, action: "approve" }) });
+            const d = await adminFetch("/adminReviewSubscriptionRequest", { method: "POST", body: JSON.stringify({ requestId: req.id, action: "approve", wallet: wallet || undefined }) });
             adminToast("تم تفعيل الحزمة. رصيد المستخدم دلوقتي: " + (d.balance != null ? d.balance : credits), "success");
             adminLoadSubscriptionRequests();
             adminRefreshAll();
@@ -1153,6 +1189,10 @@
         document.getElementById("admin-user-modal-usage").textContent = u.usageThisMonth ?? 0;
         const packInput = document.getElementById("admin-user-modal-pack");
         if (packInput) { packInput.value = u.packCredits ?? 0; packInput.disabled = readOnly; }
+        ["voice", "video", "cv", "tool"].forEach(c => {
+            const el = document.getElementById("admin-user-modal-wallet-" + c);
+            if (el) { el.value = (u.packWallet && u.packWallet[c]) || 0; el.disabled = readOnly; }
+        });
 
         const suspendBtn = document.getElementById("admin-user-modal-suspend-btn");
         suspendBtn.textContent = u.suspended ? "تفعيل الحساب" : "إيقاف الحساب";
@@ -1264,11 +1304,11 @@
         }
     };
 
-    window.adminModalUserAction = async function (action, value) {
+    window.adminModalUserAction = async function (action, value, extra) {
         if (!adminUserModalUid) return;
         if (isViewerRole()) { adminToast("دور المشاهدة مش مسموح له بالتعديل.", "error"); return; }
         try {
-            await adminFetch("/adminUserAction", { method: "POST", body: JSON.stringify({ uid: adminUserModalUid, action, value }) });
+            await adminFetch("/adminUserAction", { method: "POST", body: JSON.stringify({ uid: adminUserModalUid, action, value, ...(extra || {}) }) });
             adminToast("تم بنجاح.", "success");
             const uidToReopen = adminUserModalUid;
             await adminRefreshAll();

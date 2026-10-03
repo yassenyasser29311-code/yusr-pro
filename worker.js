@@ -25,6 +25,38 @@ const RATE_LIMITS = {
 
 const RECAPTCHA_MIN_SCORE = 0.5;
 
+// أنواع رصيد الحزم (users/{uid}/packWallet/{category}) ومصادر الخصم اللي الواجهة بتبعتها
+const WALLET_CATEGORIES = ["voice", "video", "cv", "tool"];
+const DEDUCT_SOURCES = new Set(["auto", "plan", "voice", "video", "cv", "tool", "general"]);
+// الرصيد اللي ينفع لكل نوع طلب (شاشة الفيديو بتقبل رصيد الفيديو ورصيد الأدوات، زي ما الواجهة بتحسب)
+const CATEGORY_WALLETS = {
+  voice: ["voice"],
+  video: ["video", "tool"],
+  cv: ["cv"],
+  tool: ["tool"]
+};
+
+function normalizeRequestMeta(category, source) {
+  const c = typeof category === "string" ? category.trim() : "";
+  const sRaw = typeof source === "string" ? source.trim() : "";
+  return {
+    category: WALLET_CATEGORIES.includes(c) ? c : "tool",
+    source: DEDUCT_SOURCES.has(sRaw) ? sRaw : "auto"
+  };
+}
+
+// بيرجّع الرصيد بالنوع كأرقام صحيحة موجبة بس
+function normalizeWallet(raw) {
+  const out = { voice: 0, video: 0, cv: 0, tool: 0 };
+  if (raw && typeof raw === "object") {
+    WALLET_CATEGORIES.forEach((c) => {
+      const n = Number(raw[c]);
+      if (Number.isFinite(n) && n > 0) out[c] = Math.floor(n);
+    });
+  }
+  return out;
+}
+
 
 const ADMIN_LOGIN_MAX_FAILS = 5;
 const ADMIN_LOGIN_LOCKOUT_SECONDS = 15 * 60; // 15 دقيقة
@@ -188,9 +220,31 @@ export default {
         return json({ error: "rate_limited" }, 429, corsHeaders);
       }
 
+      // نوع الطلب ومصدر الخصم (category / source) بيوصلوا في الـ body (JSON أو form-data)
+      let meta = { category: "tool", source: "auto" };
+      let transcribeForm = null;
+      if (toolName === "groqChat" || toolName === "edgeTtsSpeak") {
+        try {
+          const b = await request.clone().json();
+          meta = normalizeRequestMeta(b && b.category, b && b.source);
+        } catch (e) { /* الـ handler نفسه هيرجّع invalid_json */ }
+      } else {
+        const cl = parseInt(request.headers.get("content-length") || "0", 10);
+        const ct = (request.headers.get("content-type") || "").toLowerCase();
+        if (ct.startsWith("multipart/form-data") && cl > 0 && cl <= 20 * 1024 * 1024) {
+          try {
+            transcribeForm = await request.clone().formData();
+            meta = normalizeRequestMeta(transcribeForm.get("category"), transcribeForm.get("source"));
+            // الحقلين دول مش بيروحوا لـ Groq
+            transcribeForm.delete("category");
+            transcribeForm.delete("source");
+          } catch (e) { transcribeForm = null; }
+        }
+      }
+
       const quota = toolName === "edgeTtsSpeak"
         ? { ok: true, monthKey: null }
-        : await checkPlanUsage(uid, idToken);
+        : await checkPlanUsage(uid, idToken, meta);
       if (!quota.ok) {
         return json({ error: quota.error || "usage_limit_reached" }, 403, corsHeaders);
       }
@@ -199,7 +253,7 @@ export default {
       if (toolName === "groqChat") {
         response = await handleGroqChat(request, env, corsHeaders);
       } else if (toolName === "groqTranscribe") {
-        response = await handleGroqTranscribe(request, env, corsHeaders);
+        response = await handleGroqTranscribe(request, env, corsHeaders, transcribeForm);
       } else {
         response = await handleEdgeTts(request, env, corsHeaders);
       }
@@ -209,7 +263,11 @@ export default {
           incrementPlanUsage(uid, idToken, quota.monthKey, quota.currentCount)
         );
       } else if (response.status >= 200 && response.status < 300 && quota.usePack && !interviewTx) {
-        ctx.waitUntil(consumePackCredit(uid, env));
+        if (quota.walletCategory) {
+          ctx.waitUntil(consumeWalletCredit(uid, env, quota.walletCategory));
+        } else {
+          ctx.waitUntil(consumePackCredit(uid, env));
+        }
       }
 
       return response;
@@ -371,9 +429,10 @@ async function checkRateLimit(env, uid, toolName) {
 }
 
 
-async function checkPlanUsage(uid, idToken) {
+async function checkPlanUsage(uid, idToken, meta) {
   const monthKey = getCurrentMonthKey();
   const authQS = `auth=${encodeURIComponent(idToken)}`;
+  const { category, source } = meta || { category: "tool", source: "auto" };
 
   let userRaw = null;
   try {
@@ -399,15 +458,32 @@ async function checkPlanUsage(uid, idToken) {
       ? userRaw.usage[monthKey]
       : 0;
 
-  if (limit !== Infinity && currentCount >= limit) {
-    // سقف الباقة الشهري خلص: لو عنده رصيد حزم، بنسمح له ونخصم من الرصيد (مش من عداد الشهر)
-    const packCredits = typeof userRaw.packCredits === "number" ? userRaw.packCredits : 0;
-    if (packCredits > 0) {
-      return { ok: true, monthKey: null, usePack: true, packCredits };
-    }
-    return { ok: false, error: "usage_limit_reached" };
+  const planAvailable = limit === Infinity || currentCount < limit;
+  const wallet = normalizeWallet(userRaw.packWallet);
+  const packCredits = typeof userRaw.packCredits === "number" && userRaw.packCredits > 0 ? userRaw.packCredits : 0;
+  const applicableCats = CATEGORY_WALLETS[category] || [category];
+
+  const planResult = { ok: true, monthKey, currentCount };
+  const walletResult = (cat) => ({ ok: true, monthKey: null, usePack: true, walletCategory: cat, walletBalance: wallet[cat] });
+  const generalResult = { ok: true, monthKey: null, usePack: true, packCredits };
+
+  // 1) المصدر اللي المستخدم اختاره (لو ينفع للطلب ده)
+  if (source === "plan") {
+    if (planAvailable) return planResult;
+  } else if (source === "general") {
+    if (packCredits > 0) return generalResult;
+  } else if (source !== "auto" && applicableCats.includes(source) && wallet[source] > 0) {
+    return walletResult(source);
   }
-  return { ok: true, monthKey, currentCount };
+
+  // 2) الباقة الشهرية، 3) رصيد النوع، 4) الرصيد العام القديم
+  if (planAvailable) return planResult;
+  for (const cat of applicableCats) {
+    if (wallet[cat] > 0) return walletResult(cat);
+  }
+  if (packCredits > 0) return generalResult;
+
+  return { ok: false, error: "usage_limit_reached" };
 }
 
 // خصم طلب واحد من رصيد الحزم (بصلاحية السيرفر)، والرصيد مبيتصفّرش مع أول الشهر
@@ -419,6 +495,19 @@ async function consumePackCredit(uid, env) {
     }
   } catch (e) {
     console.warn("consumePackCredit فشل:", e);
+  }
+}
+
+// خصم طلب واحد من رصيد نوع معيّن (users/{uid}/packWallet/{category})
+async function consumeWalletCredit(uid, env, category) {
+  if (!WALLET_CATEGORIES.includes(category)) return;
+  try {
+    const cur = await fbAdminGet(`users/${uid}/packWallet/${category}`, env);
+    if (typeof cur === "number" && cur > 0) {
+      await fbAdminPut(`users/${uid}/packWallet/${category}`, cur - 1, env);
+    }
+  } catch (e) {
+    console.warn("consumeWalletCredit فشل:", e);
   }
 }
 
@@ -679,7 +768,7 @@ function stripThinkTags(text) {
 }
 
 
-async function handleGroqTranscribe(request, env, corsHeaders) {
+async function handleGroqTranscribe(request, env, corsHeaders, formData) {
   const contentType = request.headers.get("content-type") || "";
   if (!contentType.toLowerCase().startsWith("multipart/form-data")) {
     return json({ error: "invalid_content_type" }, 400, corsHeaders);
@@ -691,14 +780,19 @@ async function handleGroqTranscribe(request, env, corsHeaders) {
     return json({ error: "audio_too_large" }, 413, corsHeaders);
   }
 
-  const audioBuffer = await request.arrayBuffer();
+  // لو الـ form اتقرا قبل كده (وشلنا منه category/source) بنبعته هو، وإلا بنبعت الـ body زي ما هو
+  const audioBuffer = formData ? null : await request.arrayBuffer();
+  const outBody = formData || audioBuffer;
+  const outHeaders = (key) => formData
+    ? { Authorization: `Bearer ${key}` }
+    : { Authorization: `Bearer ${key}`, "Content-Type": contentType };
 
   let r, usedFallback = false;
   try {
     r = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
       method: "POST",
-      headers: { Authorization: `Bearer ${env.GROQ_API_KEY}`, "Content-Type": contentType },
-      body: audioBuffer
+      headers: outHeaders(env.GROQ_API_KEY),
+      body: outBody
     });
   } catch (e) {
     r = null;
@@ -708,8 +802,8 @@ async function handleGroqTranscribe(request, env, corsHeaders) {
     try {
       const fb = await fetch(env.FALLBACK_TRANSCRIBE_BASE_URL, {
         method: "POST",
-        headers: { Authorization: `Bearer ${env.FALLBACK_API_KEY}`, "Content-Type": contentType },
-        body: audioBuffer
+        headers: outHeaders(env.FALLBACK_API_KEY),
+        body: outBody
       });
       if (fb.ok) { r = fb; usedFallback = true; }
     } catch (e) {
@@ -1324,6 +1418,7 @@ async function handleAdminListUsers(request, env, corsHeaders) {
         plan: planName,
         customLimit: typeof u.customLimit === "number" ? u.customLimit : null,
         packCredits: typeof u.packCredits === "number" ? u.packCredits : 0,
+        packWallet: normalizeWallet(u.packWallet),
         points: typeof u.points === "number" ? u.points : 0,
         suspended: u.suspended === true,
         adminNote: typeof u.adminNote === "string" ? u.adminNote : "",
@@ -1406,9 +1501,36 @@ async function handleAdminReviewSubscriptionRequest(request, env, corsHeaders, c
       if (!Number.isFinite(credits) || credits <= 0 || credits > 100000) {
         return json({ error: "invalid_pack_size" }, 400, corsHeaders);
       }
+
+      // لو الأدمن بعت wallet (مقسّم بالنوع) بنزوّد packWallet، وإلا بنزوّد الرصيد العام packCredits زي الأول
+      let addWallet = null;
+      if (body.wallet !== undefined && body.wallet !== null) {
+        if (typeof body.wallet !== "object" || Array.isArray(body.wallet)) {
+          return json({ error: "invalid_wallet" }, 400, corsHeaders);
+        }
+        const unknownKey = Object.keys(body.wallet).some((k) => !WALLET_CATEGORIES.includes(k));
+        const w = normalizeWallet(body.wallet);
+        const sum = WALLET_CATEGORIES.reduce((t, c) => t + w[c], 0);
+        if (unknownKey || sum !== credits) {
+          return json({ error: "invalid_wallet" }, 400, corsHeaders);
+        }
+        addWallet = w;
+      }
+
+      let balance;
+      let walletAfter = null;
       const curRaw = await fbAdminGet(`users/${reqRaw.uid}/packCredits`, env);
-      const balance = (typeof curRaw === "number" && curRaw > 0 ? curRaw : 0) + credits;
-      await fbAdminPut(`users/${reqRaw.uid}/packCredits`, balance, env);
+      const generalBalance = typeof curRaw === "number" && curRaw > 0 ? curRaw : 0;
+      if (addWallet) {
+        const curWallet = normalizeWallet(await fbAdminGet(`users/${reqRaw.uid}/packWallet`, env));
+        walletAfter = {};
+        WALLET_CATEGORIES.forEach((c) => { walletAfter[c] = curWallet[c] + addWallet[c]; });
+        await fbAdminPut(`users/${reqRaw.uid}/packWallet`, walletAfter, env);
+        balance = generalBalance + WALLET_CATEGORIES.reduce((t, c) => t + walletAfter[c], 0);
+      } else {
+        balance = generalBalance + credits;
+        await fbAdminPut(`users/${reqRaw.uid}/packCredits`, balance, env);
+      }
       const existingPurchases = (await fbAdminGet(`users/${reqRaw.uid}/purchases`, env)) || [];
       const purchasesList = Array.isArray(existingPurchases) ? existingPurchases : Object.values(existingPurchases);
       purchasesList.push({
@@ -1421,8 +1543,8 @@ async function handleAdminReviewSubscriptionRequest(request, env, corsHeaders, c
       await fbAdminPut(`pending_requests/${requestId}/status`, "approved", env);
       await fbAdminPut(`pending_requests/${requestId}/reviewedAt`, Date.now(), env);
       await fbAdminPut(`pending_requests/${requestId}/reviewedBy`, admin.role, env);
-      if (ctx) ctx.waitUntil(logAdminActivity(env, "pack_approved", { requestId, uid: reqRaw.uid, credits, balance, by: admin.name || admin.role }));
-      return json({ ok: true, credits, balance }, 200, corsHeaders);
+      if (ctx) ctx.waitUntil(logAdminActivity(env, "pack_approved", { requestId, uid: reqRaw.uid, credits, balance, wallet: addWallet, by: admin.name || admin.role }));
+      return json({ ok: true, credits, balance, wallet: addWallet, packWallet: walletAfter }, 200, corsHeaders);
     }
 
     if (action === "approve") {
@@ -1628,6 +1750,7 @@ const ADMIN_VALID_ACTIONS = new Set([
   "setPlan",
   "setCustomLimit",
   "setPackCredits",
+  "setPackWallet",
   "setPoints",
   "resetUsage",
   "setNote",
@@ -1685,6 +1808,17 @@ async function handleAdminUserAction(request, env, corsHeaders, ctx) {
     }
     path = `users/${uid}/packCredits`;
     value = Math.round(n);
+  } else if (action === "setPackWallet") {
+    const cat = typeof body.category === "string" ? body.category : "";
+    if (!WALLET_CATEGORIES.includes(cat)) {
+      return json({ error: "invalid_category" }, 400, corsHeaders);
+    }
+    const n = Number(body.value);
+    if (!Number.isFinite(n) || n < 0 || n > 100000) {
+      return json({ error: "invalid_credits" }, 400, corsHeaders);
+    }
+    path = `users/${uid}/packWallet/${cat}`;
+    value = Math.round(n);
   } else if (action === "setPoints") {
     const n = Number(body.value);
     if (!Number.isFinite(n) || n < 0) {
@@ -1719,7 +1853,7 @@ async function handleAdminUserAction(request, env, corsHeaders, ctx) {
 
   if (ctx) {
     ctx.waitUntil(logAdminActivity(env, "admin_user_action", {
-      uid, action, value, authDeleted, by: admin.name || admin.role
+      uid, action, value, category: action === "setPackWallet" ? body.category : undefined, authDeleted, by: admin.name || admin.role
     }));
   }
   return json({ ok: true, authDeleted }, 200, corsHeaders);
@@ -2362,6 +2496,11 @@ async function handleSubmitPaymentRequest(request, env, corsHeaders) {
   const ref = str(body.ref, 200);
   const deviceId = str(body.deviceId, 80);
   const price = Number(body.price);
+  let walletReq = null;
+  if (body.wallet && typeof body.wallet === "object" && !Array.isArray(body.wallet)) {
+    const w = normalizeWallet(body.wallet);
+    if (WALLET_CATEGORIES.some((c) => w[c] > 0)) walletReq = w;
+  }
   if (!plan || !name || !phone || !Number.isFinite(price) || price <= 0 || price > 100000) {
     return json({ error: "invalid_request" }, 400, corsHeaders);
   }
@@ -2386,7 +2525,8 @@ async function handleSubmitPaymentRequest(request, env, corsHeaders) {
     if (proof) await fbAdminPut(`payment_proofs/${id}`, { uid: auth.uid, data: proof, createdAt: now }, env);
     await fbAdminPut(`pending_requests/${id}`, {
       plan, price, period, label, name, phone, ref, deviceId,
-      uid: auth.uid, email, status: "pending", hasProof: !!proof, createdAt: now
+      uid: auth.uid, email, status: "pending", hasProof: !!proof, createdAt: now,
+      ...(walletReq ? { wallet: walletReq } : {})
     }, env);
     return json({ ok: true, id }, 200, corsHeaders);
   } catch (e) {
