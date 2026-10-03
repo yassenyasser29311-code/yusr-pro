@@ -1160,7 +1160,7 @@ window.__H = {
     function getPurchases() { return JSON.parse(localStorage.getItem('yusr_purchases') || '[]'); }
     function savePurchases(list) { localStorage.setItem('yusr_purchases', JSON.stringify(list)); }
     let pendingPlanRequest = null;
-    function openPaymentRequest(name, price, period) {
+    function openPaymentRequest(name, price, period, details) {
         if (isEmailVerificationRequired()) {
             closePricingModal();
             showToast(uiStr('verifyEmailFirst'), 'error');
@@ -1168,10 +1168,10 @@ window.__H = {
             setTimeout(() => { const el = document.getElementById('email-verify-banner'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 300);
             return;
         }
-        pendingPlanRequest = { name, price, period };
+        pendingPlanRequest = { name, price, period, details: details || '' };
         closePricingModal();
         const summary = document.getElementById('payment-request-summary');
-        summary.innerHTML = `باقة <b class="text-slate-100">${name}</b> — <b class="text-slate-100">${price} ج.م</b> / ${period}`;
+        summary.innerHTML = `<b class="text-slate-100">${name}</b> — <b class="text-slate-100">${price} ج.م</b> / ${period}` + (pendingPlanRequest.details ? `<br><span class="text-slate-400">${pendingPlanRequest.details}</span>` : '');
         document.getElementById('pr-name').value = getProfile().name || '';
         document.getElementById('pr-phone').value = '';
         document.getElementById('pr-ref').value = '';
@@ -1215,7 +1215,8 @@ window.__H = {
             plan: pendingPlanRequest.name,
             price: pendingPlanRequest.price,
             period: pendingPlanRequest.period,
-            name, phone, ref,
+            name, phone,
+            ref: (pendingPlanRequest.details ? ('[' + pendingPlanRequest.details + '] ') : '') .concat(ref).slice(0, 180),
             deviceId,
             uid: currentUser ? currentUser.uid : null,
             email: currentUser ? (currentUser.email || null) : null,
@@ -1237,6 +1238,7 @@ window.__H = {
             })
             .catch((e) => {
                 console.warn('Could not write pending request:', e);
+                try { status.dataset.err = (e && (e.code || e.message)) || ''; } catch (_) {}
                 status.classList.remove('text-emerald-400');
                 status.classList.add('text-red-400');
                 status.innerText = 'تعذر إرسال الطلب دلوقتي (مشكلة اتصال). تأكد من إنك متصل بالنت وجرب تاني، أو تواصل معانا من صفحة "الدعم والتواصل".';
@@ -4997,9 +4999,9 @@ const PACK_ITEMS = [
       hint: 'طلب واحد لكل مرة: تلخيص، تحسين نص، رسالة توظيف، Elevator Pitch، أسئلة شائعة، رسالة في الشات…' }
 ];
 const READY_PACKS = [
-    { name: 'تجربة',         units: 10, price: 35,  note: 'مقابلة صوتية كاملة (7 طلبات) + 3 أدوات' },
-    { name: 'جاهز للمقابلة', units: 25, price: 85,  note: '3 مقابلات صوتية (21 طلب) + 4 أدوات', popular: true },
-    { name: 'مكثّف',         units: 50, price: 165, note: '5 مقابلات صوتية (35 طلب) + سيرة وخطابات وأدوات' }
+    { name: 'تجربة',         units: 10, price: 35,  note: 'مقابلة صوتية كاملة + 3 أدوات' },
+    { name: 'جاهز للمقابلة', units: 25, price: 85,  note: '3 مقابلات صوتية + 4 أدوات', popular: true },
+    { name: 'مكثّف',         units: 50, price: 165, note: '5 مقابلات صوتية + سيرة وخطابات وأدوات' }
 ];
 const PACK_MIN_PRICE = 10;
 const customPackCounts = { voice: 0, video: 0, cv: 0, tool: 0 };
@@ -5022,21 +5024,19 @@ function renderPacksSection() {
             <h4 class="text-xs font-bold text-slate-100">${p.name}</h4>
             <p class="text-lg font-bold text-white">${p.price} <span class="text-xs">ج.م</span> <span class="text-[10px] text-slate-500">/ مرة واحدة</span></p>
             <ul class="text-[10.5px] text-slate-400 space-y-1.5">
-                <li><i class="fa-solid fa-check text-slate-400"></i> ${p.units} طلب ذكاء اصطناعي</li>
-                <li><i class="fa-solid fa-check text-slate-400"></i> ${p.note}</li>
+                                <li><i class="fa-solid fa-check text-slate-400"></i> ${p.note}</li>
                 <li><i class="fa-solid fa-check text-slate-400"></i> بدون اشتراك ولا تجديد شهري</li>
-                <li><i class="fa-solid fa-check text-slate-400"></i> الرصيد لأي أداة في الموقع</li>
+                
             </ul>
-            <button data-x-onclick="hPackBuy" data-units="${p.units}" data-price="${p.price}" data-name="${p.name}" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl">اطلب الحزمة</button>
+            <button data-x-onclick="hPackBuy" data-units="${p.units}" data-price="${p.price}" data-name="${p.name}" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl">اشترك</button>
         </div>`).join('');
     const rows = PACK_ITEMS.map(it => {
         const n = customPackCounts[it.id] || 0;
-        const line = n > 0 ? `<span class="text-emerald-300">${n} × ${it.units} = ${n * it.units} طلب · ${n * it.price} ج.م</span>` : `${it.units === 1 ? 'طلب واحد' : it.units + ' طلبات'} · ${it.price} ج.م للواحدة`;
+        const line = n > 0 ? `<span class="text-emerald-300">${n} × ${it.price} = ${n * it.price} ج.م</span>` : `${it.price} ج.م للواحدة`;
         return `
         <div class="flex items-center justify-between gap-3 panel-2 rounded-xl px-3 py-2.5">
             <div class="min-w-0 space-y-0.5">
                 <p class="text-xs font-bold text-slate-200"><i class="fa-solid ${it.icon} text-slate-400"></i> ${it.label}</p>
-                <p class="text-[10px] text-slate-400 leading-relaxed">${it.hint}</p>
                 <p class="text-[10px] text-slate-500">${line}</p>
             </div>
             <div class="flex items-center gap-2 shrink-0" dir="ltr">
@@ -5047,38 +5047,25 @@ function renderPacksSection() {
         </div>`;
     }).join('');
     const summary = PACK_ITEMS.filter(it => customPackCounts[it.id] > 0).map(it => customPackCounts[it.id] + ' ' + it.short).join(' + ');
-    const nudge = t.price >= 150 ? '<p class="text-[11px] text-amber-300 leading-relaxed"><i class="fa-solid fa-lightbulb"></i> الاحترافية (179 ج.م = 150 طلب كل شهر) هتبقى أوفر لو هتستخدم بالكمية دي.</p>' : '';
+    const nudge = t.price >= 150 ? '<p class="text-[11px] text-amber-300 leading-relaxed"><i class="fa-solid fa-lightbulb"></i> الاحترافية (179 ج.م شهريًا) هتبقى أوفر لو هتستخدم بالكمية دي.</p>' : '';
     const ok = t.price >= PACK_MIN_PRICE;
     host.innerHTML = `
-        <div class="panel rounded-2xl p-4 sm:p-5 space-y-2 mt-2">
-            <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2"><i class="fa-solid fa-circle-info"></i> <span>إزاي الطلبات بتتحسب؟</span></h3>
-            <ul class="text-[11px] text-slate-400 leading-relaxed space-y-1.5">
-                <li><i class="fa-solid fa-check text-emerald-300"></i> <b class="text-slate-200">الطلب</b> = استخدام واحد لأداة، والرصيد بيتخصم منه 1.</li>
-                <li><i class="fa-solid fa-microphone text-slate-400"></i> <b class="text-slate-200">المقابلة الصوتية = 7 طلبات:</b> السؤال الأول (1) + 5 ردود (5) + تقرير التقييم النهائي (1). كل رد منك بالصوت ورد المحاور بالصوت بيتحسبوا <b class="text-slate-200">طلب واحد مع بعض</b>، والصوت نفسه مش بيتحسب لوحده.</li>
-                <li><i class="fa-solid fa-rotate-right text-slate-400"></i> لو رصيدك خلص في نص المقابلة، مقابلتك بتتحفظ. اشحن رصيد وكمّل من نفس المكان وخد تقريرك.</li>
-                <li><i class="fa-solid fa-layer-group text-slate-400"></i> تقدر تشتري أكتر من مقابلة: مقابلتين = 14 طلب بـ 50 ج.م.</li>
-                <li><i class="fa-solid fa-video text-slate-400"></i> مقابلة الفيديو التجريبية: طلب واحد.</li>
-                <li><i class="fa-solid fa-file-lines text-slate-400"></i> السيرة، المطابقة مع وظيفة، وخطاب التقديم: طلب لكل مرة.</li>
-                <li><i class="fa-solid fa-wand-magic-sparkles text-slate-400"></i> أي أداة تانية (تلخيص، تحسين نص، رسالة، شات…): طلب لكل مرة.</li>
-                <li><i class="fa-solid fa-infinity text-slate-400"></i> الحزم بدفعة واحدة ومالهاش تجديد. والاشتراك الشهري بيتجدد وعداده بيصفّر أول كل شهر.</li>
-            </ul>
-        </div>
         <div class="panel rounded-2xl p-4 sm:p-5 space-y-1">
             <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2"><i class="fa-solid fa-bolt"></i> <span>حزم صغيرة — ادفع مرة واحدة</span></h3>
-            <p class="text-xs text-slate-400">مش عايز اشتراك؟ خد رصيد طلبات على قدّ احتياجك، وتستخدمه في أي أداة.</p>
+            <p class="text-xs text-slate-400">مش عايز اشتراك شهري؟ ادفع مرة واحدة على قد احتياجك.</p>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">${ready}</div>
         <div class="panel rounded-2xl p-4 sm:p-5 space-y-3">
             <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2"><i class="fa-solid fa-sliders"></i> <span>اصنع باقتك بنفسك</span></h3>
-            <p class="text-xs text-slate-400">اختار عدد كل أداة والسعر بيتحسب لحظيًا.</p>
+            <p class="text-xs text-slate-400">اختار اللي محتاجه والسعر بيتحسب لحظيًا.</p>
             <div class="space-y-2">${rows}</div>
             <div class="flex items-center justify-between panel-2 rounded-xl px-4 py-3">
                 <div><p class="text-[10px] text-slate-500">الإجمالي (مرة واحدة)</p><p class="text-xl font-extrabold text-white">${t.price} <span class="text-xs">ج.م</span></p></div>
-                <div class="text-left"><p class="text-[10px] text-slate-500">رصيد الطلبات</p><p class="text-xl font-extrabold text-white">${t.units}</p></div>
+                
             </div>
             ${summary ? `<p class="text-[11px] text-slate-300 leading-relaxed"><i class="fa-solid fa-receipt text-slate-400"></i> يعني: ${summary}.</p>` : ''}
             ${nudge}
-            <button data-x-onclick="hPackCustomBuy" class="w-full py-2.5 btn-accent acc-subs font-bold text-xs rounded-xl ${ok ? '' : 'opacity-50'}">${ok ? 'اطلب باقتي' : 'اختار أدوات تعدّي ' + PACK_MIN_PRICE + ' ج.م'}</button>
+            <button data-x-onclick="hPackCustomBuy" class="w-full py-2.5 btn-accent acc-subs font-bold text-xs rounded-xl ${ok ? '' : 'opacity-50'}">${ok ? 'اشترك' : 'اختار حاجات تعدّي ' + PACK_MIN_PRICE + ' ج.م'}</button>
             <p class="text-[10px] text-slate-500 leading-relaxed">بعد التحويل وإرسال الطلب بيتم تفعيل الرصيد على حسابك يدويًا بعد مراجعة التحويل.</p>
         </div>`;
 }
@@ -5090,12 +5077,12 @@ function stepCustomPack(id, d) {
 function buyReadyPack(btn) {
     const units = parseInt(btn.getAttribute('data-units'), 10), price = parseInt(btn.getAttribute('data-price'), 10);
     if (!units || !price) return;
-    openPaymentRequest('حزمة ' + units + ' طلب', price, 'مرة واحدة (' + btn.getAttribute('data-name') + ')');
+    openPaymentRequest('حزمة ' + btn.getAttribute('data-name'), price, 'مرة واحدة');
 }
 function buyCustomPack() {
     const t = customPackTotals();
-    if (t.price < PACK_MIN_PRICE) { showToast('الحد الأدنى للباقة ' + PACK_MIN_PRICE + ' ج.م، زوّد عدد أدوات.', 'error'); return; }
-    openPaymentRequest('حزمة ' + t.units + ' طلب', t.price, 'مرة واحدة — ' + customPackDetail());
+    if (t.price < PACK_MIN_PRICE) { showToast('الحد الأدنى للباقة ' + PACK_MIN_PRICE + ' ج.م، زوّد اختياراتك.', 'error'); return; }
+    openPaymentRequest('حزمة مخصصة', t.price, 'مرة واحدة', customPackDetail());
 }
 
 // ---- بطاقة "جاهزيتك للمقابلة" ----
