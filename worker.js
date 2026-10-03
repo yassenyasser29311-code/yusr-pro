@@ -131,6 +131,16 @@ export default {
       return handleAdminListChats(request, env, corsHeaders);
     }
 
+    if (url.pathname === "/submitPaymentRequest") {
+      return handleSubmitPaymentRequest(request, env, corsHeaders);
+    }
+    if (url.pathname === "/myPaymentRequests") {
+      return handleMyPaymentRequests(request, env, corsHeaders);
+    }
+    if (url.pathname === "/adminGetPaymentProof") {
+      return handleAdminGetPaymentProof(request, env, corsHeaders);
+    }
+
     if (url.pathname === "/chatSend") {
       return handleChatSend(request, env, corsHeaders, ctx);
     }
@@ -2247,4 +2257,132 @@ async function handleLogClientError(request, env, corsHeaders) {
     console.warn("handleLogClientError: تعذر إرسال الإشعار:", e);
   }
   return json({ ok: true, delivered: true }, 200, corsHeaders);
+}
+
+// =====================================================================
+// طلبات الدفع: إرسال الطلب + صورة التحويل، وحالة طلبات المستخدم، وعرض الصورة للأدمن
+// الإرسال بيتم من خلال الـ Worker (بصلاحية السيرفر) فمش بيتأثر بقواعد قاعدة البيانات.
+// صور التحويل بتتحفظ منفصلة تحت payment_proofs/{requestId} ومش بترجع في قايمة الطلبات.
+// =====================================================================
+function decodeJwtPayloadSafe(idToken) {
+  try {
+    const p = String(idToken).split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    return JSON.parse(atob(p + "=".repeat((4 - (p.length % 4)) % 4)));
+  } catch (e) {
+    return {};
+  }
+}
+
+async function listUserPaymentRequests(uid, env) {
+  try {
+    const token = await getFirebaseAccessToken(env);
+    const qs = `orderBy=${encodeURIComponent('"uid"')}&equalTo=${encodeURIComponent(JSON.stringify(uid))}&access_token=${encodeURIComponent(token)}`;
+    const res = await fetch(`${FIREBASE_DB_URL}/pending_requests.json?${qs}`);
+    if (res.ok) return (await res.json()) || {};
+  } catch (e) { /* بنرجع للطريقة العامة تحت */ }
+  const all = (await fbAdminGet("pending_requests", env)) || {};
+  const out = {};
+  Object.entries(all).forEach(([id, r]) => { if (r && r.uid === uid) out[id] = r; });
+  return out;
+}
+
+async function handleSubmitPaymentRequest(request, env, corsHeaders) {
+  const auth = await verifyFirebaseToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, corsHeaders);
+  if (!env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    return json({ error: "firebase_service_account_not_configured" }, 500, corsHeaders);
+  }
+  let body;
+  try { body = await request.json(); } catch (e) { return json({ error: "invalid_json" }, 400, corsHeaders); }
+
+  const str = (v, max) => (typeof v === "string" ? v.trim().slice(0, max) : "");
+  const plan = str(body.plan, 80);
+  const period = str(body.period, 300);
+  const label = str(body.label, 120);
+  const name = str(body.name, 80);
+  const phone = str(body.phone, 30);
+  const ref = str(body.ref, 200);
+  const deviceId = str(body.deviceId, 80);
+  const price = Number(body.price);
+  if (!plan || !name || !phone || !Number.isFinite(price) || price <= 0 || price > 100000) {
+    return json({ error: "invalid_request" }, 400, corsHeaders);
+  }
+
+  let proof = null;
+  if (body.proof) {
+    if (typeof body.proof !== "string" || body.proof.length > 600000 ||
+        !/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(body.proof)) {
+      return json({ error: "invalid_proof" }, 400, corsHeaders);
+    }
+    proof = body.proof;
+  }
+
+  try {
+    const mine = await listUserPaymentRequests(auth.uid, env);
+    const pendingCount = Object.values(mine).filter((r) => r && (r.status || "pending") === "pending").length;
+    if (pendingCount >= 5) return json({ error: "too_many_pending" }, 429, corsHeaders);
+
+    const id = "r" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    const email = decodeJwtPayloadSafe(auth.idToken).email || null;
+    const now = Date.now();
+    if (proof) await fbAdminPut(`payment_proofs/${id}`, { uid: auth.uid, data: proof, createdAt: now }, env);
+    await fbAdminPut(`pending_requests/${id}`, {
+      plan, price, period, label, name, phone, ref, deviceId,
+      uid: auth.uid, email, status: "pending", hasProof: !!proof, createdAt: now
+    }, env);
+    return json({ ok: true, id }, 200, corsHeaders);
+  } catch (e) {
+    console.error("handleSubmitPaymentRequest فشل:", e);
+    return json({ error: "internal_error" }, 500, corsHeaders);
+  }
+}
+
+async function handleMyPaymentRequests(request, env, corsHeaders) {
+  const auth = await verifyFirebaseToken(request, env);
+  if (!auth.ok) return json({ error: auth.error }, 401, corsHeaders);
+  if (!env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    return json({ error: "firebase_service_account_not_configured" }, 500, corsHeaders);
+  }
+  try {
+    const mine = await listUserPaymentRequests(auth.uid, env);
+    const requests = Object.entries(mine)
+      .map(([id, r]) => ({
+        id,
+        plan: r.plan || "",
+        label: r.label || "",
+        price: r.price,
+        period: r.period || "",
+        status: r.status || "pending",
+        hasProof: !!r.hasProof,
+        createdAt: r.createdAt || 0,
+        reviewedAt: r.reviewedAt || 0,
+        rejectReason: r.rejectReason || ""
+      }))
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, 8);
+    return json({ ok: true, requests }, 200, corsHeaders);
+  } catch (e) {
+    console.error("handleMyPaymentRequests فشل:", e);
+    return json({ error: "internal_error" }, 500, corsHeaders);
+  }
+}
+
+async function handleAdminGetPaymentProof(request, env, corsHeaders) {
+  const admin = await requireAdminSession(request, env);
+  if (!admin.ok) return json({ error: admin.error }, 401, corsHeaders);
+  if (!env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    return json({ error: "firebase_service_account_not_configured" }, 500, corsHeaders);
+  }
+  let body;
+  try { body = await request.json(); } catch (e) { return json({ error: "invalid_json" }, 400, corsHeaders); }
+  const requestId = typeof body?.requestId === "string" ? body.requestId.trim() : "";
+  if (!/^[A-Za-z0-9_-]{1,60}$/.test(requestId)) return json({ error: "invalid_request" }, 400, corsHeaders);
+  try {
+    const p = await fbAdminGet(`payment_proofs/${requestId}`, env);
+    if (!p || !p.data) return json({ error: "not_found" }, 404, corsHeaders);
+    return json({ ok: true, data: p.data }, 200, corsHeaders);
+  } catch (e) {
+    console.error("handleAdminGetPaymentProof فشل:", e);
+    return json({ error: "internal_error" }, 500, corsHeaders);
+  }
 }

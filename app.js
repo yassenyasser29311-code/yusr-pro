@@ -1160,7 +1160,7 @@ window.__H = {
     function getPurchases() { return JSON.parse(localStorage.getItem('yusr_purchases') || '[]'); }
     function savePurchases(list) { localStorage.setItem('yusr_purchases', JSON.stringify(list)); }
     let pendingPlanRequest = null;
-    function openPaymentRequest(name, price, period, details) {
+    function openPaymentRequest(name, price, period, label, details) {
         if (isEmailVerificationRequired()) {
             closePricingModal();
             showToast(uiStr('verifyEmailFirst'), 'error');
@@ -1168,13 +1168,14 @@ window.__H = {
             setTimeout(() => { const el = document.getElementById('email-verify-banner'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 300);
             return;
         }
-        pendingPlanRequest = { name, price, period, details: details || '' };
+        pendingPlanRequest = { name, price, period, label: label || name, details: details || '' };
         closePricingModal();
         const summary = document.getElementById('payment-request-summary');
-        summary.innerHTML = `<b class="text-slate-100">${name}</b> — <b class="text-slate-100">${price} ج.م</b> / ${period}` + (pendingPlanRequest.details ? `<br><span class="text-slate-400">${pendingPlanRequest.details}</span>` : '');
+        summary.innerHTML = pendingPlanRequest.details !== undefined && label ? `<b class="text-slate-100">${label}</b> — <b class="text-slate-100">${price} ج.م</b> / مرة واحدة` + (details ? `<br><span class="text-slate-400">${details}</span>` : '') : `باقة <b class="text-slate-100">${name}</b> — <b class="text-slate-100">${price} ج.م</b> / ${period}`;
         document.getElementById('pr-name').value = getProfile().name || '';
         document.getElementById('pr-phone').value = '';
         document.getElementById('pr-ref').value = '';
+        resetPaymentProof();
         document.getElementById('payment-request-status').classList.add('hidden');
         document.getElementById('payment-request-modal').classList.remove('hidden');
     }
@@ -1191,60 +1192,225 @@ window.__H = {
     function markSpamCooldown(cooldownKey) {
         localStorage.setItem(cooldownKey, String(Date.now()));
     }
-    function submitPaymentRequest() {
+    // ---------- صورة التحويل (بتتضغط في المتصفح قبل الرفع) ----------
+    let pendingProofDataUrl = '';
+    function resetPaymentProof() {
+        pendingProofDataUrl = '';
+        const w = document.getElementById('pr-proof-wrap'), p = document.getElementById('pr-proof-pick'), i = document.getElementById('pr-proof-input');
+        if (w) w.classList.add('hidden');
+        if (p) p.classList.remove('hidden');
+        if (i) i.value = '';
+    }
+    function compressProofImage(file) {
+        return new Promise((resolve, reject) => {
+            const url = URL.createObjectURL(file);
+            const img = new Image();
+            img.onload = () => {
+                try {
+                    let max = 1100, q = 0.72, out = '';
+                    for (let i = 0; i < 4; i++) {
+                        const s = Math.min(1, max / Math.max(img.width, img.height));
+                        const c = document.createElement('canvas');
+                        c.width = Math.max(1, Math.round(img.width * s));
+                        c.height = Math.max(1, Math.round(img.height * s));
+                        const ctx = c.getContext('2d');
+                        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+                        ctx.drawImage(img, 0, 0, c.width, c.height);
+                        out = c.toDataURL('image/jpeg', q);
+                        if (out.length <= 380000) break;
+                        max = Math.round(max * 0.8); q = Math.max(0.45, q - 0.08);
+                    }
+                    URL.revokeObjectURL(url);
+                    if (out.length > 580000) reject(new Error('too_big')); else resolve(out);
+                } catch (e) { URL.revokeObjectURL(url); reject(e); }
+            };
+            img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('bad_image')); };
+            img.src = url;
+        });
+    }
+    async function handleProofSelected(file) {
+        if (!file) return;
+        if (!/^image\//.test(file.type)) { showToast('اختار صورة بس (سكرين شوت التحويل).', 'error'); return; }
+        try {
+            const dataUrl = await compressProofImage(file);
+            pendingProofDataUrl = dataUrl;
+            document.getElementById('pr-proof-preview').src = dataUrl;
+            document.getElementById('pr-proof-size').textContent = Math.round(dataUrl.length * 0.75 / 1024) + ' KB';
+            document.getElementById('pr-proof-wrap').classList.remove('hidden');
+            document.getElementById('pr-proof-pick').classList.add('hidden');
+        } catch (e) {
+            console.warn('proof compress failed', e);
+            showToast('الصورة دي مش راضية تتحمّل، جرب صورة تانية.', 'error');
+        }
+    }
+    document.addEventListener('change', (e) => { if (e.target && e.target.id === 'pr-proof-input') handleProofSelected(e.target.files && e.target.files[0]); });
+    document.addEventListener('click', (e) => {
+        const t = e.target && e.target.closest ? e.target.closest('#pr-proof-pick, #pr-proof-remove') : null;
+        if (!t) return;
+        if (t.id === 'pr-proof-pick') { const i = document.getElementById('pr-proof-input'); if (i) i.click(); }
+        else resetPaymentProof();
+    });
+
+    // ---------- إرسال الطلب (عن طريق الـ Worker) ----------
+    async function submitPaymentRequest() {
         if (!pendingPlanRequest) return;
         const name = document.getElementById('pr-name').value.trim();
         const phone = document.getElementById('pr-phone').value.trim();
         const ref = document.getElementById('pr-ref').value.trim();
         if (!name || !phone) { showToast('من فضلك اكتب اسمك ورقم الموبايل اللي حوّلت منه.', 'error'); return; }
+        const status = document.getElementById('payment-request-status');
         if (isHoneypotTriggered('pr-website')) {
-            const status = document.getElementById('payment-request-status');
-            status.innerText = '✓ تم إرسال طلبك. هيتم تفعيل الباقة على حسابك يدوياً خلال ساعات قليلة بعد مراجعة التحويل.';
+            status.innerText = '✓ تم إرسال طلبك. هتشوف حالته هنا أول ما نراجعه.';
             status.classList.remove('hidden');
             pendingPlanRequest = null;
             setTimeout(closePaymentRequestModal, 3500);
             return;
         }
-        if (isSpamCooldownActive('yusr_pr_cooldown')) {
-            showToast('من فضلك استنى شوية قبل ما تبعت طلب تاني.', 'error');
-            return;
-        }
-        const deviceId = getDeviceId();
+        if (isSpamCooldownActive('yusr_pr_cooldown')) { showToast('من فضلك استنى شوية قبل ما تبعت طلب تاني.', 'error'); return; }
         const currentUser = (typeof fbAuth !== 'undefined' && fbAuth.currentUser) ? fbAuth.currentUser : null;
-        const requestData = {
+        const payload = {
             plan: pendingPlanRequest.name,
+            label: pendingPlanRequest.label || pendingPlanRequest.name,
             price: pendingPlanRequest.price,
             period: pendingPlanRequest.period,
-            name, phone,
-            ref: (pendingPlanRequest.details ? ('[' + pendingPlanRequest.details + '] ') : '') .concat(ref).slice(0, 180),
-            deviceId,
-            uid: currentUser ? currentUser.uid : null,
-            email: currentUser ? (currentUser.email || null) : null,
-            status: 'pending',
-            createdAt: firebase.database.ServerValue.TIMESTAMP
+            name, phone, ref,
+            deviceId: getDeviceId(),
+            proof: pendingProofDataUrl || ''
         };
-        const status = document.getElementById('payment-request-status');
         const submitBtn = document.getElementById('pr-submit-btn');
         status.classList.remove('hidden', 'text-red-400', 'text-emerald-400');
         status.classList.add('text-emerald-400');
-        status.innerText = 'جاري إرسال طلبك...';
+        status.innerText = pendingProofDataUrl ? 'جاري رفع الصورة وإرسال طلبك...' : 'جاري إرسال طلبك...';
         if (submitBtn) submitBtn.disabled = true;
-        db.ref('pending_requests').push(requestData)
-            .then(() => {
-                markSpamCooldown('yusr_pr_cooldown');
-                status.innerText = '✓ تم إرسال طلبك. هيتم تفعيل الباقة على حسابك يدوياً خلال ساعات قليلة بعد مراجعة التحويل.';
-                pendingPlanRequest = null;
-                setTimeout(closePaymentRequestModal, 3500);
-            })
-            .catch((e) => {
-                console.warn('Could not write pending request:', e);
-                try { status.dataset.err = (e && (e.code || e.message)) || ''; } catch (_) {}
-                status.classList.remove('text-emerald-400');
-                status.classList.add('text-red-400');
-                status.innerText = 'تعذر إرسال الطلب دلوقتي (مشكلة اتصال). تأكد من إنك متصل بالنت وجرب تاني، أو تواصل معانا من صفحة "الدعم والتواصل".';
-            })
-            .finally(() => { if (submitBtn) submitBtn.disabled = false; });
+        try {
+            const res = await fetch(CLOUD_FUNCTIONS_BASE + '/submitPaymentRequest', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...(await getAuthHeader()) },
+                body: JSON.stringify(payload)
+            });
+            let data = {};
+            try { data = await res.json(); } catch (_) {}
+            if (!res.ok) {
+                const msgs = {
+                    too_many_pending: 'عندك 5 طلبات لسه قيد المراجعة. استنى لما يتراجعوا قبل ما تبعت طلب جديد.',
+                    invalid_proof: 'صورة التحويل مش مقبولة. جرب صورة تانية.',
+                    missing_token: 'لازم تسجّل دخول الأول.',
+                    invalid_token: 'لازم تسجّل دخول الأول.'
+                };
+                throw Object.assign(new Error(data.error || 'failed'), { friendly: msgs[data.error] || '' });
+            }
+            markSpamCooldown('yusr_pr_cooldown');
+            status.innerText = '✓ وصل طلبك. هتشوف حالته (قيد المراجعة / تمت الموافقة / مرفوض) في صفحة الاشتراكات.';
+            pendingPlanRequest = null;
+            resetPaymentProof();
+            loadMyPaymentRequests(true);
+            setTimeout(closePaymentRequestModal, 3000);
+        } catch (e) {
+            console.warn('Could not send payment request:', e);
+            status.classList.remove('text-emerald-400');
+            status.classList.add('text-red-400');
+            status.innerText = e.friendly || 'تعذر إرسال الطلب دلوقتي. تأكد من النت وجرب تاني، أو تواصل معانا من صفحة "الدعم والتواصل".';
+        } finally { if (submitBtn) submitBtn.disabled = false; }
     }
+
+    // ---------- حالة طلبات المستخدم (كارت + شريط تنبيه) ----------
+    let myPaymentRequests = [], myReqLastFetch = 0, myReqBusy = false;
+    function reqEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+    function reqSeenSet() { try { return new Set(JSON.parse(localStorage.getItem('yusr_seen_reqs') || '[]')); } catch (_) { return new Set(); } }
+    function reqSeenSave(set) { try { localStorage.setItem('yusr_seen_reqs', JSON.stringify(Array.from(set).slice(-60))); } catch (_) {} }
+    function reqKey(r) { return r.id + ':' + r.status; }
+    function reqDate(ts) { try { return new Date(ts).toLocaleString('ar-EG', { dateStyle: 'medium', timeStyle: 'short' }); } catch (_) { return ''; } }
+    function reqMeta(r) {
+        if (r.status === 'approved') return { cls: 'ok', icon: 'fa-circle-check', title: 'تمت الموافقة', sub: 'اتفعّل اشتراكك على حسابك. يلا استخدمه.' };
+        if (r.status === 'rejected') return { cls: 'no', icon: 'fa-circle-xmark', title: 'الطلب اترفض', sub: r.rejectReason ? ('السبب: ' + r.rejectReason) : 'تواصل معانا من صفحة الدعم لو محتاج تفاصيل.' };
+        return { cls: 'wait', icon: 'fa-clock', title: 'قيد المراجعة', sub: 'بنراجع التحويل، وبيتفعّل خلال ساعات قليلة.' };
+    }
+    function renderMyRequestsCard() {
+        const host = document.getElementById('my-requests-card');
+        if (!host) return;
+        const cutoff = Date.now() - 14 * 86400000;
+        const list = myPaymentRequests.filter(r => r.status === 'pending' || (r.reviewedAt || r.createdAt) > cutoff).slice(0, 5);
+        if (!list.length) { host.classList.add('hidden'); host.innerHTML = ''; return; }
+        const seen = reqSeenSet();
+        host.classList.remove('hidden');
+        host.innerHTML = `<div class="panel rounded-2xl p-4 sm:p-5 space-y-3">
+            <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2"><i class="fa-solid fa-receipt"></i> <span>حالة طلباتك</span></h3>
+            <div class="space-y-2">${list.map(r => {
+                const m = reqMeta(r);
+                const fresh = r.status !== 'pending' && !seen.has(reqKey(r));
+                return `<div class="myreq myreq-${m.cls}${fresh ? ' myreq-fresh' : ''}">
+                    <div class="myreq-ico"><i class="fa-solid ${m.icon}"></i></div>
+                    <div class="myreq-body">
+                        <div class="myreq-top"><b>${reqEsc(m.title)}</b><span class="myreq-price">${reqEsc(r.price)} ج.م</span></div>
+                        <div class="myreq-name">${reqEsc(r.label || r.plan)}</div>
+                        <div class="myreq-sub">${reqEsc(m.sub)}</div>
+                        <div class="myreq-date">${reqEsc(reqDate(r.reviewedAt || r.createdAt))}</div>
+                    </div>
+                </div>`;
+            }).join('')}</div>
+        </div>`;
+        // الكارت اتعرض = المستخدم شافه
+        if (list.some(r => r.status !== 'pending') && host.offsetParent !== null) {
+            list.forEach(r => { if (r.status !== 'pending') seen.add(reqKey(r)); });
+            reqSeenSave(seen);
+        }
+    }
+    function dismissRequestBanner() {
+        const b = document.getElementById('req-banner'); if (b) b.remove();
+        const seen = reqSeenSet();
+        myPaymentRequests.forEach(r => { if (r.status !== 'pending') seen.add(reqKey(r)); });
+        reqSeenSave(seen);
+        renderMyRequestsCard();
+    }
+    function maybeShowRequestBanner() {
+        const seen = reqSeenSet();
+        const fresh = myPaymentRequests.filter(r => r.status !== 'pending' && !seen.has(reqKey(r)))
+            .sort((a, b) => (b.reviewedAt || 0) - (a.reviewedAt || 0));
+        const old = document.getElementById('req-banner');
+        if (!fresh.length) { if (old) old.remove(); return; }
+        const r = fresh[0], m = reqMeta(r);
+        const more = fresh.length > 1 ? ` (+${fresh.length - 1} طلب تاني)` : '';
+        if (old) old.remove();
+        const el = document.createElement('div');
+        el.id = 'req-banner';
+        el.className = 'req-banner req-banner-' + m.cls;
+        el.innerHTML = `<i class="fa-solid ${m.icon} req-banner-ico"></i>
+            <div class="req-banner-txt"><b>${reqEsc(m.title)}${reqEsc(more)}</b><span>${reqEsc(r.label || r.plan)} — ${reqEsc(m.sub)}</span></div>
+            <button type="button" class="req-banner-btn" id="req-banner-view">عرض</button>
+            <button type="button" class="req-banner-x" id="req-banner-close" aria-label="إغلاق"><i class="fa-solid fa-xmark"></i></button>`;
+        document.body.appendChild(el);
+        document.getElementById('req-banner-close').onclick = dismissRequestBanner;
+        document.getElementById('req-banner-view').onclick = () => {
+            dismissRequestBanner();
+            try { switchViewByName('subscriptions'); } catch (_) {}
+            setTimeout(() => { const c = document.getElementById('my-requests-card'); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 250);
+        };
+    }
+    async function loadMyPaymentRequests(force) {
+        if (myReqBusy) return;
+        if (!force && Date.now() - myReqLastFetch < 15000) return;
+        const user = (typeof fbAuth !== 'undefined') ? fbAuth.currentUser : null;
+        if (!user) return;
+        myReqBusy = true;
+        try {
+            const res = await fetch(CLOUD_FUNCTIONS_BASE + '/myPaymentRequests', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...(await getAuthHeader()) },
+                body: '{}'
+            });
+            if (!res.ok) throw new Error('http_' + res.status);
+            const data = await res.json();
+            myPaymentRequests = data.requests || [];
+            myReqLastFetch = Date.now();
+            renderMyRequestsCard();
+            maybeShowRequestBanner();
+        } catch (e) { console.warn('تعذر تحميل حالة الطلبات', e); }
+        finally { myReqBusy = false; }
+    }
+    setTimeout(() => loadMyPaymentRequests(true), 4000);
+    setInterval(() => { if (!document.hidden) loadMyPaymentRequests(); }, 45000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) loadMyPaymentRequests(); });
+
     function submitFeedback() {
         const type = document.getElementById('fb-type').value;
         const contact = document.getElementById('fb-contact').value.trim();
@@ -5017,6 +5183,7 @@ function customPackDetail() {
 function renderPacksSection() {
     const host = document.getElementById('packs-section');
     if (!host) return;
+    try { loadMyPaymentRequests(); } catch (_) {}
     const t = customPackTotals();
     const ready = READY_PACKS.map(p => `
         <div class="rounded-xl p-4 space-y-2 lift-hover ${p.popular ? 'border-2 border-emerald-400/70 relative bg-[#16221f]' : 'panel-2'}">
@@ -5077,12 +5244,12 @@ function stepCustomPack(id, d) {
 function buyReadyPack(btn) {
     const units = parseInt(btn.getAttribute('data-units'), 10), price = parseInt(btn.getAttribute('data-price'), 10);
     if (!units || !price) return;
-    openPaymentRequest('حزمة ' + btn.getAttribute('data-name'), price, 'مرة واحدة');
+    openPaymentRequest('حزمة ' + units + ' طلب', price, 'مرة واحدة (' + btn.getAttribute('data-name') + ')', 'باقة ' + btn.getAttribute('data-name'), '');
 }
 function buyCustomPack() {
     const t = customPackTotals();
     if (t.price < PACK_MIN_PRICE) { showToast('الحد الأدنى للباقة ' + PACK_MIN_PRICE + ' ج.م، زوّد اختياراتك.', 'error'); return; }
-    openPaymentRequest('حزمة مخصصة', t.price, 'مرة واحدة', customPackDetail());
+    openPaymentRequest('حزمة ' + t.units + ' طلب', t.price, 'مرة واحدة — ' + customPackDetail(), 'باقتك المخصصة', customPackDetail());
 }
 
 // ---- بطاقة "جاهزيتك للمقابلة" ----

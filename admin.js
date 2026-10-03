@@ -315,64 +315,179 @@
         }
     };
 
-    // ---- طلبات الاشتراك (تحويل يدوي Vodafone Cash / InstaPay) ----
+    // ---- طلبات الاشتراك (تحويل يدوي Vodafone Cash / InstaPay) — عرض كروت منظمة ----
     let adminSubReqCache = [];
+    let adminSubReqFilter = null;
+    const adminProofCache = {};
+
+    async function adminFetchQuiet(path, body) {
+        const headers = { "Content-Type": "application/json" };
+        if (adminToken) headers["X-Admin-Token"] = adminToken;
+        const res = await fetch(ADMIN_API_BASE + path, { method: "POST", headers, body: JSON.stringify(body || {}) });
+        let data = {};
+        try { data = await res.json(); } catch (e) {}
+        if (!res.ok) throw new Error(data.error || "request_failed");
+        return data;
+    }
+
+    function adminReqStatus(r) { return r.status || "pending"; }
+    function adminFmtDate(ts) {
+        if (!ts) return "-";
+        try { return new Date(ts).toLocaleString("ar-EG", { dateStyle: "medium", timeStyle: "short" }); } catch (e) { return "-"; }
+    }
+
+    window.adminSetSubReqFilter = function (f) { adminSubReqFilter = f; adminRenderSubReqs(); };
+
     window.adminLoadSubscriptionRequests = async function () {
-        const tbody = document.getElementById("admin-subreq-tbody");
+        const list = document.getElementById("admin-subreq-list");
         const empty = document.getElementById("admin-subreq-empty");
         const badge = document.getElementById("admin-subreq-pending-badge");
         try {
             const data = await adminFetch("/adminListSubscriptionRequests");
             adminSubReqCache = data.requests || [];
-            const pendingCount = adminSubReqCache.filter(r => (r.status || "pending") === "pending").length;
+            const pendingCount = adminSubReqCache.filter(r => adminReqStatus(r) === "pending").length;
             if (pendingCount > 0) {
                 badge.textContent = pendingCount + " معلّق";
                 badge.classList.remove("hidden");
             } else {
                 badge.classList.add("hidden");
             }
-            const packs = adminSubReqCache.filter(adminIsPackRequest);
-            const packsPending = packs.filter(r => (r.status || "pending") === "pending").length;
-            const packsRevenue = packs.filter(r => r.status === "approved").reduce((t, r) => t + (Number(r.price) || 0), 0);
-            let sum = document.getElementById("admin-packs-summary");
-            if (!sum) {
-                sum = document.createElement("p");
-                sum.id = "admin-packs-summary";
-                sum.className = "text-[11px] text-slate-400";
-                tbody.closest("table").parentNode.insertBefore(sum, tbody.closest("table"));
-            }
-            sum.innerHTML = packs.length ? `<span class="admin-badge admin-badge-pack"><i class="fa-solid fa-bolt"></i> الحزم</span> ${packsPending} معلّق · إيراد الحزم المفعّلة ${packsRevenue} ج.م` : "";
-            tbody.innerHTML = "";
-            empty.classList.toggle("hidden", adminSubReqCache.length > 0);
-            adminSubReqCache.forEach(r => {
-                const status = r.status || "pending";
-                const statusLabel = status === "approved" ? "تمت الموافقة" : status === "rejected" ? "مرفوض" : "قيد المراجعة";
-                const statusClass = status === "approved" ? "admin-badge-online" : status === "rejected" ? "admin-badge-suspended" : "";
-                const date = r.createdAt ? new Date(r.createdAt).toLocaleString("ar-EG") : "-";
-                const transferInfo = `${escapeHtml(r.phone || "-")}${r.ref ? " — " + escapeHtml(r.ref) : ""}`;
-                const priceLabel = (r.price != null) ? `${escapeHtml(String(r.price))} ج.م / ${escapeHtml(r.period || "")}` : "";
-                const tr = document.createElement("tr");
-                tr.innerHTML = `
-                    <td class="text-slate-200 font-bold">${escapeHtml(r.name || "-")}</td>
-                    <td class="text-slate-400" dir="ltr" style="overflow-wrap:anywhere;">${escapeHtml(r.email || "-")}</td>
-                    <td class="text-slate-300">${adminIsPackRequest(r) ? '<span class="admin-badge admin-badge-pack"><i class="fa-solid fa-bolt"></i> حزمة</span> ' : ""}${escapeHtml(r.plan || "-")}<br><span class="text-slate-500">${priceLabel}</span></td>
-                    <td class="text-slate-400" dir="ltr" style="overflow-wrap:anywhere;">${transferInfo}</td>
-                    <td class="text-slate-500 whitespace-nowrap">${escapeHtml(date)}</td>
-                    <td><span class="admin-badge ${statusClass}" style="font-size:.6rem;">${statusLabel}</span></td>
-                    <td class="whitespace-nowrap">
-                        ${status === "pending" ? `
-                            <button data-x-onclick="hSubReviewApprove" data-req-id="${r.id}" class="admin-mini-btn" style="color:#34d399;">موافقة</button>
-                            <button data-x-onclick="hSubReviewReject" data-req-id="${r.id}" class="admin-mini-btn" style="color:#f87171;">رفض</button>
-                        ` : `-`}
-                    </td>`;
-                tbody.appendChild(tr);
-            });
+            if (adminSubReqFilter === null) adminSubReqFilter = pendingCount > 0 ? "pending" : "all";
+            adminRenderSubReqs();
         } catch (e) {
+            if (list) list.innerHTML = "";
             empty.classList.remove("hidden");
             empty.textContent = "تعذر تحميل طلبات الاشتراك.";
         }
     };
 
+    function adminRenderSubReqs() {
+        const list = document.getElementById("admin-subreq-list");
+        const bar = document.getElementById("admin-subreq-toolbar");
+        const empty = document.getElementById("admin-subreq-empty");
+        if (!list || !bar) return;
+        const all = adminSubReqCache;
+        const by = (s) => all.filter(r => adminReqStatus(r) === s);
+        const revenue = by("approved").reduce((t, r) => t + (Number(r.price) || 0), 0);
+        const tabs = [
+            { k: "pending", label: "معلّق", n: by("pending").length, cls: "rq-tab-wait" },
+            { k: "approved", label: "تمت الموافقة", n: by("approved").length, cls: "rq-tab-ok", extra: revenue ? revenue + " ج.م" : "" },
+            { k: "rejected", label: "مرفوض", n: by("rejected").length, cls: "rq-tab-no" },
+            { k: "all", label: "الكل", n: all.length, cls: "" }
+        ];
+        bar.innerHTML = `<div class="rq-tabs">${tabs.map(t => `
+            <button type="button" class="rq-tab ${t.cls} ${adminSubReqFilter === t.k ? "active" : ""}" data-f="${t.k}">
+                <span class="rq-tab-n">${t.n}</span><span class="rq-tab-l">${t.label}</span>${t.extra ? `<span class="rq-tab-x">${escapeHtml(t.extra)}</span>` : ""}
+            </button>`).join("")}</div>`;
+        bar.querySelectorAll(".rq-tab").forEach(b => b.addEventListener("click", () => window.adminSetSubReqFilter(b.dataset.f)));
+
+        const shown = (adminSubReqFilter === "all" ? all : by(adminSubReqFilter));
+        empty.classList.toggle("hidden", shown.length > 0);
+        empty.textContent = all.length ? "مفيش طلبات في القسم ده." : "لا يوجد أي طلبات اشتراك حاليًا.";
+        list.innerHTML = "";
+        const viewer = isViewerRole();
+        shown.forEach(r => {
+            const status = adminReqStatus(r);
+            const isPack = adminIsPackRequest(r);
+            const statusLabel = status === "approved" ? "تمت الموافقة" : status === "rejected" ? "مرفوض" : "قيد المراجعة";
+            const period = r.period || "";
+            const packDetail = isPack ? period.replace(/^مرة واحدة\s*[—-]?\s*/, "").replace(/^\((.*)\)$/, "$1") : "";
+            const card = document.createElement("div");
+            card.className = "rq-card rq-" + status;
+            card.innerHTML = `
+                <div class="rq-head">
+                    <div class="rq-who"><b>${escapeHtml(r.name || "-")}</b><span dir="ltr">${escapeHtml(r.email || "-")}</span></div>
+                    <span class="rq-pill rq-pill-${status}">${statusLabel}</span>
+                </div>
+                <div class="rq-amount">
+                    <span class="rq-price">${escapeHtml(String(r.price != null ? r.price : "-"))} <small>ج.م</small></span>
+                    <span class="rq-plan">${isPack ? '<span class="admin-badge admin-badge-pack"><i class="fa-solid fa-bolt"></i> حزمة</span> ' : ""}${escapeHtml(r.plan || "-")}${isPack ? "" : ` <em>/ ${escapeHtml(period)}</em>`}</span>
+                </div>
+                ${packDetail ? `<div class="rq-detail"><i class="fa-solid fa-list-check"></i> ${escapeHtml(packDetail)}</div>` : ""}
+                <div class="rq-grid">
+                    <div class="rq-cell"><span class="rq-k">رقم التحويل</span><span class="rq-v" dir="ltr">${escapeHtml(r.phone || "-")}</span></div>
+                    <div class="rq-cell"><span class="rq-k">ملاحظة / آخر أرقام العملية</span><span class="rq-v">${escapeHtml(r.ref || "—")}</span></div>
+                    <div class="rq-cell"><span class="rq-k">وقت الطلب</span><span class="rq-v">${escapeHtml(adminFmtDate(r.createdAt))}</span></div>
+                </div>
+                ${r.hasProof ? `
+                    <button type="button" class="rq-proof" data-proof="${escapeHtml(r.id)}" data-title="${escapeHtml((r.name || "") + " — " + (r.price != null ? r.price + " ج.م" : ""))}">
+                        <span class="rq-thumb"><i class="fa-solid fa-spinner fa-spin"></i></span>
+                        <span class="rq-proof-txt"><b>صورة التحويل</b><small>اضغط للتكبير</small></span>
+                    </button>` : `<div class="rq-noproof"><i class="fa-regular fa-image"></i> مفيش صورة تحويل مرفقة</div>`}
+                ${status === "pending" ? (viewer ? "" : `
+                    <div class="rq-actions">
+                        <button type="button" class="rq-btn rq-btn-ok" data-act="approve" data-id="${escapeHtml(r.id)}"><i class="fa-solid fa-check"></i> موافقة</button>
+                        <button type="button" class="rq-btn rq-btn-no" data-act="reject" data-id="${escapeHtml(r.id)}"><i class="fa-solid fa-xmark"></i> رفض</button>
+                    </div>`) : `
+                    <div class="rq-reviewed">
+                        <i class="fa-solid ${status === "approved" ? "fa-circle-check" : "fa-circle-xmark"}"></i>
+                        ${status === "approved" ? "اتوافق عليه" : "اترفض"} ${r.reviewedAt ? "— " + escapeHtml(adminFmtDate(r.reviewedAt)) : ""}
+                        ${r.rejectReason ? `<div class="rq-reason">السبب: ${escapeHtml(r.rejectReason)}</div>` : ""}
+                    </div>`}`;
+            list.appendChild(card);
+        });
+        list.querySelectorAll(".rq-btn").forEach(b => b.addEventListener("click", () => window.adminReviewSubscriptionRequest(b.dataset.id, b.dataset.act)));
+        list.querySelectorAll(".rq-proof").forEach(b => b.addEventListener("click", () => adminOpenProof(b.dataset.proof, b.dataset.title)));
+        adminLoadProofThumbs(list);
+    }
+
+    async function adminGetProof(id) {
+        if (adminProofCache[id]) return adminProofCache[id];
+        const d = await adminFetchQuiet("/adminGetPaymentProof", { requestId: id });
+        adminProofCache[id] = d.data;
+        return d.data;
+    }
+
+    async function adminLoadProofThumbs(list) {
+        const btns = Array.from(list.querySelectorAll(".rq-proof"));
+        for (const b of btns) {
+            const thumb = b.querySelector(".rq-thumb");
+            try {
+                const src = await adminGetProof(b.dataset.proof);
+                if (!thumb.isConnected) return;
+                thumb.innerHTML = "";
+                thumb.style.backgroundImage = `url("${src}")`;
+            } catch (e) {
+                if (thumb.isConnected) thumb.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+            }
+        }
+    }
+
+    async function adminOpenProof(id, title) {
+        let box = document.getElementById("admin-proof-lightbox");
+        if (box) box.remove();
+        box = document.createElement("div");
+        box.id = "admin-proof-lightbox";
+        box.className = "rq-lightbox";
+        box.innerHTML = `
+            <div class="rq-lb-bar">
+                <span class="rq-lb-title">${escapeHtml(title || "صورة التحويل")}</span>
+                <span class="rq-lb-tools">
+                    <a id="rq-lb-dl" class="rq-lb-btn hidden" download="proof.jpg"><i class="fa-solid fa-download"></i> تنزيل</a>
+                    <button type="button" class="rq-lb-btn" id="rq-lb-close"><i class="fa-solid fa-xmark"></i> إغلاق</button>
+                </span>
+            </div>
+            <div class="rq-lb-stage"><i class="fa-solid fa-spinner fa-spin" style="color:#fff;font-size:1.4rem;"></i></div>
+            <div class="rq-lb-hint">اضغط على الصورة للتكبير / التصغير</div>`;
+        document.body.appendChild(box);
+        const close = () => { box.remove(); document.removeEventListener("keydown", onKey); };
+        const onKey = (e) => { if (e.key === "Escape") close(); };
+        document.addEventListener("keydown", onKey);
+        box.querySelector("#rq-lb-close").addEventListener("click", close);
+        box.addEventListener("click", (e) => { if (e.target === box || e.target.classList.contains("rq-lb-stage")) close(); });
+        try {
+            const src = await adminGetProof(id);
+            const stage = box.querySelector(".rq-lb-stage");
+            stage.innerHTML = "";
+            const img = document.createElement("img");
+            img.src = src; img.alt = "صورة التحويل"; img.className = "rq-lb-img";
+            img.addEventListener("click", (e) => { e.stopPropagation(); stage.classList.toggle("zoomed"); });
+            stage.appendChild(img);
+            const dl = box.querySelector("#rq-lb-dl"); dl.href = src; dl.classList.remove("hidden");
+        } catch (e) {
+            box.querySelector(".rq-lb-stage").innerHTML = '<span style="color:#fca5a5;">تعذر تحميل الصورة.</span>';
+        }
+    }
 
     // ---- الحزم الصغيرة (دفع مرة واحدة): بتزوّد سقف المستخدم بعدد طلبات الحزمة ----
     function adminIsPackRequest(r) { return /^حزمة\s+\d+/.test((r && r.plan) || ""); }

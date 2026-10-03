@@ -504,22 +504,8 @@ html.light-mode #admin-dashboard {
                 </p>
                 <button data-x-onclick="h26" class="chip hover:bg-[var(--panel-2)]"><i class="fa-solid fa-rotate"></i> تحديث</button>
             </div>
-            <div class="overflow-x-auto">
-                <table class="w-full text-[11px] text-right border-collapse">
-                    <thead>
-                        <tr class="text-slate-500 border-b border-[var(--border)]">
-                            <th class="py-2 px-2 font-bold">الاسم</th>
-                            <th class="py-2 px-2 font-bold">الإيميل</th>
-                            <th class="py-2 px-2 font-bold">الباقة المطلوبة</th>
-                            <th class="py-2 px-2 font-bold">بيانات التحويل</th>
-                            <th class="py-2 px-2 font-bold">التاريخ</th>
-                            <th class="py-2 px-2 font-bold">الحالة</th>
-                            <th class="py-2 px-2 font-bold">إجراءات</th>
-                        </tr>
-                    </thead>
-                    <tbody id="admin-subreq-tbody"></tbody>
-                </table>
-            </div>
+            <div id="admin-subreq-toolbar"></div>
+            <div id="admin-subreq-list" class="rq-list"></div>
             <p id="admin-subreq-empty" class="hidden text-[11px] text-slate-500 text-center py-4">لا يوجد أي طلبات اشتراك حاليًا.</p>
         </div>
 
@@ -1918,6 +1904,7 @@ html.light-mode #admin-dashboard {
             
             <section id="view-subscriptions" class="view">
                 <div class="space-y-4">
+                    <div id="my-requests-card" class="hidden"></div>
                     <div class="panel rounded-2xl p-4 sm:p-5 space-y-1">
                         <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2"><i class="fa-solid fa-user"></i> <span data-i18n="subs.individualTitle">باقات الأفراد</span></h3>
                         <p class="text-xs text-slate-400" data-i18n="subs.individualDesc">لكل حد بيحضّر لمقابلة أو بيبني مسيرته المهنية بنفسه.</p>
@@ -2430,6 +2417,16 @@ html.light-mode #admin-dashboard {
             <input id="pr-phone" type="tel" data-i18n-ph="paymentRequest.prPhonePh" placeholder="رقم الموبايل اللي حوّلت منه" class="w-full input-field rounded-xl px-3 py-2.5 text-xs" dir="ltr">
             <input id="pr-ref" type="text" data-i18n-ph="paymentRequest.prRefPh" placeholder="آخر أرقام العملية أو ملاحظة (اختياري)" class="w-full input-field rounded-xl px-3 py-2.5 text-xs">
             <input id="pr-website" type="text" name="website" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true">
+        </div>
+        <div class="space-y-1.5">
+            <p class="text-[11px] text-slate-400"><i class="fa-solid fa-image"></i> صورة التحويل (سكرين شوت) <span class="text-slate-500">— بتسرّع المراجعة</span></p>
+            <input id="pr-proof-input" type="file" accept="image/*" class="hidden">
+            <button id="pr-proof-pick" type="button" class="w-full py-2.5 rounded-xl border border-dashed border-[var(--border)] text-xs text-slate-300 hover:bg-[var(--panel-2)]"><i class="fa-solid fa-cloud-arrow-up"></i> اختار صورة التحويل</button>
+            <div id="pr-proof-wrap" class="hidden panel-2 rounded-xl p-2 flex items-center gap-3">
+                <img id="pr-proof-preview" alt="صورة التحويل" class="w-16 h-16 object-cover rounded-lg">
+                <div class="flex-1 min-w-0"><p class="text-[11px] text-emerald-300 font-bold"><i class="fa-solid fa-circle-check"></i> الصورة جاهزة للإرسال</p><p id="pr-proof-size" class="text-[10px] text-slate-500"></p></div>
+                <button id="pr-proof-remove" type="button" class="chip">حذف</button>
+            </div>
         </div>
         <button id="pr-submit-btn" data-x-onclick="h179" class="w-full py-2.5 btn-primary font-bold text-xs rounded-xl disabled:opacity-60 disabled:cursor-not-allowed" data-i18n="paymentRequest.prSubmitBtnText">تم التحويل، ابعت الطلب</button>
         <p id="payment-request-status" class="text-[11px] text-center text-emerald-400 hidden"></p>
