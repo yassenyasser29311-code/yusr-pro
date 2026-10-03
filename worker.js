@@ -514,6 +514,11 @@ async function checkPlanUsage(uid, idToken, meta, env, ip) {
   let ipBlocked = false;
   if (trackFree) {
     const g = await getFreeTrackCounts(env, meta && meta.deviceId, ip, monthKey);
+    // لو الحساب مستهلك أكتر من اللي مسجّل على الجهاز (استخدام قبل التحديث مثلاً) نرفع عدّاد الجهاز لنفسه
+    if (meta && meta.deviceId && env && env.FIREBASE_SERVICE_ACCOUNT_JSON && currentCount > g.device) {
+      try { await fbAdminPut(`deviceUsage/${meta.deviceId}/${monthKey}`, currentCount, env); g.device = currentCount; }
+      catch (e) { console.warn("backfill deviceUsage فشل:", e); }
+    }
     effectiveCount = Math.max(currentCount, g.device);
     ipBlocked = FREE_IP_MONTHLY_CAP > 0 && g.ip >= FREE_IP_MONTHLY_CAP;
   }
@@ -2375,6 +2380,9 @@ async function handleOnlinePing(request, env, corsHeaders) {
   const auth = await verifyFirebaseToken(request, env);
   if (!auth.ok) return json({ error: auth.error }, 401, corsHeaders);
 
+  let body = {};
+  try { body = await request.json(); } catch (e) { body = {}; }
+
   const authQS = `auth=${encodeURIComponent(auth.idToken)}`;
   try {
     await fetch(`${FIREBASE_DB_URL}/users/${auth.uid}/lastSeen.json?${authQS}`, {
@@ -2384,7 +2392,37 @@ async function handleOnlinePing(request, env, corsHeaders) {
   } catch (e) {
     console.warn("handleOnlinePing فشل:", e);
   }
-  return json({ ok: true }, 200, corsHeaders);
+
+  // مزامنة عدّاد المحاولات المجانية على الجهاز (بتتطلب من الواجهة عند الدخول بس): بنربط الحساب بالجهاز
+  // وبنرجّع للواجهة الاستخدام الفعلي للجهاز عشان العدّاد اللي قدام المستخدم يطابق اللي بيطبّقه الـ Worker
+  let freeDeviceUsed = null;
+  const deviceId = typeof body?.deviceId === "string" ? body.deviceId.trim() : "";
+  if (body?.sync === true && DEVICE_ID_RE.test(deviceId) && env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    try {
+      const monthKey = getCurrentMonthKey();
+      const [plan, customLimit, acctRaw, bypass, devRaw] = await Promise.all([
+        fbAdminGet(`users/${auth.uid}/plan`, env),
+        fbAdminGet(`users/${auth.uid}/customLimit`, env),
+        fbAdminGet(`users/${auth.uid}/usage/${monthKey}`, env),
+        fbAdminGet(`users/${auth.uid}/deviceCapBypass`, env),
+        fbAdminGet(`deviceUsage/${deviceId}/${monthKey}`, env)
+      ]);
+      const planName = PLAN_LIMITS.hasOwnProperty(plan) ? plan : FREE_PLAN_NAME;
+      const hasCustomLimit = typeof customLimit === "number" && customLimit >= 0;
+      if (planName === FREE_PLAN_NAME && !hasCustomLimit && bypass !== monthKey) {
+        const acct = typeof acctRaw === "number" && acctRaw > 0 ? acctRaw : 0;
+        let dev = typeof devRaw === "number" && devRaw > 0 ? devRaw : 0;
+        if (acct > dev) {
+          await fbAdminPut(`deviceUsage/${deviceId}/${monthKey}`, acct, env);
+          dev = acct;
+        }
+        freeDeviceUsed = Math.max(acct, dev);
+      }
+    } catch (e) {
+      console.warn("handleOnlinePing(sync) فشل:", e);
+    }
+  }
+  return json({ ok: true, freeDeviceUsed }, 200, corsHeaders);
 }
 
 // ---- سجل نشاط كل مستخدم: أي حركة يعملها المستخدم (دخول/خروج/تغيير باسورد/تغيير باقة...)

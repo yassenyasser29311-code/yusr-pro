@@ -696,6 +696,7 @@ window.__H = {
 
     let cloudUsageCache = null; // { month, count } - بيتحدّث لايف من Firebase أول ما نعرف هوية المستخدم
     let cloudUsageRef = null;
+    let cloudDeviceFloor = { month: null, n: 0 }; // استخدام الجهاز المجاني (من الـ Worker): بيمنع حساب جديد يبدأ من صفر على نفس الجهاز
     function attachCloudUsageListener(uid) {
         if (cloudUsageRef) cloudUsageRef.off();
         const monthKey = getCurrentMonthKey();
@@ -707,10 +708,19 @@ window.__H = {
             checkDeviceTrial();
         }, err => console.warn('تعذر متابعة عداد الاستخدام من السيرفر', err));
     }
-    function getEffectiveUsageCount() {
+    function getAccountUsageCount() {
         const monthKey = getCurrentMonthKey();
         if (cloudUsageCache && cloudUsageCache.month === monthKey) return cloudUsageCache.count;
         return getLocalUsageCache().count; // لحد ما يوصل رد السيرفر أول مرة
+    }
+    function getEffectiveUsageCount() {
+        const base = getAccountUsageCount();
+        // الباقة المجانية بس: الأكبر بين استخدام الحساب واستخدام الجهاز
+        if (cloudDeviceFloor.month === getCurrentMonthKey() && cloudDeviceFloor.n > base
+            && getCurrentPlanName() === 'مجاني' && !(typeof cloudCustomLimit === 'number' && cloudCustomLimit >= 0)) {
+            return cloudDeviceFloor.n;
+        }
+        return base;
     }
 
     // ---- سقف الاستخدام المخصص (بيتحدّد من لوحة الأدمن) ----
@@ -926,7 +936,7 @@ window.__H = {
     function incrementDeviceUsage(toolLabel) {
         const user = fbAuth.currentUser;
         lastToolCategory = categoryForLabel(toolLabel);
-        setLocalUsageCache(getEffectiveUsageCount() + 1);
+        setLocalUsageCache(getAccountUsageCount() + 1);
         checkDeviceTrial();
         if (user && !user.isAnonymous) {
             addPoints(10);
@@ -1091,6 +1101,7 @@ window.__H = {
         if (cloudPurchasesRef) { cloudPurchasesRef.off(); cloudPurchasesRef = null; }
         if (cloudPointsRef) { cloudPointsRef.off(); cloudPointsRef = null; }
         cloudCustomLimit = null;
+        cloudDeviceFloor = { month: null, n: 0 };
         hideSuspendedGate();
         showAuthGate();
     });
@@ -1107,17 +1118,23 @@ window.__H = {
     }
 
     let onlinePingInterval = null;
-    async function sendOnlinePing() {
+    async function sendOnlinePing(sync) {
         try {
-            await fetch(`${CLOUD_FUNCTIONS_BASE}/onlinePing`, {
+            const res = await fetch(`${CLOUD_FUNCTIONS_BASE}/onlinePing`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', ...(await getAuthHeader()) }
+                headers: { 'Content-Type': 'application/json', ...(await getAuthHeader()) },
+                body: JSON.stringify(sync === true ? { deviceId: getDeviceId(), sync: true } : {})
             });
+            if (sync === true && res.ok) {
+                const data = await res.json().catch(() => ({}));
+                cloudDeviceFloor = { month: getCurrentMonthKey(), n: (data && typeof data.freeDeviceUsed === 'number') ? data.freeDeviceUsed : 0 };
+                checkDeviceTrial();
+            }
         } catch (e) { console.warn('تعذر إرسال نبضة الأونلاين', e); }
     }
     function startOnlinePing() {
         stopOnlinePing();
-        sendOnlinePing(); // نبضة فورية أول ما يدخل، من غير ما ينتظر دقيقة كاملة عشان يظهر أونلاين بسرعة
+        sendOnlinePing(true); // نبضة فورية أول ما يدخل، من غير ما ينتظر دقيقة كاملة عشان يظهر أونلاين بسرعة
         onlinePingInterval = setInterval(sendOnlinePing, 60 * 1000);
     }
     function stopOnlinePing() {
@@ -3435,6 +3452,7 @@ ${jobAdPromptLine()}
             if (DELIBERATE_DENIAL_STATUSES.has(response.status)) {
                 if (errBody.indexOf('free_limit_device') !== -1) {
                     showToast('المحاولات المجانية على الجهاز ده خلصت (اتستخدمت قبل كده من نفس الجهاز). اشترك أو اشتري حزمة عشان تكمل.', 'error');
+                    sendOnlinePing(true); // نحدّث العدّاد اللي على الشاشة
                 }
                 throw new Error("usage_limit_or_auth_denied");
             }
