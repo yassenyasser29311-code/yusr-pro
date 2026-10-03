@@ -661,8 +661,13 @@ window.__H = {
     }
 
     function getDeviceId() {
-        let id = localStorage.getItem('yusr_device_fingerprint');
-        if (!id) { id = 'DEV-' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36); localStorage.setItem('yusr_device_fingerprint', id); }
+        // بنخزّن المعرّف في localStorage وكوكي كمان، عشان مسح واحد منهم بس مايغيّرش هوية الجهاز
+        let ck = '';
+        try { const m = document.cookie.match(/(?:^|;\s*)yusr_did=([^;]+)/); ck = m ? decodeURIComponent(m[1]) : ''; } catch (_) {}
+        let id = localStorage.getItem('yusr_device_fingerprint') || ck;
+        if (!id) { id = 'DEV-' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36); }
+        try { if (localStorage.getItem('yusr_device_fingerprint') !== id) localStorage.setItem('yusr_device_fingerprint', id); } catch (_) {}
+        try { if (ck !== id) document.cookie = 'yusr_did=' + encodeURIComponent(id) + '; max-age=31536000; path=/; SameSite=Lax; Secure'; } catch (_) {}
         return id;
     }
     const PLAN_MONTHLY_LIMITS = {
@@ -890,7 +895,7 @@ window.__H = {
         return (lastToolCategory && cats.indexOf(lastToolCategory) !== -1) ? lastToolCategory : cats[cats.length - 1];
     }
     // بيتبعت مع طلبات الذكاء الاصطناعي عشان الخصم يتم من النوع المناسب ومن المصدر اللي المستخدم اختاره
-    function requestMeta() { return { category: requestCategory(), source: getDeductSource() }; }
+    function requestMeta() { return { category: requestCategory(), source: getDeductSource(), deviceId: getDeviceId() }; }
     function walletTotalUnits() {
         let n = cloudPackCredits > 0 ? cloudPackCredits : 0;
         WALLET_CATS.forEach(c => { n += cloudPackWallet[c] > 0 ? cloudPackWallet[c] : 0; });
@@ -3428,6 +3433,9 @@ ${jobAdPromptLine()}
             const errBody = await response.text().catch(() => "");
             console.warn("AI Processing Service (via Cloud Function) error:", response.status, errBody);
             if (DELIBERATE_DENIAL_STATUSES.has(response.status)) {
+                if (errBody.indexOf('free_limit_device') !== -1) {
+                    showToast('المحاولات المجانية على الجهاز ده خلصت (اتستخدمت قبل كده من نفس الجهاز). اشترك أو اشتري حزمة عشان تكمل.', 'error');
+                }
                 throw new Error("usage_limit_or_auth_denied");
             }
             throw new Error("groq_service_error"); // التفاصيل بتتسجل في الـ console بس (فوق)، مش بتظهر للمستخدم
@@ -4970,7 +4978,7 @@ ${firstPass}
             ? 'أيوه، تمام، يعني بص، أنا اشتغلت على المشروع ده مع الفريق وكنت مسؤول عن المتابعة والتنفيذ وحل المشاكل اللي بتظهر أول بأول.'
             : 'طيب، هقول اللي في دماغي عادي زي ما بتكلم بالظبط، بصوتي وبنفس كلامي، من غير ما حد يغيّر فيه حاجة.';
         form.append('prompt', prompt);
-        { const meta = requestMeta(); form.append('category', meta.category); form.append('source', meta.source); }
+        { const meta = requestMeta(); form.append('category', meta.category); form.append('source', meta.source); form.append('deviceId', meta.deviceId); }
         let lastErr;
         for (let attempt = 0; attempt < 2; attempt++) {
             try {

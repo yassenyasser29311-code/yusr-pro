@@ -25,6 +25,13 @@ const RATE_LIMITS = {
 
 const RECAPTCHA_MIN_SCORE = 0.5;
 
+// ---- منع تكرار المحاولات المجانية بتبديل الحسابات على نفس الجهاز ----
+// المحاولات المجانية بتتحسب على الحساب + على الجهاز (deviceUsage/{deviceId}/{الشهر}) + سقف واسع على الـ IP.
+// السقف ده مقصود يبقى كبير عشان شبكات الموبايل المشتركة (CGNAT) ماتظلمش ناس؛ اضبطه 0 لو عايز تقفله.
+const FREE_PLAN_NAME = "مجاني";
+const FREE_IP_MONTHLY_CAP = 60;
+const DEVICE_ID_RE = /^DEV-[A-Za-z0-9]{6,40}$/;
+
 // أنواع رصيد الحزم (users/{uid}/packWallet/{category}) ومصادر الخصم اللي الواجهة بتبعتها
 const WALLET_CATEGORIES = ["voice", "video", "cv", "tool"];
 const DEDUCT_SOURCES = new Set(["auto", "plan", "voice", "video", "cv", "tool", "general"]);
@@ -36,12 +43,14 @@ const CATEGORY_WALLETS = {
   tool: ["tool"]
 };
 
-function normalizeRequestMeta(category, source) {
+function normalizeRequestMeta(category, source, deviceId) {
   const c = typeof category === "string" ? category.trim() : "";
   const sRaw = typeof source === "string" ? source.trim() : "";
+  const d = typeof deviceId === "string" ? deviceId.trim() : "";
   return {
     category: WALLET_CATEGORIES.includes(c) ? c : "tool",
-    source: DEDUCT_SOURCES.has(sRaw) ? sRaw : "auto"
+    source: DEDUCT_SOURCES.has(sRaw) ? sRaw : "auto",
+    deviceId: DEVICE_ID_RE.test(d) ? d : ""
   };
 }
 
@@ -221,12 +230,13 @@ export default {
       }
 
       // نوع الطلب ومصدر الخصم (category / source) بيوصلوا في الـ body (JSON أو form-data)
-      let meta = { category: "tool", source: "auto" };
+      let meta = { category: "tool", source: "auto", deviceId: "" };
+      const clientIp = getClientIp(request);
       let transcribeForm = null;
       if (toolName === "groqChat" || toolName === "edgeTtsSpeak") {
         try {
           const b = await request.clone().json();
-          meta = normalizeRequestMeta(b && b.category, b && b.source);
+          meta = normalizeRequestMeta(b && b.category, b && b.source, b && b.deviceId);
         } catch (e) { /* الـ handler نفسه هيرجّع invalid_json */ }
       } else {
         const cl = parseInt(request.headers.get("content-length") || "0", 10);
@@ -234,17 +244,18 @@ export default {
         if (ct.startsWith("multipart/form-data") && cl > 0 && cl <= 20 * 1024 * 1024) {
           try {
             transcribeForm = await request.clone().formData();
-            meta = normalizeRequestMeta(transcribeForm.get("category"), transcribeForm.get("source"));
-            // الحقلين دول مش بيروحوا لـ Groq
+            meta = normalizeRequestMeta(transcribeForm.get("category"), transcribeForm.get("source"), transcribeForm.get("deviceId"));
+            // الحقول دي مش بتروح لـ Groq
             transcribeForm.delete("category");
             transcribeForm.delete("source");
+            transcribeForm.delete("deviceId");
           } catch (e) { transcribeForm = null; }
         }
       }
 
       const quota = toolName === "edgeTtsSpeak"
         ? { ok: true, monthKey: null }
-        : await checkPlanUsage(uid, idToken, meta);
+        : await checkPlanUsage(uid, idToken, meta, env, clientIp);
       if (!quota.ok) {
         return json({ error: quota.error || "usage_limit_reached" }, 403, corsHeaders);
       }
@@ -262,6 +273,7 @@ export default {
         ctx.waitUntil(
           incrementPlanUsage(uid, idToken, quota.monthKey, quota.currentCount)
         );
+        if (quota.freeTrack) ctx.waitUntil(recordFreeUsage(env, quota.freeTrack));
       } else if (response.status >= 200 && response.status < 300 && quota.usePack && !interviewTx) {
         if (quota.walletCategory) {
           ctx.waitUntil(consumeWalletCredit(uid, env, quota.walletCategory));
@@ -429,7 +441,43 @@ async function checkRateLimit(env, uid, toolName) {
 }
 
 
-async function checkPlanUsage(uid, idToken, meta) {
+// عدّاد المحاولات المجانية على الجهاز والـ IP (أي فشل في القراءة = منعطّلش المستخدم)
+async function getFreeTrackCounts(env, deviceId, ip, monthKey) {
+  let device = 0, ipCount = 0;
+  if (deviceId && env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    try {
+      const v = await fbAdminGet(`deviceUsage/${deviceId}/${monthKey}`, env);
+      if (typeof v === "number" && v > 0) device = v;
+    } catch (e) { console.warn("getFreeTrackCounts(device) فشل:", e); }
+  }
+  if (FREE_IP_MONTHLY_CAP > 0 && env.RATE_LIMIT_KV && ip && ip !== "unknown") {
+    try {
+      ipCount = parseInt((await env.RATE_LIMIT_KV.get(`freeip:${monthKey}:${ip}`)) || "0", 10) || 0;
+    } catch (e) { console.warn("getFreeTrackCounts(ip) فشل:", e); }
+  }
+  return { device, ip: ipCount };
+}
+
+// بيتنادى بعد طلب مجاني ناجح اتحسب على الباقة: بيزوّد عدّاد الجهاز وعدّاد الـ IP
+async function recordFreeUsage(env, track) {
+  const { deviceId, ip, monthKey } = track || {};
+  if (deviceId && env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+    try {
+      const path = `deviceUsage/${deviceId}/${monthKey}`;
+      const cur = await fbAdminGet(path, env);
+      await fbAdminPut(path, (typeof cur === "number" && cur > 0 ? cur : 0) + 1, env);
+    } catch (e) { console.warn("recordFreeUsage(device) فشل:", e); }
+  }
+  if (FREE_IP_MONTHLY_CAP > 0 && env.RATE_LIMIT_KV && ip && ip !== "unknown") {
+    try {
+      const key = `freeip:${monthKey}:${ip}`;
+      const cur = parseInt((await env.RATE_LIMIT_KV.get(key)) || "0", 10) || 0;
+      await env.RATE_LIMIT_KV.put(key, String(cur + 1), { expirationTtl: 40 * 24 * 60 * 60 });
+    } catch (e) { console.warn("recordFreeUsage(ip) فشل:", e); }
+  }
+}
+
+async function checkPlanUsage(uid, idToken, meta, env, ip) {
   const monthKey = getCurrentMonthKey();
   const authQS = `auth=${encodeURIComponent(idToken)}`;
   const { category, source } = meta || { category: "tool", source: "auto" };
@@ -458,12 +506,25 @@ async function checkPlanUsage(uid, idToken, meta) {
       ? userRaw.usage[monthKey]
       : 0;
 
-  const planAvailable = limit === Infinity || currentCount < limit;
+  // الباقة المجانية: العدّاد بيتحسب على الحساب والجهاز (الأكبر فيهم) وسقف واسع على الـ IP.
+  // مستثنى: اللي الأدمن حدد له سقف مخصص أو عمل له "تصفير الاستخدام" الشهر ده.
+  const hasCustomLimit = typeof userRaw.customLimit === "number" && userRaw.customLimit >= 0;
+  const trackFree = planName === FREE_PLAN_NAME && !hasCustomLimit && userRaw.deviceCapBypass !== monthKey;
+  let effectiveCount = currentCount;
+  let ipBlocked = false;
+  if (trackFree) {
+    const g = await getFreeTrackCounts(env, meta && meta.deviceId, ip, monthKey);
+    effectiveCount = Math.max(currentCount, g.device);
+    ipBlocked = FREE_IP_MONTHLY_CAP > 0 && g.ip >= FREE_IP_MONTHLY_CAP;
+  }
+  const planAvailable = limit === Infinity || (effectiveCount < limit && !ipBlocked);
+  const deviceBlocked = trackFree && !planAvailable && currentCount < limit;
   const wallet = normalizeWallet(userRaw.packWallet);
   const packCredits = typeof userRaw.packCredits === "number" && userRaw.packCredits > 0 ? userRaw.packCredits : 0;
   const applicableCats = CATEGORY_WALLETS[category] || [category];
 
   const planResult = { ok: true, monthKey, currentCount };
+  if (trackFree) planResult.freeTrack = { deviceId: (meta && meta.deviceId) || "", ip, monthKey };
   const walletResult = (cat) => ({ ok: true, monthKey: null, usePack: true, walletCategory: cat, walletBalance: wallet[cat] });
   const generalResult = { ok: true, monthKey: null, usePack: true, packCredits };
 
@@ -483,7 +544,7 @@ async function checkPlanUsage(uid, idToken, meta) {
   }
   if (packCredits > 0) return generalResult;
 
-  return { ok: false, error: "usage_limit_reached" };
+  return { ok: false, error: deviceBlocked ? "free_limit_device" : "usage_limit_reached" };
 }
 
 // خصم طلب واحد من رصيد الحزم (بصلاحية السيرفر)، والرصيد مبيتصفّرش مع أول الشهر
@@ -1840,6 +1901,8 @@ async function handleAdminUserAction(request, env, corsHeaders, ctx) {
 
   try {
     await fbAdminPut(path, value, env);
+    // تصفير الاستخدام من الأدمن لازم يشتغل برضه مع حد الجهاز/الـ IP للباقة المجانية
+    if (action === "resetUsage") await fbAdminPut(`users/${uid}/deviceCapBypass`, getCurrentMonthKey(), env);
   } catch (e) {
     console.error("handleAdminUserAction فشل:", e);
     return json({ error: "firebase_write_failed" }, 502, corsHeaders);
