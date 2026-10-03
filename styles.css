@@ -739,3 +739,8 @@ body header.sticky .header-trial-badge{padding:4px 8px!important}
   header.sticky.top-0 > div.mr-auto > button{flex-shrink:0}
   header.sticky.top-0 #lang-picker{flex-shrink:0;width:78px;max-width:78px;font-size:11px;padding-inline:6px;text-overflow:ellipsis}
 }
+
+.pack-step{width:30px;height:30px;border-radius:999px;border:1px solid var(--border);background:var(--panel);color:#e5e7eb;font-size:16px;font-weight:800;line-height:1;cursor:pointer;transition:.15s}
+.pack-step:hover{border-color:#00A3A3;color:#fff}
+
+.admin-badge-pack{color:#5FD0D0;background:rgba(0,163,163,.14);border:1px solid rgba(0,163,163,.35)}

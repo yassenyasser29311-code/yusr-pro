@@ -211,6 +211,11 @@ window.__H = {
   hDeleteHistoryEntry: function(event) { event.stopPropagation(); deleteHistoryEntry(parseInt(this.getAttribute('data-idx'), 10)) },
   hDownloadResultLinkedin: function(event) { downloadResult(this, 'cv-linkedin-style.txt') },
   hExportCvLinkedInImage: function(event) { exportCvLinkedInImage() },
+  hPackBuy: function(event) { buyReadyPack(this); },
+  hPackStep: function(event) { stepCustomPack(this.getAttribute('data-item'), parseInt(this.getAttribute('data-d'), 10)); },
+  hPackCustomBuy: function(event) { buyCustomPack(); },
+  hShareResult: function(event) { shareResultCard(this); },
+  hGoSubs: function(event) { closePricingModal(); switchViewByName('subscriptions'); },
   hToggleProgressDetail: function(event) { document.getElementById('progress-detail-' + this.getAttribute('data-idx')).classList.toggle('hidden') },
 };
 
@@ -3015,6 +3020,7 @@ window.__H = {
 تجري مقابلة عمل مع المتقدم لوظيفة: (${interviewRole}).
 الشخصية المطلوب المحاكاة بها: (${selectedNationality}).
 ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
+${jobAdPromptLine()}
 تعليمات:
 1. اتكلم بطبيعية وسلاسة كأنك محاور حقيقي بيقابل حد وشه في وش، مش بوت.
 2. وجه سؤالاً واحداً مختصراً في كل مرة (سطرين كحد أقصى).
@@ -3049,6 +3055,12 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
     }
 
     async function sendUserAnswer() {
+        { const lim = getEffectiveMonthlyLimit();
+          if (lim !== Infinity && lim - getEffectiveUsageCount() <= 1 && chatHistory.some(m => m.role === 'user')) {
+              showToast('فاضل طلب واحد محجوز لتقرير مقابلتك. اضغط «إنهاء» وخد التقرير، أو اشحن رصيد وكمّل مقابلتك من نفس المكان.', 'warning');
+              if (lim - getEffectiveUsageCount() <= 0) openPricingModal();
+              return;
+          } }
         if (interviewLive) { interviewLive.abort(); interviewLive = null; stopMic(); } // المستخدم بعت والمايك شغال: نقفل الإملاء فوراً
         const inputField = document.getElementById('user-chat-input');
         const userMsg = inputField.value.trim();
@@ -3069,6 +3081,7 @@ ${cvContent ? 'خبرات المتقدم: ' + cvContent : ''}
             appendChatMessage("ai", aiResponse);
             speakText(aiResponse);
             saveInterviewState();
+            if (chatHistory.filter(m => m.role === 'user').length === 5) showToast('استهلكت 6 طلبات والسابع للتقرير النهائي. تقدر تكمل (كل رد إضافي = طلب) أو اضغط إنهاء وخد تقريرك.', 'info');
         } catch (err) {
             indicator.classList.add('hidden');
             if (err && err.message === "usage_limit_or_auth_denied") {
@@ -3455,7 +3468,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         const transcript = chatHistory.filter(m => m.role !== 'system').map(m => (m.role === 'assistant' ? currentInterviewerName + ': ' : 'المتقدم: ') + m.content).join('\n');
 
         const prompt = [
-            { role: "system", content: `أنت خبير تدريب مقابلات محترف وصريح جداً. حلل نص المقابلة وابنِ تقرير بنفس الترتيب: 1) تقييم عام من 100 مع السبب 2) نقاط قوة بأمثلة حقيقية من كلامه 3) نقاط تحسين محددة إجابة بإجابة 4) مستوى الثقة والتوتر بناءً على أسلوب كلامه وبيانات السرعة/التردد المرفقة، بصراحة ووضوح 5) 3-5 نصائح عملية فورية 6) خلاصة تحفيزية قصيرة. اكتب بأسلوب واضح مباشر بدون رموز markdown.${aiToolLangDirective()}` },
+            { role: "system", content: `أنت خبير تدريب مقابلات محترف وصريح جداً. حلل نص المقابلة وابنِ تقرير بنفس الترتيب: 1) تقييم عام من 100 مع السبب 2) نقاط قوة بأمثلة حقيقية من كلامه 3) نقاط تحسين محددة إجابة بإجابة 4) مستوى الثقة والتوتر بناءً على أسلوب كلامه وبيانات السرعة/التردد المرفقة، بصراحة ووضوح 5) 3-5 نصائح عملية فورية 6) إجابة محسّنة: اختر أضعف إجابتين له، واكتب تحت عنوان «إجابة محسّنة» إجابته الأصلية باختصار ثم إجابة أقوى بأسلوب STAR يقدر يقولها هو بنفسه بحسب خبراته الحقيقية دون اختلاق وقائع 7) خلاصة تحفيزية قصيرة. ابدأ التقرير بسطر واحد بالظبط بالشكل ده: الدرجة: 72/100 (بدل 72 اكتب درجته الحقيقية). اكتب بأسلوب واضح مباشر بدون رموز markdown.${aiToolLangDirective()}` },
             { role: "user", content: `بيانات صوتية:\n${voiceInsights}\n\nنص المقابلة:\n${transcript}` }
         ];
         try {
@@ -3485,6 +3498,12 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
             "هنولّد تقييم أداء نهائي ونحفظ المقابلة كاملة (المحادثة + التقرير) في أرشيف المقابلات بشكل دائم.";
         if (!confirm(confirmMsg)) return;
 
+        { const lim = getEffectiveMonthlyLimit();
+          if (lim !== Infinity && lim - getEffectiveUsageCount() <= 0) {
+              showToast('رصيدك خلص قبل التقرير. مقابلتك محفوظة: اشحن رصيد وارجع اضغط «كمّل» وخد تقريرك.', 'warning');
+              openPricingModal();
+              return;
+          } }
         stopSpeaking();
         openReportModal();
         const body = document.getElementById('report-body');
@@ -3502,12 +3521,13 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
             }
             const transcriptText = fullTranscript.map(m => (m.role === 'assistant' ? currentInterviewerName + ': ' : 'المتقدم: ') + m.content).join('\n');
             const prompt = [
-                { role: "system", content: `أنت خبير تدريب مقابلات محترف وصريح جداً. حلل نص المقابلة وابنِ تقرير بنفس الترتيب: 1) تقييم عام من 100 مع السبب 2) نقاط قوة بأمثلة حقيقية من كلامه 3) نقاط تحسين محددة إجابة بإجابة 4) مستوى الثقة والتوتر بناءً على أسلوب كلامه وبيانات السرعة/التردد المرفقة، بصراحة ووضوح 5) 3-5 نصائح عملية فورية 6) خلاصة تحفيزية قصيرة. اكتب بأسلوب واضح مباشر بدون رموز markdown.${aiToolLangDirective()}` },
+                { role: "system", content: `أنت خبير تدريب مقابلات محترف وصريح جداً. حلل نص المقابلة وابنِ تقرير بنفس الترتيب: 1) تقييم عام من 100 مع السبب 2) نقاط قوة بأمثلة حقيقية من كلامه 3) نقاط تحسين محددة إجابة بإجابة 4) مستوى الثقة والتوتر بناءً على أسلوب كلامه وبيانات السرعة/التردد المرفقة، بصراحة ووضوح 5) 3-5 نصائح عملية فورية 6) إجابة محسّنة: اختر أضعف إجابتين له، واكتب تحت عنوان «إجابة محسّنة» إجابته الأصلية باختصار ثم إجابة أقوى بأسلوب STAR يقدر يقولها هو بنفسه بحسب خبراته الحقيقية دون اختلاق وقائع 7) خلاصة تحفيزية قصيرة. ابدأ التقرير بسطر واحد بالظبط بالشكل ده: الدرجة: 72/100 (بدل 72 اكتب درجته الحقيقية). اكتب بأسلوب واضح مباشر بدون رموز markdown.${aiToolLangDirective()}` },
                 { role: "user", content: `بيانات صوتية:\n${voiceInsights}\n\nنص المقابلة:\n${transcriptText}` }
             ];
             try {
                 reportText = await callGroqConversation(prompt);
                 renderResult(body, reportText, 'performance-report.txt');
+                try { appendShareButton(body, reportText, interviewRole); } catch (e) {}
             } catch (e) {
                 reportText = "تعذر توليد تقييم تفصيلي لهذه الجلسة، لكن المحادثة كاملة اتحفظت في الأرشيف.";
                 body.innerHTML = errorHTML("تعذر توليد تقييم تفصيلي، لكن اطمن: المحادثة كاملة اتحفظت في أرشيف المقابلات من غير تقييم.");
@@ -4462,6 +4482,7 @@ ${firstPass}
         });
         if (list.length > 50) list.length = 50;
         saveProgressHistory(list);
+        try { renderReadinessCard(); } catch (e) {}
     }
     function clearProgressHistory() {
         if (!confirm("متأكد إنك عايز تمسح كل سجل الجلسات السابقة؟ الإجراء ده مش هيتراجع.")) return;
@@ -4469,6 +4490,7 @@ ${firstPass}
         renderProgressView();
     }
     function renderProgressView() {
+        try { renderReadinessCard(); } catch (e) {}
         const list = loadProgressHistory();
         const statsBox = document.getElementById('progress-stats');
         const scored = list.filter(e => e.score !== null);
@@ -4704,7 +4726,7 @@ ${firstPass}
         let lastErr;
         for (let attempt = 0; attempt < 2; attempt++) {
             try {
-                const res = await fetch(`${CLOUD_FUNCTIONS_BASE}/groqTranscribe`, {
+                const res = await fetch(`${CLOUD_FUNCTIONS_BASE}/groqTranscribe${context === 'interview' ? '?ctx=interview' : ''}`, {
                     method: 'POST',
                     headers: { ...(await getAuthHeader()) },
                     body: form
@@ -4958,4 +4980,219 @@ ${firstPass}
             showToast('النت رجع تاني، تقدر تكمل عادي.', 'success');
         }
     });
+})();
+
+
+// ======================================================================
+// الباقات الصغيرة + الباقة المخصصة + بطاقة الجاهزية + مشاركة النتيجة
+// ======================================================================
+const PACK_ITEMS = [
+    { id: 'voice', icon: 'fa-microphone',          label: 'مقابلة صوتية كاملة',       units: 7,  price: 25, short: 'مقابلة صوتية',
+      hint: '7 طلبات: السؤال الأول + 5 ردود + تقرير التقييم النهائي. كل رد = صوتك + رد المحاور بالصوت في طلب واحد.' },
+    { id: 'video', icon: 'fa-video',               label: 'مقابلة فيديو تجريبية',      units: 1,  price: 8,  short: 'مقابلة فيديو',
+      hint: 'طلب واحد لكل تسجيل.' },
+    { id: 'cv',    icon: 'fa-file-lines',          label: 'سيرة ذاتية / مطابقة / خطاب', units: 1,  price: 7,  short: 'سيرة أو مطابقة أو خطاب',
+      hint: 'طلب واحد لكل مرة: بناء سيرة، مطابقتها مع وظيفة، أو خطاب تقديم.' },
+    { id: 'tool',  icon: 'fa-wand-magic-sparkles', label: 'أداة سريعة',                units: 1,  price: 4,  short: 'أداة سريعة',
+      hint: 'طلب واحد لكل مرة: تلخيص، تحسين نص، رسالة توظيف، Elevator Pitch، أسئلة شائعة، رسالة في الشات…' }
+];
+const READY_PACKS = [
+    { name: 'تجربة',         units: 10, price: 35,  note: 'مقابلة صوتية كاملة (7 طلبات) + 3 أدوات' },
+    { name: 'جاهز للمقابلة', units: 25, price: 85,  note: '3 مقابلات صوتية (21 طلب) + 4 أدوات', popular: true },
+    { name: 'مكثّف',         units: 50, price: 165, note: '5 مقابلات صوتية (35 طلب) + سيرة وخطابات وأدوات' }
+];
+const PACK_MIN_PRICE = 10;
+const customPackCounts = { voice: 0, video: 0, cv: 0, tool: 0 };
+
+function customPackTotals() {
+    let units = 0, price = 0;
+    PACK_ITEMS.forEach(it => { const n = customPackCounts[it.id] || 0; units += n * it.units; price += n * it.price; });
+    return { units, price: Math.ceil(price) };
+}
+function customPackDetail() {
+    return PACK_ITEMS.filter(it => customPackCounts[it.id] > 0).map(it => it.label + ' ×' + customPackCounts[it.id]).join('، ');
+}
+function renderPacksSection() {
+    const host = document.getElementById('packs-section');
+    if (!host) return;
+    const t = customPackTotals();
+    const ready = READY_PACKS.map(p => `
+        <div class="rounded-xl p-4 space-y-2 lift-hover ${p.popular ? 'border-2 border-emerald-400/70 relative bg-[#16221f]' : 'panel-2'}">
+            ${p.popular ? '<span class="absolute top-0 left-0 bg-emerald-400 text-slate-950 text-[9px] font-bold px-2 py-0.5 rounded-br-lg rounded-tl-xl">الأنسب للبداية</span>' : ''}
+            <h4 class="text-xs font-bold text-slate-100">${p.name}</h4>
+            <p class="text-lg font-bold text-white">${p.price} <span class="text-xs">ج.م</span> <span class="text-[10px] text-slate-500">/ مرة واحدة</span></p>
+            <ul class="text-[10.5px] text-slate-400 space-y-1.5">
+                <li><i class="fa-solid fa-check text-slate-400"></i> ${p.units} طلب ذكاء اصطناعي</li>
+                <li><i class="fa-solid fa-check text-slate-400"></i> ${p.note}</li>
+                <li><i class="fa-solid fa-check text-slate-400"></i> بدون اشتراك ولا تجديد شهري</li>
+                <li><i class="fa-solid fa-check text-slate-400"></i> الرصيد لأي أداة في الموقع</li>
+            </ul>
+            <button data-x-onclick="hPackBuy" data-units="${p.units}" data-price="${p.price}" data-name="${p.name}" class="w-full py-2 btn-accent acc-subs font-bold text-xs rounded-xl">اطلب الحزمة</button>
+        </div>`).join('');
+    const rows = PACK_ITEMS.map(it => {
+        const n = customPackCounts[it.id] || 0;
+        const line = n > 0 ? `<span class="text-emerald-300">${n} × ${it.units} = ${n * it.units} طلب · ${n * it.price} ج.م</span>` : `${it.units === 1 ? 'طلب واحد' : it.units + ' طلبات'} · ${it.price} ج.م للواحدة`;
+        return `
+        <div class="flex items-center justify-between gap-3 panel-2 rounded-xl px-3 py-2.5">
+            <div class="min-w-0 space-y-0.5">
+                <p class="text-xs font-bold text-slate-200"><i class="fa-solid ${it.icon} text-slate-400"></i> ${it.label}</p>
+                <p class="text-[10px] text-slate-400 leading-relaxed">${it.hint}</p>
+                <p class="text-[10px] text-slate-500">${line}</p>
+            </div>
+            <div class="flex items-center gap-2 shrink-0" dir="ltr">
+                <button data-x-onclick="hPackStep" data-item="${it.id}" data-d="-1" class="pack-step" aria-label="-">−</button>
+                <span class="w-6 text-center text-sm font-bold text-white">${n}</span>
+                <button data-x-onclick="hPackStep" data-item="${it.id}" data-d="1" class="pack-step" aria-label="+">+</button>
+            </div>
+        </div>`;
+    }).join('');
+    const summary = PACK_ITEMS.filter(it => customPackCounts[it.id] > 0).map(it => customPackCounts[it.id] + ' ' + it.short).join(' + ');
+    const nudge = t.price >= 150 ? '<p class="text-[11px] text-amber-300 leading-relaxed"><i class="fa-solid fa-lightbulb"></i> الاحترافية (179 ج.م = 150 طلب كل شهر) هتبقى أوفر لو هتستخدم بالكمية دي.</p>' : '';
+    const ok = t.price >= PACK_MIN_PRICE;
+    host.innerHTML = `
+        <div class="panel rounded-2xl p-4 sm:p-5 space-y-2 mt-2">
+            <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2"><i class="fa-solid fa-circle-info"></i> <span>إزاي الطلبات بتتحسب؟</span></h3>
+            <ul class="text-[11px] text-slate-400 leading-relaxed space-y-1.5">
+                <li><i class="fa-solid fa-check text-emerald-300"></i> <b class="text-slate-200">الطلب</b> = استخدام واحد لأداة، والرصيد بيتخصم منه 1.</li>
+                <li><i class="fa-solid fa-microphone text-slate-400"></i> <b class="text-slate-200">المقابلة الصوتية = 7 طلبات:</b> السؤال الأول (1) + 5 ردود (5) + تقرير التقييم النهائي (1). كل رد منك بالصوت ورد المحاور بالصوت بيتحسبوا <b class="text-slate-200">طلب واحد مع بعض</b>، والصوت نفسه مش بيتحسب لوحده.</li>
+                <li><i class="fa-solid fa-rotate-right text-slate-400"></i> لو رصيدك خلص في نص المقابلة، مقابلتك بتتحفظ. اشحن رصيد وكمّل من نفس المكان وخد تقريرك.</li>
+                <li><i class="fa-solid fa-layer-group text-slate-400"></i> تقدر تشتري أكتر من مقابلة: مقابلتين = 14 طلب بـ 50 ج.م.</li>
+                <li><i class="fa-solid fa-video text-slate-400"></i> مقابلة الفيديو التجريبية: طلب واحد.</li>
+                <li><i class="fa-solid fa-file-lines text-slate-400"></i> السيرة، المطابقة مع وظيفة، وخطاب التقديم: طلب لكل مرة.</li>
+                <li><i class="fa-solid fa-wand-magic-sparkles text-slate-400"></i> أي أداة تانية (تلخيص، تحسين نص، رسالة، شات…): طلب لكل مرة.</li>
+                <li><i class="fa-solid fa-infinity text-slate-400"></i> الحزم بدفعة واحدة ومالهاش تجديد. والاشتراك الشهري بيتجدد وعداده بيصفّر أول كل شهر.</li>
+            </ul>
+        </div>
+        <div class="panel rounded-2xl p-4 sm:p-5 space-y-1">
+            <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2"><i class="fa-solid fa-bolt"></i> <span>حزم صغيرة — ادفع مرة واحدة</span></h3>
+            <p class="text-xs text-slate-400">مش عايز اشتراك؟ خد رصيد طلبات على قدّ احتياجك، وتستخدمه في أي أداة.</p>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">${ready}</div>
+        <div class="panel rounded-2xl p-4 sm:p-5 space-y-3">
+            <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2"><i class="fa-solid fa-sliders"></i> <span>اصنع باقتك بنفسك</span></h3>
+            <p class="text-xs text-slate-400">اختار عدد كل أداة والسعر بيتحسب لحظيًا.</p>
+            <div class="space-y-2">${rows}</div>
+            <div class="flex items-center justify-between panel-2 rounded-xl px-4 py-3">
+                <div><p class="text-[10px] text-slate-500">الإجمالي (مرة واحدة)</p><p class="text-xl font-extrabold text-white">${t.price} <span class="text-xs">ج.م</span></p></div>
+                <div class="text-left"><p class="text-[10px] text-slate-500">رصيد الطلبات</p><p class="text-xl font-extrabold text-white">${t.units}</p></div>
+            </div>
+            ${summary ? `<p class="text-[11px] text-slate-300 leading-relaxed"><i class="fa-solid fa-receipt text-slate-400"></i> يعني: ${summary}.</p>` : ''}
+            ${nudge}
+            <button data-x-onclick="hPackCustomBuy" class="w-full py-2.5 btn-accent acc-subs font-bold text-xs rounded-xl ${ok ? '' : 'opacity-50'}">${ok ? 'اطلب باقتي' : 'اختار أدوات تعدّي ' + PACK_MIN_PRICE + ' ج.م'}</button>
+            <p class="text-[10px] text-slate-500 leading-relaxed">بعد التحويل وإرسال الطلب بيتم تفعيل الرصيد على حسابك يدويًا بعد مراجعة التحويل.</p>
+        </div>`;
+}
+function stepCustomPack(id, d) {
+    if (!(id in customPackCounts)) return;
+    customPackCounts[id] = Math.max(0, Math.min(20, (customPackCounts[id] || 0) + d));
+    renderPacksSection();
+}
+function buyReadyPack(btn) {
+    const units = parseInt(btn.getAttribute('data-units'), 10), price = parseInt(btn.getAttribute('data-price'), 10);
+    if (!units || !price) return;
+    openPaymentRequest('حزمة ' + units + ' طلب', price, 'مرة واحدة (' + btn.getAttribute('data-name') + ')');
+}
+function buyCustomPack() {
+    const t = customPackTotals();
+    if (t.price < PACK_MIN_PRICE) { showToast('الحد الأدنى للباقة ' + PACK_MIN_PRICE + ' ج.م، زوّد عدد أدوات.', 'error'); return; }
+    openPaymentRequest('حزمة ' + t.units + ' طلب', t.price, 'مرة واحدة — ' + customPackDetail());
+}
+
+// ---- بطاقة "جاهزيتك للمقابلة" ----
+function extractScore(text) {
+    const m = String(text || '').match(/(\d{1,3})\s*(?:\/\s*100|من\s*100)/);
+    const v = m ? parseInt(m[1], 10) : null;
+    return (v !== null && v >= 0 && v <= 100) ? v : null;
+}
+function readinessLevel(v) {
+    if (v >= 85) return { t: 'جاهز للمقابلة', c: '#34d399' };
+    if (v >= 70) return { t: 'جاهز تقريبًا', c: '#5FD0D0' };
+    if (v >= 50) return { t: 'قرّبت', c: '#fbbf24' };
+    return { t: 'محتاج تدريب أكتر', c: '#f87171' };
+}
+function renderReadinessCard() {
+    const host = document.getElementById('readiness-card');
+    if (!host) return;
+    const scored = loadProgressHistory().filter(e => e.score !== null).slice(0, 8).reverse();
+    if (!scored.length) {
+        host.innerHTML = `<div class="panel-2 rounded-xl p-3.5 flex items-center gap-3"><div class="w-10 h-10 rounded-full bg-emerald-500/15 text-emerald-300 flex items-center justify-center shrink-0"><i class="fa-solid fa-gauge-high"></i></div><div><p class="text-xs font-bold text-slate-100">درجة جاهزيتك للمقابلة</p><p class="text-[11px] text-slate-400 leading-relaxed">خلّص أول مقابلة وهتشوف درجتك هنا، وتتابع تحسنها مع كل محاولة.</p></div></div>`;
+        return;
+    }
+    const last = scored[scored.length - 1].score, prev = scored.length > 1 ? scored[scored.length - 2].score : null;
+    const lv = readinessLevel(last);
+    const diff = prev === null ? '' : (last - prev === 0 ? 'ثابتة' : (last > prev ? '▲ +' : '▼ ') + (last - prev));
+    const W = 120, H = 34, pts = scored.map((e, i) => {
+        const x = scored.length === 1 ? W / 2 : (i * (W - 6)) / (scored.length - 1) + 3;
+        return x.toFixed(1) + ',' + (H - 3 - (e.score / 100) * (H - 6)).toFixed(1);
+    }).join(' ');
+    host.innerHTML = `<div class="panel-2 rounded-xl p-3.5 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+            <div class="w-14 h-14 rounded-full flex items-center justify-center shrink-0 text-base font-extrabold text-white" style="border:3px solid ${lv.c}">${last}</div>
+            <div class="min-w-0"><p class="text-[10px] text-slate-500">جاهزيتك للمقابلة</p><p class="text-sm font-bold" style="color:${lv.c}">${lv.t}</p>${diff ? `<p class="text-[10px] text-slate-400">${diff} عن آخر مرة</p>` : ''}</div>
+        </div>
+        <svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="shrink-0" style="direction:ltr"><polyline points="${pts}" fill="none" stroke="${lv.c}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>`;
+}
+
+// ---- إعلان الوظيفة داخل المقابلة ----
+function jobAdPromptLine() {
+    const el = document.getElementById('interview-job-ad');
+    const t = el ? el.value.trim().slice(0, 3000) : '';
+    return t ? 'إعلان الوظيفة الحقيقي اللي المتقدم هيقدم عليها (ابنِ أسئلتك على متطلباته ومهاراته ومسؤولياته بالتحديد): ' + t : '';
+}
+
+// ---- مشاركة النتيجة كصورة ----
+function appendShareButton(body, reportText, role) {
+    const score = extractScore(reportText);
+    if (score === null || !body) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'pt-3';
+    wrap.innerHTML = `<button data-x-onclick="hShareResult" data-score="${score}" data-role="${escapeHtml(role || '')}" class="w-full py-2.5 btn-accent acc-interview font-bold text-xs rounded-xl flex items-center justify-center gap-2"><i class="fa-solid fa-share-nodes"></i> شارك نتيجتك</button>`;
+    body.appendChild(wrap);
+}
+function shareResultCard(btn) {
+    const score = parseInt(btn.getAttribute('data-score'), 10) || 0;
+    const role = btn.getAttribute('data-role') || '';
+    const lv = readinessLevel(score);
+    const W = 1080, H = 1350, c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    const g = c.getContext('2d'), font = getComputedStyle(document.body).fontFamily || 'sans-serif';
+    const bg = g.createLinearGradient(0, 0, W, H); bg.addColorStop(0, '#05110f'); bg.addColorStop(1, '#0b2b2a');
+    g.fillStyle = bg; g.fillRect(0, 0, W, H);
+    g.textAlign = 'center'; g.direction = 'rtl';
+    g.fillStyle = '#5FD0D0'; g.font = '700 54px ' + font; g.fillText('يُسْر Pro', W / 2, 150);
+    g.fillStyle = '#A6A7A2'; g.font = '500 40px ' + font; g.fillText('نتيجة مقابلتي التدريبية', W / 2, 260);
+    g.lineWidth = 26; g.strokeStyle = 'rgba(255,255,255,.08)'; g.beginPath(); g.arc(W / 2, 640, 260, 0, Math.PI * 2); g.stroke();
+    g.strokeStyle = lv.c; g.lineCap = 'round'; g.beginPath(); g.arc(W / 2, 640, 260, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (score / 100)); g.stroke();
+    g.fillStyle = '#fff'; g.font = '800 200px ' + font; g.fillText(String(score), W / 2, 700);
+    g.fillStyle = '#A6A7A2'; g.font = '500 44px ' + font; g.fillText('من 100', W / 2, 780);
+    g.fillStyle = lv.c; g.font = '800 70px ' + font; g.fillText(lv.t, W / 2, 1000);
+    if (role) { g.fillStyle = '#fff'; g.font = '600 46px ' + font; g.fillText(role.slice(0, 40), W / 2, 1090); }
+    g.fillStyle = '#5FD0D0'; g.font = '600 38px ' + font; g.fillText('جرّب مقابلتك بالصوت مجانًا: ' + location.host, W / 2, 1245);
+    c.toBlob(async blob => {
+        if (!blob) return;
+        const file = new File([blob], 'yusr-result.png', { type: 'image/png' });
+        try {
+            if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text: 'جاهزيتي للمقابلة ' + score + '/100 على يُسْر Pro' }); return; }
+        } catch (e) { if (e && e.name === 'AbortError') return; }
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'yusr-result.png'; document.body.appendChild(a); a.click(); a.remove();
+        showToast('اتحفظت صورة النتيجة، تقدر تشاركها.', 'success');
+    }, 'image/png');
+}
+
+// ---- تشغيل أولي + رابط الحزم داخل نافذة الأسعار ----
+(function initGrowthUi() {
+    renderPacksSection();
+    renderReadinessCard();
+    const modal = document.getElementById('pricing-modal');
+    if (modal && !document.getElementById('pricing-packs-link')) {
+        const box = modal.querySelector('.space-y-3.text-right');
+        if (box) {
+            const b = document.createElement('button');
+            b.id = 'pricing-packs-link'; b.setAttribute('data-x-onclick', 'hGoSubs');
+            b.className = 'w-full py-2.5 rounded-xl text-xs font-bold panel-2 text-slate-200 hover:text-white';
+            b.innerHTML = '<i class="fa-solid fa-bolt"></i> أو خد حزمة صغيرة بدل اشتراك';
+            box.appendChild(b);
+        }
+    }
 })();

@@ -331,6 +331,17 @@
             } else {
                 badge.classList.add("hidden");
             }
+            const packs = adminSubReqCache.filter(adminIsPackRequest);
+            const packsPending = packs.filter(r => (r.status || "pending") === "pending").length;
+            const packsRevenue = packs.filter(r => r.status === "approved").reduce((t, r) => t + (Number(r.price) || 0), 0);
+            let sum = document.getElementById("admin-packs-summary");
+            if (!sum) {
+                sum = document.createElement("p");
+                sum.id = "admin-packs-summary";
+                sum.className = "text-[11px] text-slate-400";
+                tbody.closest("table").parentNode.insertBefore(sum, tbody.closest("table"));
+            }
+            sum.innerHTML = packs.length ? `<span class="admin-badge admin-badge-pack"><i class="fa-solid fa-bolt"></i> الحزم</span> ${packsPending} معلّق · إيراد الحزم المفعّلة ${packsRevenue} ج.م` : "";
             tbody.innerHTML = "";
             empty.classList.toggle("hidden", adminSubReqCache.length > 0);
             adminSubReqCache.forEach(r => {
@@ -344,7 +355,7 @@
                 tr.innerHTML = `
                     <td class="text-slate-200 font-bold">${escapeHtml(r.name || "-")}</td>
                     <td class="text-slate-400" dir="ltr" style="overflow-wrap:anywhere;">${escapeHtml(r.email || "-")}</td>
-                    <td class="text-slate-300">${escapeHtml(r.plan || "-")}<br><span class="text-slate-500">${priceLabel}</span></td>
+                    <td class="text-slate-300">${adminIsPackRequest(r) ? '<span class="admin-badge admin-badge-pack"><i class="fa-solid fa-bolt"></i> حزمة</span> ' : ""}${escapeHtml(r.plan || "-")}<br><span class="text-slate-500">${priceLabel}</span></td>
                     <td class="text-slate-400" dir="ltr" style="overflow-wrap:anywhere;">${transferInfo}</td>
                     <td class="text-slate-500 whitespace-nowrap">${escapeHtml(date)}</td>
                     <td><span class="admin-badge ${statusClass}" style="font-size:.6rem;">${statusLabel}</span></td>
@@ -362,9 +373,48 @@
         }
     };
 
+
+    // ---- الحزم الصغيرة (دفع مرة واحدة): بتزوّد سقف المستخدم بعدد طلبات الحزمة ----
+    function adminIsPackRequest(r) { return /^حزمة\s+\d+/.test((r && r.plan) || ""); }
+    async function adminApprovePack(req, credits) {
+        if (!credits) { adminToast("مش قادر أقرأ عدد طلبات الحزمة.", "error"); return; }
+        const u = adminUsersCache.find(x => x.uid === req.uid || (req.email && x.email === req.email));
+        const uid = req.uid || (u && u.uid);
+        if (!uid) { adminToast("الطلب مالوش حساب مسجّل. فعّل الحزمة يدويًا من ملف المستخدم.", "error"); return; }
+        // لو المستخدم مش محمّل في القايمة: اسأل عن باقته الحالية عشان الموافقة ما تنزّلش باقته بالغلط
+        let plan = u && PLAN_NAMES.includes(u.plan) ? u.plan : null;
+        if (!plan) {
+            plan = prompt("المستخدم مش ظاهر في القايمة المحمّلة.\nاكتب باقته الحالية بالظبط: " + PLAN_NAMES.join(" / "), "مجاني");
+            if (!plan || !PLAN_NAMES.includes(plan.trim())) { adminToast("باقة غير صحيحة، اتلغت العملية.", "error"); return; }
+            plan = plan.trim();
+        }
+        const used = (u && Number(u.usageThisMonth)) || 0;
+        const base = (u && typeof u.customLimit === "number") ? u.customLimit : ADMIN_PLAN_LIMITS[plan];
+        if (base === Infinity) { adminToast("المستخدم على باقة غير محدودة، الحزمة مش هتفرق معاه. ارفض الطلب وردّ له الفلوس.", "error"); return; }
+        const suggested = Math.max(base, used) + credits;
+        const answer = prompt(`حزمة ${credits} طلب — ${req.name || req.email || ""}\nباقته: ${plan} | السقف الحالي: ${base} | استهلك الشهر ده: ${used}\n\nالسقف الجديد (مقترح = ${suggested}):\nتنبيه: السقف بيفضل ثابت لحد ما تغيّره، فصفّره من ملف المستخدم لما رصيد الحزمة يخلص.`, String(suggested));
+        if (answer === null) return;
+        const newLimit = parseInt(answer, 10);
+        if (!Number.isFinite(newLimit) || newLimit < 0) { adminToast("رقم غير صالح.", "error"); return; }
+        try {
+            await adminFetch("/adminReviewSubscriptionRequest", { method: "POST", body: JSON.stringify({ requestId: req.id, action: "approve", planOverride: plan }) });
+            await adminFetch("/adminUserAction", { method: "POST", body: JSON.stringify({ uid, action: "setCustomLimit", value: newLimit }) });
+            const stamp = `[حزمة ${credits} طلب — ${new Date().toLocaleDateString("ar-EG")} — السقف ${base}←${newLimit}]`;
+            const oldNote = (u && u.adminNote) ? u.adminNote + "\n" : "";
+            await adminFetch("/adminUserAction", { method: "POST", body: JSON.stringify({ uid, action: "setNote", value: oldNote + stamp }) });
+            adminToast("تم تفعيل الحزمة. السقف الجديد: " + newLimit, "success");
+            adminLoadSubscriptionRequests();
+            adminRefreshAll();
+        } catch (e) {
+            adminToast("فشل: " + (e.data && e.data.error ? e.data.error : (e.message || "unknown")), "error");
+        }
+    }
+
     window.adminReviewSubscriptionRequest = async function (requestId, action) {
         if (isViewerRole()) { adminToast("دور المشاهدة مش مسموح له بمراجعة الطلبات.", "error"); return; }
         const req = adminSubReqCache.find(r => r.id === requestId);
+        const packMatch = req && /^حزمة\s+(\d+)/.exec(req.plan || "");
+        if (packMatch && action === "approve") { await adminApprovePack(req, parseInt(packMatch[1], 10)); return; }
         let planOverride;
         if (action === "approve" && req && !PLAN_NAMES.includes(req.plan)) {
             planOverride = prompt(`الباقة "${req.plan || ''}" مش من الباقات القياسية.\nاكتب اسم الباقة اللي هتتفعّل بالظبط: ${PLAN_NAMES.join(" / ")}`, PLAN_NAMES[1]);

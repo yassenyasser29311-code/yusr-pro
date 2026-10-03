@@ -19,7 +19,8 @@ const PLAN_LIMITS = {
 const RATE_LIMITS = {
   groqChat: { max: 20, windowSeconds: 60 },
   groqTranscribe: { max: 25, windowSeconds: 60 },
-  edgeTtsSpeak: { max: 20, windowSeconds: 60 }
+  edgeTtsSpeak: { max: 20, windowSeconds: 60 },
+  groqTranscribeInterview: { max: 8, windowSeconds: 60 }
 };
 
 const RECAPTCHA_MIN_SCORE = 0.5;
@@ -170,7 +171,9 @@ export default {
       }
       const { uid, idToken } = auth;
 
-      const rl = await checkRateLimit(env, uid, toolName);
+      // تفريغ إجابات المقابلة الصوتية بيتحسب مع رد المحاور كطلب واحد، فمش بنزوّد عداد الاستخدام عليه (وحد المعدل له أضيق)
+      const interviewTx = toolName === "groqTranscribe" && url.searchParams.get("ctx") === "interview";
+      const rl = await checkRateLimit(env, uid, interviewTx ? "groqTranscribeInterview" : toolName);
       if (!rl.ok) {
         return json({ error: "rate_limited" }, 429, corsHeaders);
       }
@@ -191,7 +194,7 @@ export default {
         response = await handleEdgeTts(request, env, corsHeaders);
       }
 
-      if (response.status >= 200 && response.status < 300 && quota.monthKey) {
+      if (response.status >= 200 && response.status < 300 && quota.monthKey && !interviewTx) {
         ctx.waitUntil(
           incrementPlanUsage(uid, idToken, quota.monthKey, quota.currentCount)
         );

@@ -108,7 +108,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Tajawal:wght@500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=9">
+<link rel="stylesheet" href="styles.css?v=10">
 <link rel="stylesheet" href="landing.css?v=7">
 </head>
 <body class="min-h-screen">
@@ -1038,6 +1038,7 @@ html.light-mode #admin-dashboard {
                         </div>
                     </div>
                     <div id="interview-setup-box" class="space-y-4 py-3">
+                        <div id="readiness-card"></div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <label class="block text-xs text-slate-400 mb-1.5" data-i18n="interview.roleLabel">الوظيفة المستهدفة</label>
@@ -1050,6 +1051,10 @@ html.light-mode #admin-dashboard {
                                     <option value="a calm, professional, distinguished English-speaking HR manager who always writes in clear, well-articulated, natural English" data-i18n="interview.personaEnLabel">English متميز</option>
                                 </select>
                             </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-slate-400 mb-1.5"><i class="fa-solid fa-bullseye"></i> إعلان الوظيفة <span class="text-slate-500">(اختياري — الصقه والمحاور هيسألك على متطلباته)</span></label>
+                            <textarea id="interview-job-ad" rows="3" maxlength="3000" placeholder="الصق نص إعلان الوظيفة هنا..." class="w-full input-field rounded-xl px-3.5 py-2.5 text-xs sm:text-sm"></textarea>
                         </div>
                         <div>
                             <label class="block text-xs text-slate-400 mb-1.5"><i class="fa-solid fa-volume-high"></i> <span data-i18n="interview.voiceLabel">صوت المحاور</span></label>
@@ -1065,6 +1070,7 @@ html.light-mode #admin-dashboard {
                         <button data-x-onclick="h88" class="w-full py-3 btn-accent acc-interview font-bold text-xs sm:text-sm rounded-xl flex items-center justify-center gap-2">
                             <i class="fa-solid fa-circle-play"></i> <span data-i18n="interview.start">ابدأ الجلسة</span>
                         </button>
+                        <p class="text-[10.5px] text-slate-500 leading-relaxed text-center"><i class="fa-solid fa-circle-info"></i> المقابلة الصوتية الكاملة = 7 طلبات: السؤال الأول + 5 ردود + التقرير النهائي. كل رد (صوتك + رد المحاور بالصوت) طلب واحد. لو رصيدك خلص في النص، مقابلتك بتتحفظ وتكمّلها بعد الشحن.</p>
                     </div>
 
                     <div id="chat-interface" class="hidden flex-col space-y-3">
@@ -1955,6 +1961,8 @@ html.light-mode #admin-dashboard {
                         </div>
                     </div>
 
+                    <div id="packs-section" class="space-y-4"></div>
+
                     <div class="panel rounded-2xl p-4 sm:p-5 space-y-1 mt-2">
                         <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2"><i class="fa-solid fa-people-group"></i> <span data-i18n="subs.teamTitle">باقات الفرق والجامعات</span></h3>
                         <p class="text-xs text-slate-400" data-i18n="subs.teamDesc">لكليات وجامعات ومراكز توظيف عايزة تدرّب مجموعة طلاب/خريجين مع بعض بسعر أوفر للفرد.</p>
@@ -2486,7 +2494,7 @@ html.light-mode #admin-dashboard {
     </div>
 </div>
 
-<script src="app.js?v=15"></script>
+<script src="app.js?v=18"></script>
 <script src="landing.js?v=7"></script>
 <script src="admin.js?v=2"></script>
 </body>
