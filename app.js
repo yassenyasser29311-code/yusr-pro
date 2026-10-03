@@ -155,7 +155,7 @@ window.__H = {
   h147: function(event) { previewPitchAudio() },
   h148: function(event) { switchViewByName('cv') },
   h149: function(event) { switchViewByName('interview') },
-  h150: function(event) { if(event.key==='Enter'||event.key===' '){event.preventDefault();this.querySelector('input,~input')||document.getElementById('profile-photo-input').click();} },
+  h150: function(event) { if(event.key==='Enter'||event.key===' '){event.preventDefault();document.getElementById('profile-photo-input').click();} },
   h151: function(event) { handleProfilePhotoUpload(event) },
   h152: function(event) { saveProfileInfo() },
   h153: function(event) { switchViewByName('portfolio') },
@@ -367,6 +367,7 @@ window.__H = {
         if (el) el.classList.add('active');
         document.getElementById('view-title').innerText = viewTitle(view);
         if (view === 'profile') refreshProfileView();
+        if (view === 'subscriptions') { try { renderBalanceBreakdown(); loadMyPaymentRequests(); } catch (e) {} }
         if (view === 'progress') renderProgressView();
         if (view === 'history') renderHistoryView();
         if (view === 'interview') checkInterviewResumeBanner();
@@ -830,6 +831,7 @@ window.__H = {
             headerBadge.classList.add('trial-' + level);
         }
         if (headerCount) headerCount.innerText = isUnlimited ? '∞' : String(remaining + credits);
+        try { renderBalanceBreakdown(); } catch (_) {}
     }
     function maybeFireTrialWarning(remaining, limit) {
         if (limit === Infinity) return;
@@ -1221,36 +1223,30 @@ window.__H = {
         if (p) p.classList.remove('hidden');
         if (i) i.value = '';
     }
-    function compressProofImage(file) {
-        return new Promise((resolve, reject) => {
-            const url = URL.createObjectURL(file);
-            const img = new Image();
-            img.onload = () => {
-                try {
-                    let max = 1100, q = 0.72, out = '';
-                    for (let i = 0; i < 4; i++) {
-                        const s = Math.min(1, max / Math.max(img.width, img.height));
-                        const c = document.createElement('canvas');
-                        c.width = Math.max(1, Math.round(img.width * s));
-                        c.height = Math.max(1, Math.round(img.height * s));
-                        const ctx = c.getContext('2d');
-                        ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
-                        ctx.drawImage(img, 0, 0, c.width, c.height);
-                        out = c.toDataURL('image/jpeg', q);
-                        if (out.length <= 380000) break;
-                        max = Math.round(max * 0.8); q = Math.max(0.45, q - 0.08);
-                    }
-                    URL.revokeObjectURL(url);
-                    if (out.length > 580000) reject(new Error('too_big')); else resolve(out);
-                } catch (e) { URL.revokeObjectURL(url); reject(e); }
-            };
-            img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('bad_image')); };
-            img.src = url;
-        });
+    async function compressProofImage(file) {
+        const d = await decodeImageFile(file);
+        try {
+            if (!d.w || !d.h) throw new Error('bad_image');
+            let max = 1100, q = 0.72, out = '';
+            for (let i = 0; i < 4; i++) {
+                const s = Math.min(1, max / Math.max(d.w, d.h));
+                const c = document.createElement('canvas');
+                c.width = Math.max(1, Math.round(d.w * s));
+                c.height = Math.max(1, Math.round(d.h * s));
+                const ctx = c.getContext('2d');
+                ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+                ctx.drawImage(d.src, 0, 0, c.width, c.height);
+                out = c.toDataURL('image/jpeg', q);
+                if (out.length <= 380000) break;
+                max = Math.round(max * 0.8); q = Math.max(0.45, q - 0.08);
+            }
+            if (out.length > 580000) throw new Error('too_big');
+            return out;
+        } finally { d.done(); }
     }
     async function handleProofSelected(file) {
         if (!file) return;
-        if (!/^image\//.test(file.type)) { showToast('اختار صورة بس (سكرين شوت التحويل).', 'error'); return; }
+        if (!isImageFile(file)) { showToast('اختار صورة بس (سكرين شوت التحويل).', 'error'); return; }
         try {
             const dataUrl = await compressProofImage(file);
             pendingProofDataUrl = dataUrl;
@@ -1260,7 +1256,7 @@ window.__H = {
             document.getElementById('pr-proof-pick').classList.add('hidden');
         } catch (e) {
             console.warn('proof compress failed', e);
-            showToast('الصورة دي مش راضية تتحمّل، جرب صورة تانية.', 'error');
+            showToast((e && e.message === 'too_big') ? 'الصورة كبيرة قوي حتى بعد الضغط، جرب سكرين شوت أصغر.' : 'مش قادر أقرأ الصورة دي، جرب صورة JPG أو PNG (أو خد سكرين شوت للتحويل).', 'error');
         }
     }
     document.addEventListener('change', (e) => { if (e.target && e.target.id === 'pr-proof-input') handleProofSelected(e.target.files && e.target.files[0]); });
@@ -1346,11 +1342,12 @@ window.__H = {
         return { cls: 'wait', icon: 'fa-clock', title: 'قيد المراجعة', sub: 'بنراجع التحويل، وبيتفعّل خلال ساعات قليلة.' };
     }
     function renderMyRequestsCard() {
+        try { renderBalanceBreakdown(); } catch (_) {}
         const host = document.getElementById('my-requests-card');
         if (!host) return;
         const cutoff = Date.now() - 14 * 86400000;
         const list = myPaymentRequests.filter(r => r.status === 'pending' || (r.reviewedAt || r.createdAt) > cutoff).slice(0, 5);
-        const credits = cloudPackCredits > 0 ? cloudPackCredits : 0;
+        const credits = 0; // رصيد الحزم اتنقل لكارت "رصيدك الحالي" (balance-breakdown-subs)
         if (!list.length && !credits) { host.classList.add('hidden'); host.innerHTML = ''; return; }
         const seen = reqSeenSet();
         host.classList.remove('hidden');
@@ -1898,6 +1895,7 @@ window.__H = {
         }
         updateAccountChip(p);
         renderPurchasesOverview();
+        try { renderBalanceBreakdown(); } catch (_) {}
         refreshGoogleSigninState(p);
         updateSubscriptionButtonsState();
         refreshCancelSubscriptionUi(planName);
@@ -2014,32 +2012,69 @@ window.__H = {
             avatar.appendChild(img);
         }
     }
-    function compressImageFile(file, maxWidth, quality) {
-        maxWidth = maxWidth || 400;
-        quality = quality || 0.7;
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => {
-                const img = new Image();
-                img.onload = () => {
-                    const scale = Math.min(1, maxWidth / img.width);
-                    const canvas = document.createElement('canvas');
-                    canvas.width = Math.round(img.width * scale);
-                    canvas.height = Math.round(img.height * scale);
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    resolve(canvas.toDataURL('image/jpeg', quality));
-                };
-                img.onerror = reject;
-                img.src = reader.result;
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-        });
+    // ---- تحميل وضغط الصور بشكل متين ----
+    // 1) createImageBitmap مش بيعدّي على img-src بتاع الـ CSP (عكس <img> مع blob:/data:)، وبيصلّح اتجاه صور الموبايل.
+    // 2) لو فشل بنجرّب <img> بـ blob: وبعدين بـ data: كاحتياطي.
+    // 3) isImageFile بتقبل الملف حتى لو الموبايل بعته type فاضي (بنفحص الامتداد).
+    const IMAGE_EXT_RE = /\.(jpe?g|png|gif|webp|bmp|avif|heic|heif)$/i;
+    function isImageFile(file) {
+        if (!file) return false;
+        if (file.type) return file.type.indexOf('image/') === 0;
+        return IMAGE_EXT_RE.test(file.name || '');
     }
+    async function decodeImageFile(file) {
+        if (typeof createImageBitmap === 'function') {
+            const closer = (bmp) => () => { try { bmp.close(); } catch (e) {} };
+            try {
+                const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
+                return { src: bmp, w: bmp.width, h: bmp.height, done: closer(bmp) };
+            } catch (e1) {
+                try {
+                    const bmp = await createImageBitmap(file);
+                    return { src: bmp, w: bmp.width, h: bmp.height, done: closer(bmp) };
+                } catch (e2) { /* نكمل بالطريقة التقليدية */ }
+            }
+        }
+        const loadImg = (url) => new Promise((res, rej) => {
+            const img = new Image();
+            img.onload = () => res(img);
+            img.onerror = () => rej(new Error('decode_failed'));
+            img.src = url;
+        });
+        let objUrl = '';
+        try {
+            objUrl = URL.createObjectURL(file);
+            const img = await loadImg(objUrl);
+            return { src: img, w: img.naturalWidth || img.width, h: img.naturalHeight || img.height, done: () => URL.revokeObjectURL(objUrl) };
+        } catch (e3) { if (objUrl) { try { URL.revokeObjectURL(objUrl); } catch (e) {} } }
+        const dataUrl = await new Promise((res, rej) => {
+            const r = new FileReader();
+            r.onload = () => res(r.result);
+            r.onerror = () => rej(new Error('read_failed'));
+            r.readAsDataURL(file);
+        });
+        const img = await loadImg(dataUrl);
+        return { src: img, w: img.naturalWidth || img.width, h: img.naturalHeight || img.height, done: () => {} };
+    }
+    async function compressImageFile(file, maxDim, quality) {
+        maxDim = maxDim || 1024; quality = quality || 0.8;
+        const d = await decodeImageFile(file);
+        try {
+            if (!d.w || !d.h) throw new Error('empty_image');
+            const ratio = Math.min(1, maxDim / Math.max(d.w, d.h));
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.max(1, Math.round(d.w * ratio));
+            canvas.height = Math.max(1, Math.round(d.h * ratio));
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height); // الـ PNG الشفاف ميبقاش أسود بعد التحويل لـ JPEG
+            ctx.drawImage(d.src, 0, 0, canvas.width, canvas.height);
+            return canvas.toDataURL('image/jpeg', quality);
+        } finally { d.done(); }
+    }
+
     function handleProfilePhotoUpload(e) {
         const file = e.target.files[0]; if (!file) return;
-        if (!file.type || !file.type.startsWith('image/')) {
+        if (!isImageFile(file)) {
             showToast(uiStr('chooseImageFile'), 'error');
             e.target.value = ''; return;
         }
@@ -2060,7 +2095,8 @@ window.__H = {
             syncProfileToCloud(p);
             refreshProfileView();
             showToast(uiStr('profilePhotoUpdated'), 'success');
-        }).catch(() => {
+        }).catch((err) => {
+            console.warn('Profile photo failed:', err);
             showToast(uiStr('imageProcessError'), 'error');
             if (icon) icon.className = prevIconClass || 'fa-solid fa-camera text-slate-500 text-xl';
         }).finally(() => {
@@ -3430,35 +3466,11 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         }
     }
 
-    function compressImageFile(file, maxDim, quality) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onerror = () => reject(new Error('read_failed'));
-            reader.onload = () => {
-                const img = new Image();
-                img.onerror = () => reject(new Error('decode_failed'));
-                img.onload = () => {
-                    let { width, height } = img;
-                    if (width > maxDim || height > maxDim) {
-                        const ratio = Math.min(maxDim / width, maxDim / height);
-                        width = Math.round(width * ratio);
-                        height = Math.round(height * ratio);
-                    }
-                    const canvas = document.createElement('canvas');
-                    canvas.width = width; canvas.height = height;
-                    canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-                    resolve(canvas.toDataURL('image/jpeg', quality));
-                };
-                img.src = reader.result;
-            };
-            reader.readAsDataURL(file);
-        });
-    }
     async function handleAssistantImageSelect(ev) {
         const file = ev.target.files && ev.target.files[0];
         ev.target.value = ''; // يسمح باختيار نفس الملف تاني لو احتاج يشيله ويرجّعه
         if (!file) return;
-        if (!file.type || !file.type.startsWith('image/')) {
+        if (!isImageFile(file)) {
             showToast('اختار ملف صورة صحيح.', 'error'); return;
         }
         try {
@@ -3814,35 +3826,18 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         }
     }
     function previewCvLiPhoto(e) {
-        const file = e.target.files[0]; if (!file) return;
-        const applyPhoto = (src) => {
+        const input = e.target;
+        const file = input.files && input.files[0]; if (!file) return;
+        if (!isImageFile(file)) { showToast(uiStr('chooseImageFile'), 'error'); input.value = ''; return; }
+        // بنصغّر الصورة (أقصى 600px) بدل ما نستخدم صورة الموبايل الأصلية الضخمة، عشان حفظ الصورة ميتقلش ويجمّد الصفحة.
+        compressImageFile(file, 600, 0.9).then((src) => {
             document.getElementById('cv-li-photo-preview').src = src;
             document.getElementById('cv-li-photo-preview').classList.remove('hidden');
             document.getElementById('cv-li-photo-icon').classList.add('hidden');
-        };
-        const fallbackRead = () => {
-            const reader = new FileReader();
-            reader.onload = () => applyPhoto(reader.result);
-            reader.readAsDataURL(file);
-        };
-        // بنصغّر الصورة (أقصى 600px) بدل ما نستخدم صورة الموبايل الأصلية الضخمة، عشان حفظ الصورة ميتقلش ويجمّد الصفحة.
-        const objUrl = URL.createObjectURL(file);
-        const probe = new Image();
-        probe.onload = () => {
-            try {
-                const ratio = Math.min(1, 600 / Math.max(probe.naturalWidth, probe.naturalHeight));
-                const canvas = document.createElement('canvas');
-                canvas.width = Math.max(1, Math.round(probe.naturalWidth * ratio));
-                canvas.height = Math.max(1, Math.round(probe.naturalHeight * ratio));
-                const ctx = canvas.getContext('2d');
-                ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.drawImage(probe, 0, 0, canvas.width, canvas.height);
-                applyPhoto(canvas.toDataURL('image/jpeg', 0.9));
-            } catch (err) { fallbackRead(); }
-            URL.revokeObjectURL(objUrl);
-        };
-        probe.onerror = () => { URL.revokeObjectURL(objUrl); fallbackRead(); };
-        probe.src = objUrl;
+        }).catch((err) => {
+            console.warn('CV photo failed:', err);
+            showToast(uiStr('imageProcessError'), 'error');
+        });
     }
     async function runCvBuilder(variant) {
         variant = variant === 'linkedin' ? 'linkedin' : 'plain';
@@ -4154,7 +4149,7 @@ ${firstPass}
         event.target.value = ''; // نصفّر الـ input عشان يقدر يختار نفس الملف تاني لو عايز
         const statusEl = document.getElementById('cover-cv-extract-status');
         const extractBox = document.getElementById('cover-cv-extract');
-        if (!file.type || !file.type.startsWith('image/')) {
+        if (!isImageFile(file)) {
             statusEl.textContent = 'الأداة بتقرأ صور بس دلوقتي (صورة أو سكرين شوت للـ CV)، من فضلك ارفع صورة.';
             return;
         }
@@ -5372,3 +5367,147 @@ function shareResultCard(btn) {
         }
     }
 })();
+
+
+// ======================================================================
+// رصيدك الحالي: الباقة الشهرية + رصيد الحزم (تفاصيل في صفحة الاشتراكات + ملخص في الملف الشخصي)
+// ملاحظة: رصيد الحزم متخزّن كرقم واحد (عدد الطلبات المتبقية)، وكل طلب = طلب واحد في أي أداة.
+// عشان كده بنعرض الباقي كـ "بيكفي لكام مقابلة/سيرة/أداة" (من نفس الرصيد) + اللي اشتراه المستخدم من سجل طلباته.
+// ======================================================================
+function balEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function balNum(n) { return Number(n).toLocaleString('ar-EG'); }
+function balEscRe(s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+// "حزمة 14 طلب" -> 14
+function balPackUnits(r) {
+    const m = /^حزمة\s+(\d+)/.exec((r && r.plan) || '');
+    return m ? parseInt(m[1], 10) : 0;
+}
+// بيطلّع محتوى الحزمة من نص الطلب: "مقابلة صوتية ×2، أداة سريعة ×3" أو وصف الباقة الجاهزة
+function balPackContents(r) {
+    const text = [r && r.period, r && r.details, r && r.label].filter(Boolean).join(' | ');
+    const parts = [];
+    PACK_ITEMS.forEach(it => {
+        const m = new RegExp(balEscRe(it.label) + '\\s*[×xX]\\s*(\\d+)').exec(text);
+        if (m) parts.push(it.short + ' ×' + m[1]);
+    });
+    if (parts.length) return parts.join('، ');
+    const ready = READY_PACKS.find(p => text.indexOf(p.name) !== -1);
+    return ready ? ready.note : '';
+}
+function balSnapshot() {
+    const limit = getEffectiveMonthlyLimit();
+    const used = getEffectiveUsageCount();
+    const unlimited = limit === Infinity;
+    const planLeft = unlimited ? Infinity : Math.max(0, limit - used);
+    const credits = cloudPackCredits > 0 ? cloudPackCredits : 0;
+    const reqs = Array.isArray(myPaymentRequests) ? myPaymentRequests : [];
+    const packs = reqs.filter(r => balPackUnits(r) > 0);
+    const approved = packs.filter(r => r.status === 'approved')
+        .sort((a, b) => (b.reviewedAt || b.createdAt || 0) - (a.reviewedAt || a.createdAt || 0));
+    const pending = packs.filter(r => r.status === 'pending');
+    const bought = approved.reduce((t, r) => t + balPackUnits(r), 0);
+    return { limit, used, unlimited, planLeft, credits, approved, pending, bought, plan: getCurrentPlanName() };
+}
+
+function balPlanRow(s) {
+    const pct = s.unlimited ? 100 : (s.limit > 0 ? Math.min(100, Math.round((s.used / s.limit) * 100)) : 100);
+    const lvl = s.unlimited ? 'ok' : (s.planLeft <= 0 ? 'danger' : (s.planLeft <= Math.max(2, Math.ceil(s.limit * 0.2)) ? 'warn' : 'ok'));
+    const val = s.unlimited ? '∞' : balNum(s.planLeft) + ' <small>طلب باقي</small>';
+    const body = s.unlimited
+        ? '<div class="bal-sub text-slate-400">طلبات غير محدودة، مفيش سقف شهري.</div>'
+        : `<div class="bal-bar"><span class="bal-fill bal-${lvl}" style="width:${pct}%"></span></div>
+           <div class="bal-sub text-slate-400">استخدمت ${balNum(s.used)} من ${balNum(s.limit)} الشهر ده، وبيتجدد أول الشهر الجاي.</div>`;
+    return `<div class="bal-row">
+        <div class="bal-head"><span class="bal-title text-slate-200"><i class="fa-solid fa-gem"></i> باقتك الشهرية: ${balEsc(s.plan)}</span><b class="bal-val text-slate-100">${val}</b></div>
+        ${body}
+    </div>`;
+}
+
+function balEquivalents(s) {
+    const vUnits = (PACK_ITEMS.find(i => i.id === 'voice') || { units: 7 }).units;
+    const v = Math.floor(s.credits / vUnits), rest = s.credits - v * vUnits;
+    const cells = PACK_ITEMS.map(it => {
+        const n = Math.floor(s.credits / it.units);
+        const note = it.units > 1 ? `<span class="bal-eq-note text-slate-500">${balNum(it.units)} طلبات للواحدة</span>` : '<span class="bal-eq-note text-slate-500">طلب واحد للمرة</span>';
+        return `<div class="bal-eq-i"><i class="fa-solid ${it.icon} text-slate-400"></i><b class="text-slate-100">×${balNum(n)}</b><span class="text-slate-300">${balEsc(it.short)}</span>${note}</div>`;
+    }).join('');
+    const mixParts = [];
+    if (v) mixParts.push(balNum(v) + ' مقابلة صوتية كاملة');
+    if (rest) mixParts.push(balNum(rest) + ' طلب لأي أداة تانية');
+    const mix = mixParts.length ? `<p class="bal-sub text-slate-300"><i class="fa-solid fa-lightbulb text-amber-300"></i> يعني ممكن تعمل: ${mixParts.join(' + ')}.</p>` : '';
+    return `<div class="bal-eq-wrap">
+        <p class="bal-sub text-slate-400">رصيدك يكفيك لكل حاجة من دول لو صرفته كله عليها (الأرقام من نفس الرصيد، مش كل واحدة لوحدها):</p>
+        <div class="bal-eq">${cells}</div>
+        ${mix}
+    </div>`;
+}
+
+function balPackRow(s, withEquivalents) {
+    if (!s.credits && !s.approved.length) {
+        return `<div class="bal-row bal-muted">
+            <div class="bal-head"><span class="bal-title text-slate-200"><i class="fa-solid fa-bolt"></i> رصيد الحزم</span><b class="bal-val text-slate-100">0</b></div>
+            <div class="bal-sub text-slate-400">مفيش رصيد حزم حاليًا. الحزمة بتتضاف هنا أول ما نراجع التحويل ونوافق عليه.</div>
+        </div>`;
+    }
+    const spent = (s.bought > 0 && s.bought >= s.credits) ? (s.bought - s.credits) : null;
+    const spentLine = spent !== null ? ` اتصرف تقريبًا ${balNum(spent)} من ${balNum(s.bought)} طلب اشتريتهم.` : '';
+    return `<div class="bal-row">
+        <div class="bal-head"><span class="bal-title text-slate-200"><i class="fa-solid fa-bolt"></i> رصيد الحزم</span><b class="bal-val text-slate-100">${balNum(s.credits)} <small>طلب باقي</small></b></div>
+        <div class="bal-sub text-slate-400">بيتخصم تلقائيًا بعد ما سقف باقتك الشهري يخلص، ومبيتجددش ولا بيتصفّر أول الشهر.${spentLine}</div>
+        ${(withEquivalents && s.credits > 0) ? balEquivalents(s) : ''}
+    </div>`;
+}
+
+function balTotalRow(s) {
+    if (s.unlimited) return '';
+    return `<div class="bal-total"><span class="text-slate-300">إجمالي المتاح لك دلوقتي</span><b class="text-slate-100">${balNum(s.planLeft + s.credits)} <small>طلب</small></b></div>`;
+}
+
+function balPurchasesHtml(s) {
+    const pendingHtml = s.pending.length
+        ? `<div class="bal-pending"><i class="fa-solid fa-clock"></i> ${balNum(s.pending.length)} طلب حزمة قيد المراجعة، والرصيد بيتضاف أول ما نوافق عليه.</div>` : '';
+    if (!s.approved.length) return pendingHtml;
+    const rows = s.approved.slice(0, 6).map(r => {
+        const units = balPackUnits(r);
+        const contents = balPackContents(r) || ('حزمة ' + units + ' طلب');
+        return `<div class="bal-buy">
+            <div class="min-w-0"><b class="text-slate-100">${balEsc(r.label || r.plan)}</b><span class="text-slate-400">${balEsc(contents)}</span></div>
+            <div class="bal-buy-r"><b class="text-slate-100">${balNum(units)} طلب</b><small class="text-slate-500">${balEsc(reqDate(r.reviewedAt || r.createdAt))}</small></div>
+        </div>`;
+    }).join('');
+    return `<div class="space-y-2">
+        <p class="text-xs font-bold text-slate-300 flex items-center gap-2"><i class="fa-solid fa-receipt"></i> الحزم اللي اشتريتها</p>
+        ${rows}
+        ${pendingHtml}
+    </div>`;
+}
+
+function renderBalanceBreakdown() {
+    const full = document.getElementById('balance-breakdown-subs');
+    const compact = document.getElementById('balance-breakdown-profile');
+    if (!full && !compact) return;
+    const s = balSnapshot();
+    if (full) {
+        full.innerHTML = `<div class="panel rounded-2xl p-4 sm:p-5 space-y-3">
+            <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2"><i class="fa-solid fa-wallet"></i> <span>رصيدك الحالي</span></h3>
+            ${balPlanRow(s)}
+            ${balPackRow(s, true)}
+            ${balTotalRow(s)}
+            ${balPurchasesHtml(s)}
+        </div>`;
+    }
+    if (compact) {
+        compact.innerHTML = `<div class="space-y-2">
+            <div class="flex items-center justify-between gap-2">
+                <p class="text-xs font-bold text-slate-300 flex items-center gap-2"><i class="fa-solid fa-battery-three-quarters"></i> رصيدك الحالي</p>
+                <button data-x-onclick="hGoSubs" class="chip hover:bg-[var(--panel-2)]">التفاصيل</button>
+            </div>
+            ${balPlanRow(s)}
+            ${balPackRow(s, false)}
+            ${balTotalRow(s)}
+            ${s.pending.length ? `<div class="bal-pending"><i class="fa-solid fa-clock"></i> ${balNum(s.pending.length)} طلب حزمة قيد المراجعة.</div>` : ''}
+        </div>`;
+    }
+}
+try { renderBalanceBreakdown(); } catch (_) {}

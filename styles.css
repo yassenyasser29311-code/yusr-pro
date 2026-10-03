@@ -808,3 +808,28 @@ body header.sticky .header-trial-badge{padding:4px 8px!important}
 .req-banner-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;font-size:.72rem;line-height:1.5}.req-banner-txt b{font-size:.85rem}
 .req-banner-btn{background:#5FD0D0;color:#04201f;border:0;border-radius:10px;padding:7px 14px;font-weight:800;font-size:.75rem;cursor:pointer}
 .req-banner-x{background:transparent;border:0;color:#94a3b8;cursor:pointer;padding:4px}
+
+/* ---- رصيدك الحالي (الباقة الشهرية + رصيد الحزم) ---- */
+.bal-row{background:var(--panel-2);border:1px solid var(--border);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.bal-muted{opacity:.9}
+.bal-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.bal-title{font-size:.78rem;font-weight:700;display:flex;align-items:center;gap:6px;min-width:0}
+.bal-val{font-size:1rem;font-weight:800;white-space:nowrap}
+.bal-val small,.bal-total small{font-size:.62rem;font-weight:500;opacity:.7}
+.bal-sub{font-size:.7rem;line-height:1.7}
+.bal-bar{height:6px;border-radius:999px;background:rgba(148,163,184,.25);overflow:hidden}
+.bal-fill{display:block;height:100%;border-radius:999px;background:#34d399;transition:width .3s}
+.bal-fill.bal-warn{background:#fbbf24}
+.bal-fill.bal-danger{background:#f87171}
+.bal-eq-wrap{display:flex;flex-direction:column;gap:8px;margin-top:2px}
+.bal-eq{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media (min-width:640px){.bal-eq{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.bal-eq-i{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;padding:10px 6px;border-radius:12px;background:var(--panel);border:1px solid var(--border);font-size:.7rem}
+.bal-eq-i b{font-size:1.05rem;font-weight:800}
+.bal-eq-note{font-size:.58rem}
+.bal-total{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;border:1px dashed var(--border);font-size:.78rem}
+.bal-total b{font-size:1rem;font-weight:800}
+.bal-buy{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:12px;background:var(--panel-2);border:1px solid var(--border);font-size:.74rem}
+.bal-buy>div:first-child{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+.bal-buy-r{display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0}
+.bal-pending{font-size:.7rem;color:#fbbf24;display:flex;align-items:center;gap:6px;line-height:1.7}
