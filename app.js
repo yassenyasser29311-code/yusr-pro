@@ -3343,9 +3343,10 @@ ${jobAdPromptLine()}
 
     async function sendUserAnswer() {
         { const lim = getEffectiveMonthlyLimit();
-          if (lim !== Infinity && lim - getEffectiveUsageCount() <= 1 && chatHistory.some(m => m.role === 'user')) {
+          const left = lim - getEffectiveUsageCount() + walletApplicable(); // باقي الباقة + رصيد الحزم اللي ينفع للمقابلة
+          if (lim !== Infinity && left <= 1 && chatHistory.some(m => m.role === 'user')) {
               showToast('فاضل طلب واحد محجوز لتقرير مقابلتك. اضغط «إنهاء» وخد التقرير، أو اشحن رصيد وكمّل مقابلتك من نفس المكان.', 'warning');
-              if (lim - getEffectiveUsageCount() <= 0) openPricingModal();
+              if (left <= 0) openPricingModal();
               return;
           } }
         if (interviewLive) { interviewLive.abort(); interviewLive = null; stopMic(); } // المستخدم بعت والمايك شغال: نقفل الإملاء فوراً
@@ -3762,7 +3763,7 @@ Fixed important rule: if anyone asks who built you, who made you, what technolog
         if (!confirm(confirmMsg)) return;
 
         { const lim = getEffectiveMonthlyLimit();
-          if (lim !== Infinity && lim - getEffectiveUsageCount() <= 0) {
+          if (lim !== Infinity && lim - getEffectiveUsageCount() + walletApplicable() <= 0) {
               showToast('رصيدك خلص قبل التقرير. مقابلتك محفوظة: اشحن رصيد وارجع اضغط «كمّل» وخد تقريرك.', 'warning');
               openPricingModal();
               return;
