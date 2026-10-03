@@ -208,6 +208,8 @@ export default {
         ctx.waitUntil(
           incrementPlanUsage(uid, idToken, quota.monthKey, quota.currentCount)
         );
+      } else if (response.status >= 200 && response.status < 300 && quota.usePack && !interviewTx) {
+        ctx.waitUntil(consumePackCredit(uid, env));
       }
 
       return response;
@@ -398,9 +400,26 @@ async function checkPlanUsage(uid, idToken) {
       : 0;
 
   if (limit !== Infinity && currentCount >= limit) {
+    // سقف الباقة الشهري خلص: لو عنده رصيد حزم، بنسمح له ونخصم من الرصيد (مش من عداد الشهر)
+    const packCredits = typeof userRaw.packCredits === "number" ? userRaw.packCredits : 0;
+    if (packCredits > 0) {
+      return { ok: true, monthKey: null, usePack: true, packCredits };
+    }
     return { ok: false, error: "usage_limit_reached" };
   }
   return { ok: true, monthKey, currentCount };
+}
+
+// خصم طلب واحد من رصيد الحزم (بصلاحية السيرفر)، والرصيد مبيتصفّرش مع أول الشهر
+async function consumePackCredit(uid, env) {
+  try {
+    const cur = await fbAdminGet(`users/${uid}/packCredits`, env);
+    if (typeof cur === "number" && cur > 0) {
+      await fbAdminPut(`users/${uid}/packCredits`, cur - 1, env);
+    }
+  } catch (e) {
+    console.warn("consumePackCredit فشل:", e);
+  }
 }
 
 async function incrementPlanUsage(uid, idToken, monthKey, previousCount, attempt = 0) {
@@ -1304,6 +1323,7 @@ async function handleAdminListUsers(request, env, corsHeaders) {
         displayName: u.displayName || u.name || null,
         plan: planName,
         customLimit: typeof u.customLimit === "number" ? u.customLimit : null,
+        packCredits: typeof u.packCredits === "number" ? u.packCredits : 0,
         points: typeof u.points === "number" ? u.points : 0,
         suspended: u.suspended === true,
         adminNote: typeof u.adminNote === "string" ? u.adminNote : "",
@@ -1374,6 +1394,36 @@ async function handleAdminReviewSubscriptionRequest(request, env, corsHeaders, c
   try {
     const reqRaw = await fbAdminGet(`pending_requests/${requestId}`, env);
     if (!reqRaw) return json({ error: "request_not_found" }, 404, corsHeaders);
+
+    if (reqRaw.status && reqRaw.status !== "pending") {
+      return json({ error: "already_reviewed" }, 409, corsHeaders);
+    }
+
+    const packMatch = /^حزمة\s+(\d+)/.exec(reqRaw.plan || "");
+    if (action === "approve" && packMatch) {
+      const credits = parseInt(packMatch[1], 10);
+      if (!reqRaw.uid) return json({ error: "request_missing_uid" }, 400, corsHeaders);
+      if (!Number.isFinite(credits) || credits <= 0 || credits > 100000) {
+        return json({ error: "invalid_pack_size" }, 400, corsHeaders);
+      }
+      const curRaw = await fbAdminGet(`users/${reqRaw.uid}/packCredits`, env);
+      const balance = (typeof curRaw === "number" && curRaw > 0 ? curRaw : 0) + credits;
+      await fbAdminPut(`users/${reqRaw.uid}/packCredits`, balance, env);
+      const existingPurchases = (await fbAdminGet(`users/${reqRaw.uid}/purchases`, env)) || [];
+      const purchasesList = Array.isArray(existingPurchases) ? existingPurchases : Object.values(existingPurchases);
+      purchasesList.push({
+        name: reqRaw.label || reqRaw.plan,
+        price: Number(reqRaw.price) || 0,
+        period: "مرة واحدة",
+        date: Date.now()
+      });
+      await fbAdminPut(`users/${reqRaw.uid}/purchases`, purchasesList, env);
+      await fbAdminPut(`pending_requests/${requestId}/status`, "approved", env);
+      await fbAdminPut(`pending_requests/${requestId}/reviewedAt`, Date.now(), env);
+      await fbAdminPut(`pending_requests/${requestId}/reviewedBy`, admin.role, env);
+      if (ctx) ctx.waitUntil(logAdminActivity(env, "pack_approved", { requestId, uid: reqRaw.uid, credits, balance, by: admin.name || admin.role }));
+      return json({ ok: true, credits, balance }, 200, corsHeaders);
+    }
 
     if (action === "approve") {
       const planToSet = PLAN_LIMITS.hasOwnProperty(body.planOverride)
@@ -1577,6 +1627,7 @@ const ADMIN_VALID_ACTIONS = new Set([
   "activate",
   "setPlan",
   "setCustomLimit",
+  "setPackCredits",
   "setPoints",
   "resetUsage",
   "setNote",
@@ -1627,6 +1678,13 @@ async function handleAdminUserAction(request, env, corsHeaders, ctx) {
       value = n;
     }
     path = `users/${uid}/customLimit`;
+  } else if (action === "setPackCredits") {
+    const n = Number(body.value);
+    if (!Number.isFinite(n) || n < 0 || n > 100000) {
+      return json({ error: "invalid_credits" }, 400, corsHeaders);
+    }
+    path = `users/${uid}/packCredits`;
+    value = Math.round(n);
   } else if (action === "setPoints") {
     const n = Number(body.value);
     if (!Number.isFinite(n) || n < 0) {

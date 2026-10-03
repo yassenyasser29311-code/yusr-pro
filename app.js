@@ -43,6 +43,7 @@ window.__H = {
   h36: function(event) { adminCloseUserModal() },
   h37: function(event) { adminModalUserAction('setPlan', this.value) },
   h38: function(event) { adminModalUserAction('setCustomLimit', this.value === '' ? null : this.value) },
+  hAdminSetPack: function(event) { adminModalUserAction('setPackCredits', this.value === '' ? 0 : this.value) },
   h39: function(event) { adminModalToggleSuspend() },
   h40: function(event) { adminModalUserAction('resetUsage') },
   h41: function(event) { adminModalSendPasswordReset() },
@@ -720,6 +721,20 @@ window.__H = {
         }, err => console.warn('تعذر متابعة السقف المخصص من السيرفر', err));
     }
 
+    // ---- رصيد الحزم (بيتزود بموافقة الأدمن وبيتخصم لما سقف الباقة الشهري يخلص) ----
+    let cloudPackCredits = 0;
+    let cloudPackRef = null;
+    function attachCloudPackListener(uid) {
+        if (cloudPackRef) cloudPackRef.off();
+        cloudPackRef = db.ref('users/' + uid + '/packCredits');
+        cloudPackRef.on('value', snap => {
+            const v = snap.val();
+            cloudPackCredits = (typeof v === 'number' && v > 0) ? v : 0;
+            checkDeviceTrial();
+            try { renderMyRequestsCard(); } catch (_) {}
+        }, err => console.warn('تعذر متابعة رصيد الحزم', err));
+    }
+
     let cloudPlanRef = null;
     function attachCloudPlanListener(uid) {
         if (cloudPlanRef) cloudPlanRef.off();
@@ -790,16 +805,17 @@ window.__H = {
     function setTrialWarnState(state) {
         localStorage.setItem('yusr_trial_warned', JSON.stringify(state));
     }
-    function updateTrialUsageUI(remaining, limit, count) {
+    function updateTrialUsageUI(remaining, limit, count, packCredits) {
+        const credits = packCredits > 0 ? packCredits : 0;
         const isUnlimited = limit === Infinity;
         const ratio = isUnlimited ? 0 : (limit > 0 ? count / limit : 1);
         let level = 'ok';
         if (!isUnlimited) {
-            if (remaining <= 0) level = 'danger';
-            else if (remaining <= Math.max(2, Math.ceil(limit * 0.2))) level = 'warning';
+            if (remaining + credits <= 0) level = 'danger';
+            else if (credits === 0 && remaining <= Math.max(2, Math.ceil(limit * 0.2))) level = 'warning';
         }
         const trialEl = document.getElementById('trial-left');
-        if (trialEl) trialEl.innerText = isUnlimited ? '∞' : `${remaining} / ${limit}`;
+        if (trialEl) trialEl.innerText = isUnlimited ? '∞' : (credits > 0 ? `${remaining} / ${limit} + ${credits} حزمة` : `${remaining} / ${limit}`);
         const chip = document.getElementById('trial-chip');
         if (chip) { chip.classList.remove('trial-ok', 'trial-warning', 'trial-danger'); chip.classList.add('trial-' + level); }
         const fill = document.getElementById('trial-progress-fill');
@@ -813,7 +829,7 @@ window.__H = {
             headerBadge.classList.remove('trial-ok', 'trial-warning', 'trial-danger');
             headerBadge.classList.add('trial-' + level);
         }
-        if (headerCount) headerCount.innerText = isUnlimited ? '∞' : String(remaining);
+        if (headerCount) headerCount.innerText = isUnlimited ? '∞' : String(remaining + credits);
     }
     function maybeFireTrialWarning(remaining, limit) {
         if (limit === Infinity) return;
@@ -837,9 +853,10 @@ window.__H = {
         const limit = getEffectiveMonthlyLimit();
         const count = getEffectiveUsageCount();
         const remaining = (limit === Infinity) ? Infinity : Math.max(0, limit - count);
-        updateTrialUsageUI(remaining, limit, count);
-        if (limit !== Infinity) maybeFireTrialWarning(remaining, limit);
-        if (limit !== Infinity && count >= limit) { openPricingModal(); return false; }
+        const credits = cloudPackCredits > 0 ? cloudPackCredits : 0;
+        updateTrialUsageUI(remaining, limit, count, credits);
+        if (limit !== Infinity && credits === 0) maybeFireTrialWarning(remaining, limit);
+        if (limit !== Infinity && count >= limit && credits === 0) { openPricingModal(); return false; }
         return true;
     }
     function incrementDeviceUsage(toolLabel) {
@@ -980,6 +997,7 @@ window.__H = {
             attachCloudUsageListener(user.uid);
             attachCloudPlanListener(user.uid);
             attachCloudLimitListener(user.uid);
+            attachCloudPackListener(user.uid);
             attachCloudPurchasesListener(user.uid);
             attachCloudPointsListener(user.uid);
             attachSuspensionListener(user.uid);
@@ -1000,6 +1018,8 @@ window.__H = {
         detachSuspensionListener();
         detachAccountDeletionWatcher();
         if (cloudCustomLimitRef) { cloudCustomLimitRef.off(); cloudCustomLimitRef = null; }
+        if (cloudPackRef) { cloudPackRef.off(); cloudPackRef = null; }
+        cloudPackCredits = 0;
         if (cloudPlanRef) { cloudPlanRef.off(); cloudPlanRef = null; }
         if (cloudPurchasesRef) { cloudPurchasesRef.off(); cloudPurchasesRef = null; }
         if (cloudPointsRef) { cloudPointsRef.off(); cloudPointsRef = null; }
@@ -1330,11 +1350,13 @@ window.__H = {
         if (!host) return;
         const cutoff = Date.now() - 14 * 86400000;
         const list = myPaymentRequests.filter(r => r.status === 'pending' || (r.reviewedAt || r.createdAt) > cutoff).slice(0, 5);
-        if (!list.length) { host.classList.add('hidden'); host.innerHTML = ''; return; }
+        const credits = cloudPackCredits > 0 ? cloudPackCredits : 0;
+        if (!list.length && !credits) { host.classList.add('hidden'); host.innerHTML = ''; return; }
         const seen = reqSeenSet();
         host.classList.remove('hidden');
         host.innerHTML = `<div class="panel rounded-2xl p-4 sm:p-5 space-y-3">
-            <h3 class="text-sm font-bold text-slate-100 flex items-center gap-2"><i class="fa-solid fa-receipt"></i> <span>حالة طلباتك</span></h3>
+            ${credits ? `<div class="myreq myreq-ok"><div class="myreq-ico"><i class="fa-solid fa-bolt"></i></div><div class="myreq-body"><div class="myreq-top"><b>رصيد حزمتك</b><span class="myreq-price">${credits}</span></div><div class="myreq-sub">بيتستخدم تلقائيًا لما حد باقتك الشهري يخلص، ومبيتجددش ولا بيتصفّر أول الشهر.</div></div></div>` : ''}
+            ${list.length ? `<h3 class="text-sm font-bold text-slate-100 flex items-center gap-2"><i class="fa-solid fa-receipt"></i> <span>حالة طلباتك</span></h3>` : ''}
             <div class="space-y-2">${list.map(r => {
                 const m = reqMeta(r);
                 const fresh = r.status !== 'pending' && !seen.has(reqKey(r));

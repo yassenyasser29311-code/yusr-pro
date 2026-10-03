@@ -492,32 +492,13 @@
     // ---- الحزم الصغيرة (دفع مرة واحدة): بتزوّد سقف المستخدم بعدد طلبات الحزمة ----
     function adminIsPackRequest(r) { return /^حزمة\s+\d+/.test((r && r.plan) || ""); }
     async function adminApprovePack(req, credits) {
-        if (!credits) { adminToast("مش قادر أقرأ عدد طلبات الحزمة.", "error"); return; }
-        const u = adminUsersCache.find(x => x.uid === req.uid || (req.email && x.email === req.email));
-        const uid = req.uid || (u && u.uid);
-        if (!uid) { adminToast("الطلب مالوش حساب مسجّل. فعّل الحزمة يدويًا من ملف المستخدم.", "error"); return; }
-        // لو المستخدم مش محمّل في القايمة: اسأل عن باقته الحالية عشان الموافقة ما تنزّلش باقته بالغلط
-        let plan = u && PLAN_NAMES.includes(u.plan) ? u.plan : null;
-        if (!plan) {
-            plan = prompt("المستخدم مش ظاهر في القايمة المحمّلة.\nاكتب باقته الحالية بالظبط: " + PLAN_NAMES.join(" / "), "مجاني");
-            if (!plan || !PLAN_NAMES.includes(plan.trim())) { adminToast("باقة غير صحيحة، اتلغت العملية.", "error"); return; }
-            plan = plan.trim();
-        }
-        const used = (u && Number(u.usageThisMonth)) || 0;
-        const base = (u && typeof u.customLimit === "number") ? u.customLimit : ADMIN_PLAN_LIMITS[plan];
-        if (base === Infinity) { adminToast("المستخدم على باقة غير محدودة، الحزمة مش هتفرق معاه. ارفض الطلب وردّ له الفلوس.", "error"); return; }
-        const suggested = Math.max(base, used) + credits;
-        const answer = prompt(`حزمة ${credits} طلب — ${req.name || req.email || ""}\nباقته: ${plan} | السقف الحالي: ${base} | استهلك الشهر ده: ${used}\n\nالسقف الجديد (مقترح = ${suggested}):\nتنبيه: السقف بيفضل ثابت لحد ما تغيّره، فصفّره من ملف المستخدم لما رصيد الحزمة يخلص.`, String(suggested));
-        if (answer === null) return;
-        const newLimit = parseInt(answer, 10);
-        if (!Number.isFinite(newLimit) || newLimit < 0) { adminToast("رقم غير صالح.", "error"); return; }
+        if (!credits) { adminToast("مش قادر أقرأ حجم الحزمة.", "error"); return; }
+        if (!req.uid) { adminToast("الطلب مالوش حساب مسجّل.", "error"); return; }
+        const sure = confirm(`تفعيل حزمة ${credits} للمستخدم ${req.name || req.email || ""}؟\nهتتضاف على رصيده وبتتخصم منه بس لما سقف باقته الشهري يخلص، ومبتتجددش.`);
+        if (!sure) return;
         try {
-            await adminFetch("/adminReviewSubscriptionRequest", { method: "POST", body: JSON.stringify({ requestId: req.id, action: "approve", planOverride: plan }) });
-            await adminFetch("/adminUserAction", { method: "POST", body: JSON.stringify({ uid, action: "setCustomLimit", value: newLimit }) });
-            const stamp = `[حزمة ${credits} طلب — ${new Date().toLocaleDateString("ar-EG")} — السقف ${base}←${newLimit}]`;
-            const oldNote = (u && u.adminNote) ? u.adminNote + "\n" : "";
-            await adminFetch("/adminUserAction", { method: "POST", body: JSON.stringify({ uid, action: "setNote", value: oldNote + stamp }) });
-            adminToast("تم تفعيل الحزمة. السقف الجديد: " + newLimit, "success");
+            const d = await adminFetch("/adminReviewSubscriptionRequest", { method: "POST", body: JSON.stringify({ requestId: req.id, action: "approve" }) });
+            adminToast("تم تفعيل الحزمة. رصيد المستخدم دلوقتي: " + (d.balance != null ? d.balance : credits), "success");
             adminLoadSubscriptionRequests();
             adminRefreshAll();
         } catch (e) {
@@ -1170,6 +1151,8 @@
         }
 
         document.getElementById("admin-user-modal-usage").textContent = u.usageThisMonth ?? 0;
+        const packInput = document.getElementById("admin-user-modal-pack");
+        if (packInput) { packInput.value = u.packCredits ?? 0; packInput.disabled = readOnly; }
 
         const suspendBtn = document.getElementById("admin-user-modal-suspend-btn");
         suspendBtn.textContent = u.suspended ? "تفعيل الحساب" : "إيقاف الحساب";
