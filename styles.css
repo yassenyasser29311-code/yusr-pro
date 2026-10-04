@@ -849,3 +849,20 @@ body header.sticky .header-trial-badge{padding:4px 8px!important}
 .wal-chip[disabled]{cursor:default}
 .wal-chip[disabled]:hover{border-color:var(--border)}
 .wal-hint{font-size:.68rem;line-height:1.7}
+
+    /* ---------- نافذة الدفع ---------- */
+    .pay-hero { background: linear-gradient(135deg, rgba(0,172,172,.16), rgba(0,172,172,.04)); border: 1px solid rgba(0,172,172,.35); }
+    .pay-price { font-size: 1.6rem; font-weight: 800; color: var(--text); line-height: 1; }
+    .pay-step { display:flex; align-items:center; gap:.5rem; font-size:.72rem; font-weight:700; color: var(--text); }
+    .pay-step-num { width:1.35rem; height:1.35rem; border-radius:999px; background: var(--accent); color:#fff; display:inline-flex; align-items:center; justify-content:center; font-size:.68rem; font-weight:800; flex-shrink:0; }
+    .pay-method { background: var(--panel-2); border: 1px solid var(--border); border-radius: .9rem; padding: .7rem; transition: border-color .15s ease; }
+    .pay-method:hover { border-color: rgba(0,172,172,.55); }
+    .pay-method-head { display:flex; align-items:center; gap:.5rem; margin-bottom:.5rem; font-size:.75rem; font-weight:700; color: var(--text); }
+    .pay-badge { width:1.9rem; height:1.9rem; border-radius:.55rem; display:inline-flex; align-items:center; justify-content:center; font-size:.85rem; color:#fff; flex-shrink:0; }
+    .pay-badge-orange { background: linear-gradient(135deg,#ff7a00,#ff9a3c); }
+    .pay-badge-insta { background: linear-gradient(135deg,#6d28d9,#a855f7); }
+    .pay-num-row { display:flex; align-items:center; justify-content:space-between; gap:.5rem; background: var(--panel); border:1px solid var(--border); border-radius:.65rem; padding:.5rem .75rem; }
+    .pay-num-row + .pay-num-row { margin-top:.4rem; }
+    .pay-num { font-weight:800; letter-spacing:.06em; font-size:.92rem; color: var(--text); }
+    .pay-tag { font-size:.6rem; font-weight:700; padding:.1rem .45rem; border-radius:999px; background: rgba(0,172,172,.15); color: var(--accent); }
+    .pay-note { font-size:.64rem; color: var(--muted); line-height:1.6; }
