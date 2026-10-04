@@ -670,6 +670,71 @@ window.__H = {
         try { if (ck !== id) document.cookie = 'yusr_did=' + encodeURIComponent(id) + '; max-age=31536000; path=/; SameSite=Lax; Secure'; } catch (_) {}
         return id;
     }
+
+    // بصمة الجهاز: مبنية على مواصفات الجهاز نفسه (الشاشة، كارت الشاشة، المعالج، المنطقة الزمنية، رسم الـ canvas)
+    // فبتفضل ثابتة حتى لو فتح المستخدم متصفح خفي أو مسح الكوكيز والـ localStorage.
+    // ملحوظة: مش مضمونة 100% (بعض المتصفحات زي Brave بتعمل تشويش عمدًا)، فبتتبعت مع deviceId العادي مش بدله.
+    let _hwFp = null;
+    function _hash128(str) {
+        let h1 = 1779033703, h2 = 3144134277, h3 = 1013904242, h4 = 2773480762;
+        for (let i = 0, k; i < str.length; i++) {
+            k = str.charCodeAt(i);
+            h1 = h2 ^ Math.imul(h1 ^ k, 597399067);
+            h2 = h3 ^ Math.imul(h2 ^ k, 2869860233);
+            h3 = h4 ^ Math.imul(h3 ^ k, 951274213);
+            h4 = h1 ^ Math.imul(h4 ^ k, 2716044179);
+        }
+        h1 = Math.imul(h3 ^ (h1 >>> 18), 597399067);
+        h2 = Math.imul(h4 ^ (h2 >>> 22), 2869860233);
+        h3 = Math.imul(h1 ^ (h3 >>> 17), 951274213);
+        h4 = Math.imul(h2 ^ (h4 >>> 19), 2716044179);
+        h1 ^= (h2 ^ h3 ^ h4); h2 ^= h1; h3 ^= h1; h4 ^= h1;
+        return [h1, h2, h3, h4].map(n => (n >>> 0).toString(16).padStart(8, '0')).join('');
+    }
+    function getHardwareFp() {
+        if (_hwFp !== null) return _hwFp;
+        const parts = [];
+        try {
+            const dpr = window.devicePixelRatio || 1;
+            parts.push('s:' + Math.round(Math.max(screen.width, screen.height) * dpr) + 'x' + Math.round(Math.min(screen.width, screen.height) * dpr));
+            parts.push('cd:' + screen.colorDepth);
+        } catch (_) {}
+        try { parts.push('hc:' + (navigator.hardwareConcurrency || 0)); } catch (_) {}
+        try { parts.push('tp:' + (navigator.maxTouchPoints || 0)); } catch (_) {}
+        try { parts.push('pf:' + (navigator.platform || '')); } catch (_) {}
+        try { parts.push('tz:' + Intl.DateTimeFormat().resolvedOptions().timeZone); } catch (_) {}
+        try {
+            const c = document.createElement('canvas');
+            const gl = c.getContext('webgl') || c.getContext('experimental-webgl');
+            if (gl) {
+                const ext = gl.getExtension('WEBGL_debug_renderer_info');
+                if (ext) {
+                    parts.push('gv:' + gl.getParameter(ext.UNMASKED_VENDOR_WEBGL));
+                    parts.push('gr:' + gl.getParameter(ext.UNMASKED_RENDERER_WEBGL));
+                }
+                parts.push('gt:' + gl.getParameter(gl.MAX_TEXTURE_SIZE));
+                parts.push('gx:' + gl.getParameter(gl.MAX_RENDERBUFFER_SIZE));
+            }
+        } catch (_) {}
+        try {
+            const draw = () => {
+                const c = document.createElement('canvas');
+                c.width = 220; c.height = 40;
+                const x = c.getContext('2d');
+                x.textBaseline = 'top';
+                x.font = '16px Arial';
+                x.fillStyle = '#f60'; x.fillRect(10, 5, 90, 25);
+                x.fillStyle = '#069'; x.fillText('Yusr Pro \u2713 abc 123', 4, 8);
+                x.strokeStyle = 'rgba(102,204,0,0.7)'; x.arc(150, 20, 12, 0, Math.PI * 2); x.stroke();
+                return c.toDataURL();
+            };
+            const d1 = draw(), d2 = draw();
+            // لو الرسمتين طلعوا مختلفين يبقى المتصفح بيضيف تشويش (Brave/Firefox)، فبنتجاهل الـ canvas عشان البصمة متتغيرش كل مرة
+            if (d1 === d2) parts.push('cv:' + _hash128(d1));
+        } catch (_) {}
+        _hwFp = parts.length >= 4 ? 'FP-' + _hash128(parts.join('|')) : '';
+        return _hwFp;
+    }
     const PLAN_MONTHLY_LIMITS = {
         'مجاني': 5,
         'الأساسية': 25,
@@ -905,7 +970,7 @@ window.__H = {
         return (lastToolCategory && cats.indexOf(lastToolCategory) !== -1) ? lastToolCategory : cats[cats.length - 1];
     }
     // بيتبعت مع طلبات الذكاء الاصطناعي عشان الخصم يتم من النوع المناسب ومن المصدر اللي المستخدم اختاره
-    function requestMeta() { return { category: requestCategory(), source: getDeductSource(), deviceId: getDeviceId() }; }
+    function requestMeta() { return { category: requestCategory(), source: getDeductSource(), deviceId: getDeviceId(), fp: getHardwareFp() }; }
     function walletTotalUnits() {
         let n = cloudPackCredits > 0 ? cloudPackCredits : 0;
         WALLET_CATS.forEach(c => { n += cloudPackWallet[c] > 0 ? cloudPackWallet[c] : 0; });
@@ -1123,7 +1188,7 @@ window.__H = {
             const res = await fetch(`${CLOUD_FUNCTIONS_BASE}/onlinePing`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', ...(await getAuthHeader()) },
-                body: JSON.stringify(sync === true ? { deviceId: getDeviceId(), sync: true } : {})
+                body: JSON.stringify(sync === true ? { deviceId: getDeviceId(), fp: getHardwareFp(), sync: true } : {})
             });
             if (sync === true && res.ok) {
                 const data = await res.json().catch(() => ({}));
@@ -4996,7 +5061,7 @@ ${firstPass}
             ? 'أيوه، تمام، يعني بص، أنا اشتغلت على المشروع ده مع الفريق وكنت مسؤول عن المتابعة والتنفيذ وحل المشاكل اللي بتظهر أول بأول.'
             : 'طيب، هقول اللي في دماغي عادي زي ما بتكلم بالظبط، بصوتي وبنفس كلامي، من غير ما حد يغيّر فيه حاجة.';
         form.append('prompt', prompt);
-        { const meta = requestMeta(); form.append('category', meta.category); form.append('source', meta.source); form.append('deviceId', meta.deviceId); }
+        { const meta = requestMeta(); form.append('category', meta.category); form.append('source', meta.source); form.append('deviceId', meta.deviceId); form.append('fp', meta.fp); }
         let lastErr;
         for (let attempt = 0; attempt < 2; attempt++) {
             try {
