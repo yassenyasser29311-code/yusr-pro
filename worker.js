@@ -33,6 +33,16 @@ const FREE_IP_MONTHLY_CAP = 60;
 const DEVICE_ID_RE = /^DEV-[A-Za-z0-9]{6,40}$/;
 // بصمة الجهاز (من مواصفات الهاردوير) — بتفضل ثابتة في المتصفح الخفي وبعد مسح البيانات
 const FP_ID_RE = /^FP-[a-f0-9]{32}$/;
+// الباقة المجانية محتاجة رقم موبايل متأكَّد منه (Firebase Phone Auth). الرقم بيتسجّل في التوكن (phone_number)،
+// والـ Worker بيحفظ منه هاش بس (مش الرقم نفسه) كمعرّف جهاز/شخص تالت: الحساب الجديد بنفس الرقم بيكمّل من استهلاك القديم.
+const PHONE_REQUIRED_FOR_FREE = true;
+async function phoneKey(phone, env) {
+  if (!phone) return "";
+  const data = new TextEncoder().encode((env.PHONE_HASH_SALT || "yusr") + "|" + phone);
+  const buf = await crypto.subtle.digest("SHA-256", data);
+  const hex = Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+  return "PH-" + hex.slice(0, 32);
+}
 
 // أنواع رصيد الحزم (users/{uid}/packWallet/{category}) ومصادر الخصم اللي الواجهة بتبعتها
 const WALLET_CATEGORIES = ["voice", "video", "cv", "tool"];
@@ -224,7 +234,7 @@ export default {
       if (!auth.ok) {
         return json({ error: auth.error }, 401, corsHeaders);
       }
-      const { uid, idToken } = auth;
+      const { uid, idToken, phone } = auth;
 
       // تفريغ إجابات المقابلة الصوتية بيتحسب مع رد المحاور كطلب واحد، فمش بنزوّد عداد الاستخدام عليه (وحد المعدل له أضيق)
       const interviewTx = toolName === "groqTranscribe" && url.searchParams.get("ctx") === "interview";
@@ -257,6 +267,9 @@ export default {
           } catch (e) { transcribeForm = null; }
         }
       }
+
+      meta.ph = phone ? await phoneKey(phone, env) : "";
+      meta.hasPhone = !!phone;
 
       const quota = toolName === "edgeTtsSpeak"
         ? { ok: true, monthKey: null }
@@ -399,7 +412,7 @@ async function verifyFirebaseToken(request, env) {
   }
   if (!isValid) return { ok: false, error: "invalid_signature" };
 
-  return { ok: true, uid: payload.sub, idToken };
+  return { ok: true, uid: payload.sub, idToken, phone: typeof payload.phone_number === "string" ? payload.phone_number : "" };
 }
 
 async function getFirebaseJwks() {
@@ -457,31 +470,30 @@ async function readDeviceCounter(env, id, monthKey) {
   } catch (e) { console.warn("readDeviceCounter فشل:", e); return 0; }
 }
 
-async function getFreeTrackCounts(env, deviceId, fp, ip, monthKey) {
-  const [devRaw, fpRaw] = await Promise.all([
-    readDeviceCounter(env, deviceId, monthKey),
-    readDeviceCounter(env, fp, monthKey)
-  ]);
+async function getFreeTrackCounts(env, ids, ip, monthKey) {
+  const list = (ids || []).filter(Boolean);
+  const raws = await Promise.all(list.map((id) => readDeviceCounter(env, id, monthKey)));
+  const rawById = {};
+  list.forEach((id, i) => { rawById[id] = raws[i]; });
   let ipCount = 0;
   if (FREE_IP_MONTHLY_CAP > 0 && env.RATE_LIMIT_KV && ip && ip !== "unknown") {
     try {
       ipCount = parseInt((await env.RATE_LIMIT_KV.get(`freeip:${monthKey}:${ip}`)) || "0", 10) || 0;
     } catch (e) { console.warn("getFreeTrackCounts(ip) فشل:", e); }
   }
-  return { device: Math.max(devRaw, fpRaw), devRaw, fpRaw, ip: ipCount };
+  return { device: Math.max(0, ...raws), rawById, ip: ipCount };
 }
 
-// بيتنادى بعد طلب مجاني ناجح اتحسب على الباقة: بيزوّد عدّاد الجهاز (بالمعرّفين) وعدّاد الـ IP
+// بيتنادى بعد طلب مجاني ناجح اتحسب على الباقة: بيزوّد عدّاد الجهاز (بكل المعرّفات: deviceId + بصمة + هاش الرقم) وعدّاد الـ IP
 async function recordFreeUsage(env, track) {
-  const { deviceId, fp, ip, monthKey, base } = track || {};
+  const { ids, ip, monthKey, base } = track || {};
   if (env.FIREBASE_SERVICE_ACCOUNT_JSON) {
-    for (const id of [deviceId, fp]) {
-      if (!id) continue;
+    for (const id of (ids || []).filter(Boolean)) {
       try {
         const path = `deviceUsage/${id}/${monthKey}`;
         const cur = await fbAdminGet(path, env);
         const c = typeof cur === "number" && cur > 0 ? cur : 0;
-        // بنبدأ من الأكبر (استخدام الحساب/الجهاز وقت الفحص) عشان المعرّفين يفضلوا متزامنين
+        // بنبدأ من الأكبر (استخدام الحساب/الجهاز وقت الفحص) عشان كل المعرّفات يفضلوا متزامنين
         await fbAdminPut(path, Math.max(c, base || 0) + 1, env);
       } catch (e) { console.warn("recordFreeUsage(device) فشل:", e); }
     }
@@ -530,12 +542,14 @@ async function checkPlanUsage(uid, idToken, meta, env, ip) {
   const trackFree = planName === FREE_PLAN_NAME && !hasCustomLimit && userRaw.deviceCapBypass !== monthKey;
   let effectiveCount = currentCount;
   let ipBlocked = false;
+  const phoneBlocked = trackFree && PHONE_REQUIRED_FOR_FREE && !(meta && meta.hasPhone);
   if (trackFree) {
-    const g = await getFreeTrackCounts(env, meta && meta.deviceId, meta && meta.fp, ip, monthKey);
+    const ids = [meta && meta.deviceId, meta && meta.fp, meta && meta.ph].filter(Boolean);
+    const g = await getFreeTrackCounts(env, ids, ip, monthKey);
     // لو الحساب مستهلك أكتر من اللي مسجّل على الجهاز (استخدام قبل التحديث مثلاً) نرفع عدّادات الجهاز لنفسه
     if (env && env.FIREBASE_SERVICE_ACCOUNT_JSON && currentCount > 0) {
-      for (const [id, raw] of [[meta && meta.deviceId, g.devRaw], [meta && meta.fp, g.fpRaw]]) {
-        if (id && currentCount > raw) {
+      for (const id of ids) {
+        if (currentCount > (g.rawById[id] || 0)) {
           try { await fbAdminPut(`deviceUsage/${id}/${monthKey}`, currentCount, env); }
           catch (e) { console.warn("backfill deviceUsage فشل:", e); }
         }
@@ -545,14 +559,15 @@ async function checkPlanUsage(uid, idToken, meta, env, ip) {
     effectiveCount = Math.max(currentCount, g.device);
     ipBlocked = FREE_IP_MONTHLY_CAP > 0 && g.ip >= FREE_IP_MONTHLY_CAP;
   }
-  const planAvailable = limit === Infinity || (effectiveCount < limit && !ipBlocked);
-  const deviceBlocked = trackFree && !planAvailable && currentCount < limit;
+  // من غير رقم موبايل متأكَّد الباقة المجانية مقفولة (الحزم المدفوعة لسه شغالة)
+  const planAvailable = !phoneBlocked && (limit === Infinity || (effectiveCount < limit && !ipBlocked));
+  const deviceBlocked = trackFree && !phoneBlocked && !planAvailable && currentCount < limit;
   const wallet = normalizeWallet(userRaw.packWallet);
   const packCredits = typeof userRaw.packCredits === "number" && userRaw.packCredits > 0 ? userRaw.packCredits : 0;
   const applicableCats = CATEGORY_WALLETS[category] || [category];
 
   const planResult = { ok: true, monthKey, currentCount };
-  if (trackFree) planResult.freeTrack = { deviceId: (meta && meta.deviceId) || "", fp: (meta && meta.fp) || "", ip, monthKey, base: effectiveCount };
+  if (trackFree) planResult.freeTrack = { ids: [meta && meta.deviceId, meta && meta.fp, meta && meta.ph].filter(Boolean), ip, monthKey, base: effectiveCount };
   const walletResult = (cat) => ({ ok: true, monthKey: null, usePack: true, walletCategory: cat, walletBalance: wallet[cat] });
   const generalResult = { ok: true, monthKey: null, usePack: true, packCredits };
 
@@ -572,7 +587,7 @@ async function checkPlanUsage(uid, idToken, meta, env, ip) {
   }
   if (packCredits > 0) return generalResult;
 
-  return { ok: false, error: deviceBlocked ? "free_limit_device" : "usage_limit_reached" };
+  return { ok: false, error: phoneBlocked ? "phone_required" : (deviceBlocked ? "free_limit_device" : "usage_limit_reached") };
 }
 
 // خصم طلب واحد من رصيد الحزم (بصلاحية السيرفر)، والرصيد مبيتصفّرش مع أول الشهر
@@ -2423,25 +2438,26 @@ async function handleOnlinePing(request, env, corsHeaders) {
   const fp = typeof body?.fp === "string" ? body.fp.trim() : "";
   const validDev = DEVICE_ID_RE.test(deviceId) ? deviceId : "";
   const validFp = FP_ID_RE.test(fp) ? fp : "";
-  if (body?.sync === true && (validDev || validFp) && env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+  const ph = auth.phone ? await phoneKey(auth.phone, env) : "";
+  const syncIds = [validDev, validFp, ph].filter(Boolean);
+  if (body?.sync === true && syncIds.length && env.FIREBASE_SERVICE_ACCOUNT_JSON) {
     try {
       const monthKey = getCurrentMonthKey();
-      const [plan, customLimit, acctRaw, bypass, devRaw, fpRaw] = await Promise.all([
+      const [plan, customLimit, acctRaw, bypass, ...raws] = await Promise.all([
         fbAdminGet(`users/${auth.uid}/plan`, env),
         fbAdminGet(`users/${auth.uid}/customLimit`, env),
         fbAdminGet(`users/${auth.uid}/usage/${monthKey}`, env),
         fbAdminGet(`users/${auth.uid}/deviceCapBypass`, env),
-        readDeviceCounter(env, validDev, monthKey),
-        readDeviceCounter(env, validFp, monthKey)
+        ...syncIds.map((id) => readDeviceCounter(env, id, monthKey))
       ]);
       const planName = PLAN_LIMITS.hasOwnProperty(plan) ? plan : FREE_PLAN_NAME;
       const hasCustomLimit = typeof customLimit === "number" && customLimit >= 0;
       if (planName === FREE_PLAN_NAME && !hasCustomLimit && bypass !== monthKey) {
         const acct = typeof acctRaw === "number" && acctRaw > 0 ? acctRaw : 0;
-        const dev = Math.max(devRaw, fpRaw, acct);
-        // نزامن المعرّفين على الأكبر عشان أي حساب جديد على نفس الجهاز يبدأ من نفس الرقم
-        for (const [id, raw] of [[validDev, devRaw], [validFp, fpRaw]]) {
-          if (id && raw < dev) await fbAdminPut(`deviceUsage/${id}/${monthKey}`, dev, env);
+        const dev = Math.max(acct, ...raws);
+        // نزامن كل المعرّفات على الأكبر عشان أي حساب جديد على نفس الجهاز/الرقم يبدأ من نفس الرقم
+        for (let i = 0; i < syncIds.length; i++) {
+          if (raws[i] < dev) await fbAdminPut(`deviceUsage/${syncIds[i]}/${monthKey}`, dev, env);
         }
         freeDeviceUsed = dev;
       }

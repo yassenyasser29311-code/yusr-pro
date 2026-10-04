@@ -207,6 +207,31 @@
 </div>
 
 
+<div id="phone-verify-modal" class="hidden fixed inset-0 z-[125] flex items-center justify-center p-4 modal-backdrop">
+    <div class="panel modal-pop max-w-sm w-full rounded-2xl p-5 space-y-3 text-right">
+        <div class="text-center space-y-1">
+            <div class="w-11 h-11 rounded-full bg-[var(--panel-2)] border border-[var(--border)] flex items-center justify-center mx-auto">
+                <i class="fa-solid fa-mobile-screen-button text-slate-300"></i>
+            </div>
+            <h3 class="text-sm font-bold text-slate-100">أكّد رقم موبايلك</h3>
+            <p class="text-[11px] text-slate-400 leading-relaxed">عشان تستخدم المحاولات المجانية لازم تأكّد رقم موبايلك بكود يوصلك SMS. كل رقم ليه حساب واحد بس، والرقم مش بيتعرض لأي حد.</p>
+        </div>
+        <div id="phone-step-number" class="space-y-2">
+            <input id="phone-input" type="tel" inputmode="tel" dir="ltr" placeholder="01XXXXXXXXX" autocomplete="tel" class="w-full input-field rounded-xl px-3 py-2.5 text-xs">
+            <button id="phone-send-btn" data-x-onclick="hPhoneSend" class="w-full py-2.5 btn-primary font-bold text-xs rounded-xl">ابعتلي الكود</button>
+        </div>
+        <div id="phone-step-code" class="hidden space-y-2">
+            <input id="phone-code-input" type="text" inputmode="numeric" maxlength="6" dir="ltr" placeholder="000000" autocomplete="one-time-code" class="w-full input-field rounded-xl px-3 py-2.5 text-center text-sm tracking-[0.4em]">
+            <button id="phone-confirm-btn" data-x-onclick="hPhoneConfirm" class="w-full py-2.5 btn-primary font-bold text-xs rounded-xl">تأكيد</button>
+            <button data-x-onclick="hPhoneBack" class="w-full text-[11px] text-slate-500 hover:text-slate-300 underline underline-offset-2">غيّر الرقم</button>
+        </div>
+        <p id="phone-status" class="text-[11px] text-center hidden"></p>
+        <div id="phone-recaptcha"></div>
+        <button data-x-onclick="hPhoneClose" class="w-full py-2 chip justify-center hover:bg-[var(--panel-2)]">لاحقًا</button>
+    </div>
+</div>
+
+
 <div id="account-suspended-modal" class="hidden fixed inset-0 z-[130] flex items-center justify-center p-4" style="background:#000000;">
     <div class="panel modal-pop max-w-sm w-full rounded-2xl p-6 space-y-4 text-center">
         <div class="w-14 h-14 rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center mx-auto">
