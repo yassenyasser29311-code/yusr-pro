@@ -219,10 +219,6 @@ window.__H = {
   hPackCustomBuy: function(event) { buyCustomPack(); },
   hShareResult: function(event) { shareResultCard(this); },
   hGoSubs: function(event) { closePricingModal(); switchViewByName('subscriptions'); },
-  hPhoneSend: function(event) { sendPhoneCode() },
-  hPhoneConfirm: function(event) { confirmPhoneCode() },
-  hPhoneBack: function(event) { phoneModalStep('number') },
-  hPhoneClose: function(event) { hidePhoneVerifyModal() },
   hToggleProgressDetail: function(event) { document.getElementById('progress-detail-' + this.getAttribute('data-idx')).classList.toggle('hidden') },
 };
 
@@ -509,14 +505,6 @@ window.__H = {
         uploadingTranscribing: { ar:'جاري رفع وتفريغ بدقة عالية:', en:'Uploading & transcribing:', fr:'Envoi et transcription en cours :', es:'Subiendo y transcribiendo:', tr:'Yükleniyor ve deşifre ediliyor:', de:'Wird hochgeladen & transkribiert:', hi:'अपलोड और ट्रांसक्राइब हो रहा है:', ur:'اپ لوڈ اور ٹرانسکرائب ہو رہا ہے:', fa:'در حال بارگذاری و پیاده‌سازی متن:' },
         transcribedSuccess: { ar:'✓ اتفرّغ بنجاح. راجع النص تحت واضغط "نظّف وحسّن التنسيق".', en:'✓ Transcribed successfully. Review below, then click Clean Up.', fr:'✓ Transcription réussie. Vérifiez ci-dessous, puis cliquez sur Nettoyer.', es:'✓ Transcrito correctamente. Revisa abajo y luego haz clic en Limpiar.', tr:'✓ Başarıyla deşifre edildi. Aşağıda gözden geçirin, ardından Temizle\'ye tıklayın.', de:'✓ Erfolgreich transkribiert. Prüfe den Text unten und klicke dann auf Bereinigen.', hi:'✓ सफलतापूर्वक ट्रांसक्राइब हो गया। नीचे रिव्यू करें, फिर क्लीन अप पर क्लिक करें।', ur:'✓ کامیابی سے ٹرانسکرائب ہو گیا۔ نیچے جائزہ لیں، پھر صاف کریں پر کلک کریں۔', fa:'✓ با موفقیت پیاده‌سازی شد. متن زیر را بررسی کنید، سپس روی پاک‌سازی کلیک کنید.' },
         transcriptionFailed: { ar:'تعذر التفريغ التلقائي. جرب تاني أو الصق النص يدوياً.', en:'Auto-transcription failed. Please paste the text manually or try again.', fr:'La transcription automatique a échoué. Veuillez coller le texte manuellement ou réessayer.', es:'Falló la transcripción automática. Pega el texto manualmente o inténtalo de nuevo.', tr:'Otomatik deşifre başarısız oldu. Lütfen metni manuel olarak yapıştırın veya tekrar deneyin.', de:'Die automatische Transkription ist fehlgeschlagen. Bitte füge den Text manuell ein oder versuche es erneut.', hi:'ऑटो-ट्रांसक्रिप्शन विफल रहा। कृपया टेक्स्ट मैन्युअल रूप से पेस्ट करें या दोबारा कोशिश करें।', ur:'خودکار ٹرانسکرپشن ناکام ہو گئی۔ براہ کرم متن دستی طور پر پیسٹ کریں یا دوبارہ کوشش کریں۔', fa:'پیاده‌سازی خودکار ناموفق بود. لطفاً متن را به‌صورت دستی جای‌گذاری کنید یا دوباره تلاش کنید.' },
-        phoneRequiredToast: { ar:'لازم تأكّد رقم موبايلك الأول عشان تستخدم المحاولات المجانية.', en:'Please verify your phone number first to use your free attempts.' },
-        phoneCodeSent: { ar:'اتبعت كود التأكيد على رقمك.', en:'Verification code sent to your number.' },
-        phoneVerified: { ar:'تم تأكيد رقمك، تقدر تستخدم الأدوات دلوقتي.', en:'Phone verified — you can use the tools now.' },
-        phoneInvalid: { ar:'اكتب رقم صحيح (مثال: 01012345678 أو +201012345678).', en:'Enter a valid number (e.g. 01012345678 or +201012345678).' },
-        phoneInUse: { ar:'الرقم ده مربوط بحساب تاني. سجّل دخول بالحساب ده أو استخدم رقم تاني.', en:'This number is linked to another account. Sign in with that account or use another number.' },
-        phoneBadCode: { ar:'الكود غلط، راجعه وجرب تاني.', en:'Wrong code, check it and try again.' },
-        phoneCodeExpired: { ar:'الكود انتهت صلاحيته، اطلب كود جديد.', en:'The code expired, request a new one.' },
-        phoneGenericError: { ar:'تعذّر إرسال الكود، جرب تاني بعد شوية.', en:'Could not send the code, try again shortly.' },
         resendWait: { ar:'استنى {n} ثانية قبل ما تطلب إرسال تاني.', en:'Please wait {n}s before resending.', fr:'Veuillez attendre {n}s avant de renvoyer.', es:'Espera {n}s antes de reenviar.', tr:'Yeniden göndermeden önce lütfen {n}sn bekleyin.', de:'Bitte warte {n}s, bevor du erneut sendest.', hi:'दोबारा भेजने से पहले कृपया {n} सेकंड प्रतीक्षा करें।', ur:'دوبارہ بھیجنے سے پہلے براہ کرم {n} سیکنڈ انتظار کریں۔', fa:'لطفاً قبل از ارسال مجدد {n} ثانیه صبر کنید.' },
         verificationEmailSent: { ar:'اتبعت رابط التأكيد على إيميلك — راجع صندوق الوارد (والسبام).', en:'Verification email sent — check your inbox (and spam).', fr:'E-mail de vérification envoyé — vérifiez votre boîte de réception (et vos spams).', es:'Correo de verificación enviado — revisa tu bandeja de entrada (y el spam).', tr:'Doğrulama e-postası gönderildi — gelen kutunuzu (ve spam\'i) kontrol edin.', de:'Bestätigungs-E-Mail gesendet — überprüfe dein Postfach (und den Spam-Ordner).', hi:'सत्यापन ईमेल भेज दिया गया — अपना इनबॉक्स (और स्पैम) देखें।', ur:'تصدیقی ای میل بھیج دی گئی — اپنا ان باکس (اور اسپیم) چیک کریں۔', fa:'ایمیل تأیید ارسال شد — صندوق ورودی (و اسپم) خود را بررسی کنید.' },
         tooManyRequests: { ar:'محاولات كتير، جرب تاني بعد شوية.', en:'Too many requests, please try again later.', fr:'Trop de tentatives, veuillez réessayer plus tard.', es:'Demasiados intentos, inténtalo de nuevo más tarde.', tr:'Çok fazla deneme yapıldı, lütfen daha sonra tekrar deneyin.', de:'Zu viele Versuche, bitte versuche es später erneut.', hi:'बहुत अधिक प्रयास, कृपया बाद में फिर कोशिश करें।', ur:'بہت زیادہ کوششیں، براہ کرم بعد میں دوبارہ کوشش کریں۔', fa:'تعداد تلاش‌ها زیاد بود، لطفاً بعداً دوباره تلاش کنید.' },
@@ -1194,109 +1182,6 @@ window.__H = {
         }
     }
 
-
-    // ---- تأكيد رقم الموبايل (Firebase Phone Auth): مطلوب لاستخدام الباقة المجانية ----
-    let _phoneVerifier = null, _phoneConfirmation = null, _phoneBusy = false;
-    function phoneStatus(msg, kind) {
-        const el = document.getElementById('phone-status');
-        if (!el) return;
-        el.classList.remove('hidden', 'text-red-400', 'text-emerald-400');
-        if (!msg) { el.classList.add('hidden'); return; }
-        el.classList.add(kind === 'ok' ? 'text-emerald-400' : 'text-red-400');
-        el.textContent = msg;
-    }
-    function phoneModalStep(step) {
-        const n = document.getElementById('phone-step-number'), c = document.getElementById('phone-step-code');
-        if (n) n.classList.toggle('hidden', step !== 'number');
-        if (c) c.classList.toggle('hidden', step !== 'code');
-        phoneStatus('');
-    }
-    function showPhoneVerifyModal() {
-        const user = fbAuth.currentUser;
-        if (!user || user.isAnonymous || user.phoneNumber) return;
-        const m = document.getElementById('phone-verify-modal');
-        if (!m) return;
-        phoneModalStep('number');
-        m.classList.remove('hidden');
-    }
-    function hidePhoneVerifyModal() {
-        const m = document.getElementById('phone-verify-modal');
-        if (m) m.classList.add('hidden');
-    }
-    function normalizePhoneInput(raw) {
-        let v = String(raw || '').replace(/[\s\-().]/g, '');
-        v = v.replace(/[٠-٩]/g, d => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d)));
-        if (v.startsWith('00')) v = '+' + v.slice(2);
-        if (/^01\d{9}$/.test(v)) v = '+20' + v.slice(1); // رقم مصري محلي
-        return /^\+[1-9]\d{7,14}$/.test(v) ? v : null;
-    }
-    function resetPhoneVerifier() {
-        try { if (_phoneVerifier) _phoneVerifier.clear(); } catch (_) {}
-        _phoneVerifier = null;
-        const holder = document.getElementById('phone-recaptcha');
-        if (holder) holder.innerHTML = '';
-    }
-    function phoneErrorMessage(e) {
-        const code = e && e.code;
-        if (code === 'auth/credential-already-in-use' || code === 'auth/account-exists-with-different-credential' || code === 'auth/provider-already-linked') return uiStr('phoneInUse');
-        if (code === 'auth/invalid-phone-number' || code === 'auth/missing-phone-number') return uiStr('phoneInvalid');
-        if (code === 'auth/invalid-verification-code') return uiStr('phoneBadCode');
-        if (code === 'auth/code-expired') return uiStr('phoneCodeExpired');
-        if (code === 'auth/too-many-requests' || code === 'auth/quota-exceeded') return uiStr('tooManyRequests');
-        return uiStr('phoneGenericError');
-    }
-    async function sendPhoneCode() {
-        if (_phoneBusy) return;
-        const user = fbAuth.currentUser;
-        if (!user) return;
-        const number = normalizePhoneInput((document.getElementById('phone-input') || {}).value);
-        if (!number) { phoneStatus(uiStr('phoneInvalid')); return; }
-        _phoneBusy = true;
-        const btn = document.getElementById('phone-send-btn');
-        if (btn) { btn.disabled = true; btn.classList.add('opacity-60'); }
-        try {
-            if (!_phoneVerifier) _phoneVerifier = new firebase.auth.RecaptchaVerifier('phone-recaptcha', { size: 'invisible' });
-            _phoneConfirmation = await user.linkWithPhoneNumber(number, _phoneVerifier);
-            phoneModalStep('code');
-            phoneStatus(uiStr('phoneCodeSent'), 'ok');
-        } catch (e) {
-            console.warn('phone send failed', e);
-            resetPhoneVerifier(); // الـ verifier بيبوظ بعد أي فشل، لازم ننشئ واحد جديد
-            phoneStatus(phoneErrorMessage(e));
-        } finally {
-            _phoneBusy = false;
-            if (btn) { btn.disabled = false; btn.classList.remove('opacity-60'); }
-        }
-    }
-    async function confirmPhoneCode() {
-        if (_phoneBusy || !_phoneConfirmation) return;
-        const code = ((document.getElementById('phone-code-input') || {}).value || '').trim();
-        if (!/^\d{6}$/.test(code)) { phoneStatus(uiStr('phoneBadCode')); return; }
-        _phoneBusy = true;
-        const btn = document.getElementById('phone-confirm-btn');
-        if (btn) { btn.disabled = true; btn.classList.add('opacity-60'); }
-        try {
-            await _phoneConfirmation.confirm(code); // بيربط الرقم بالحساب
-            _phoneConfirmation = null;
-            resetPhoneVerifier();
-            try { await fbAuth.currentUser.getIdToken(true); } catch (_) {} // نجدد التوكن عشان يشيل phone_number
-            hidePhoneVerifyModal();
-            showToast(uiStr('phoneVerified'), 'success');
-            logActivity('phone_verified', 'تأكيد رقم الموبايل');
-            sendOnlinePing(true);
-        } catch (e) {
-            console.warn('phone confirm failed', e);
-            phoneStatus(phoneErrorMessage(e));
-        } finally {
-            _phoneBusy = false;
-            if (btn) { btn.disabled = false; btn.classList.remove('opacity-60'); }
-        }
-    }
-    window.sendPhoneCode = sendPhoneCode;
-    window.confirmPhoneCode = confirmPhoneCode;
-    window.phoneModalStep = phoneModalStep;
-    window.hidePhoneVerifyModal = hidePhoneVerifyModal;
-    window.showPhoneVerifyModal = showPhoneVerifyModal;
 
     let onlinePingInterval = null;
     async function sendOnlinePing(sync) {
@@ -3631,10 +3516,7 @@ ${jobAdPromptLine()}
             const errBody = await response.text().catch(() => "");
             console.warn("AI Processing Service (via Cloud Function) error:", response.status, errBody);
             if (DELIBERATE_DENIAL_STATUSES.has(response.status)) {
-                if (errBody.indexOf('phone_required') !== -1) {
-                    showToast(uiStr('phoneRequiredToast'), 'error');
-                    showPhoneVerifyModal();
-                } else if (errBody.indexOf('free_limit_device') !== -1) {
+                if (errBody.indexOf('free_limit_device') !== -1) {
                     showToast('المحاولات المجانية على الجهاز ده خلصت (اتستخدمت قبل كده من نفس الجهاز). اشترك أو اشتري حزمة عشان تكمل.', 'error');
                     sendOnlinePing(true); // نحدّث العدّاد اللي على الشاشة
                 }
@@ -5194,7 +5076,6 @@ ${firstPass}
                 return returnFullData ? data : cleanTranscriptionText(data);
             } catch (e) {
                 lastErr = e;
-                if (e && /phone_required/.test(e.message || '')) { showToast(uiStr('phoneRequiredToast'), 'error'); showPhoneVerifyModal(); throw e; }
                 if (attempt === 0) await new Promise(r => setTimeout(r, 1200));
             }
         }
